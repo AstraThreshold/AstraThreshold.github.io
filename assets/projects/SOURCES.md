@@ -6,7 +6,6 @@ Retrieved 2026-11-10 from AstraThreshold's public project materials. These are p
 | --- | --- | --- |
 | `launcher.webp` | [oled-ui-astra-lite / IMG2.JPG](https://raw.githubusercontent.com/AstraThreshold/oled-ui-astra-lite/main/IMG/IMG2.JPG) | astra Launcher 开发板实物，OLED 显示固件名称与版本信息。 / Physical astra Launcher board with its firmware information on the OLED. |
 | `astra-lite.webp` | [oled-ui-astra-lite / IMG1.JPG](https://raw.githubusercontent.com/AstraThreshold/oled-ui-astra-lite/main/IMG/IMG1.JPG) | astra UI Lite 在开发板 OLED 上运行的多级列表菜单。 / astra UI Lite running a list menu on the development board's OLED. |
-| `astra-ui.webp` | [astra UI Wiki / Home](https://github.com/AstraThreshold/oled-ui-astra/wiki), [original image](https://github.com/dcfsswindy/oled-ui-astra/assets/59963050/159bd518-976e-4fa5-bb5c-66452e0d698a) | 实际 OLED 屏幕上的 astra UI 启动画面。 / The astra UI boot screen photographed on an OLED display. |
 
 Images were resized proportionally and encoded to WebP. No content was generated or composited.
 
@@ -36,3 +35,10 @@ The Bilibili profile URL returned HTTP 412 to direct retrieval. Video pages and 
 - `altium-library.jpg`: Original cover of the owner's Bilibili video [BV12N4y117hD](https://www.bilibili.com/video/BV12N4y117hD/), retrieved on 2026-11-10 via the public video metadata API.
 - Original image: https://i1.hdslb.com/bfs/archive/c784f7b93347ff76f3435cdc65c6976ddb7658a1.jpg
 - Used only as an on-demand project-title preview; the image is unchanged.
+
+## astra UI video frame
+
+- `astra-ui-demo.webp`: Frame at 00:05 of the author's [astra UI demonstration, BV1i4421D7nJ](https://www.bilibili.com/video/BV1i4421D7nJ/?t=5), retrieved 2026-11-10.
+- The public video metadata identifies uploader UID 43483079 and CID 1608972847. The frame shows the real OLED tile menu running on the development board.
+- Extracted at the source resolution of 852 × 480 and encoded to WebP. No generated or composited content; the source frame and watermark are preserved.
+- Replaces the previous boot-logo-only preview. GitHub stars were rechecked on 2026-11-10: 2,417 / 139 / 234 / 1,125 for astra UI / Lite / launcher / Altium library, respectively.

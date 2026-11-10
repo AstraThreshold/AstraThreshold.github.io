@@ -18,12 +18,15 @@ npm run preview
 ## 内容维护
 
 - `index.html`：页面结构、中文默认内容及 `data-en` 英文文案、元数据和外链。
-- `script.js`：语言切换、粉丝数读取及交互。
-- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；英文主要使用 Times New Roman。
+- `script.js`：语言切换、粉丝数读取、进入页面和手动刷新时的数字递增动画；遵循系统减少动态效果设置。
+- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题及头像下方的英文使用 Consolas，正文保留衬线字体。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon。
 - `assets/projects/`：项目展示素材。
 - `assets/profile/`：Bilibili 个人头像与来源记录。
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
+- `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。
+- `assets/affiliations/`：港科广及强脑科技官网提供的方形标志；网站品牌和 favicon 保持 WoooLAB。
+- `github-stats.js`：浏览器与定时任务共用的 GitHub 分页统计逻辑。
 - `scripts/build.mjs`：将公开网页与允许的媒体文件复制至 `dist/`。
 
 项目资料、简历原件、品牌源文件和研究目录不进入发布产物，也不加入此仓库。联系方式、身份和项目状态变更时，请同时维护两种语言。
@@ -34,7 +37,7 @@ npm run preview
 
 1. 将网站源文件推送到 `main` 分支。
 2. 在仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
-3. 检查 **Actions → Deploy GitHub Pages**。每次推送 `main`、手动运行或定时触发工作流，都会读取粉丝数、构建并发布 `dist/`。
+3. 检查 **Actions → Deploy GitHub Pages**。每次推送 `main`、手动运行或定时触发工作流，都会读取粉丝数和 GitHub stars、构建并发布 `dist/`。
 
 工作流使用 GitHub 官方 Pages Actions，无需个人访问令牌。构建产物采用白名单，避免把原始简历或设计源文件当作网站文件发布。发布流程参考 [GitHub Pages 官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
 
@@ -47,5 +50,13 @@ npm run preview
 这是定时更新，受 GitHub 调度、Bilibili 接口可用性和 CDN 缓存影响，不保证严格每 15 分钟完成。GitHub 公开仓库连续 60 天无活动时可能自动停用定时工作流，可在 Actions 中重新启用，见 [GitHub schedule 文档](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。
 
 本地手动更新：`npm run refresh:stats`，然后 `npm run build`。头像使用当前保存的 Bilibili 图片，不随粉丝数任务替换。
+
+## GitHub stars 更新
+
+总数是 AstraThreshold 名下所有公开仓库收到的 stars 之和，包含 Fork 仓库；不是用户收藏过的仓库数。分页完整读取成功后才替换总数，任何一页失败都不会显示部分合计。
+
+页面打开和点击“刷新”时优先请求 GitHub 公开 API，可见期间约每 5 分钟尝试直接更新。匿名访问遇到限流或网络错误时，使用同站 JSON 和最近一次有效缓存，并将自动重试间隔延长至 15 分钟。同站 JSON 随现有 GitHub Actions 任务约每 15 分钟更新，不需要服务器或个人令牌。任务只在运行时使用 GitHub 自动提供的短期令牌，提高 API 配额；凭据不进入公开文件。
+
+顶部总数和项目列表的 stars 使用同一份数据，展示真实读取时间。Bilibili 数字在进入页面及手动刷新时从零递增到实际值；后台检查不重复播放动画，系统开启“减少动态效果”时直接显示最终值。
 
 WoooLAB 标识和项目作品归原作者所有；各开源项目的许可以其独立仓库为准。
