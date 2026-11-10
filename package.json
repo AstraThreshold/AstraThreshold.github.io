@@ -6,6 +6,7 @@
   "description": "AstraThreshold · WoooLAB — personal portfolio",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "refresh:stats": "node scripts/update-bilibili.mjs",
     "preview": "node scripts/serve.mjs"
   },
   "engines": {

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: read
@@ -23,6 +25,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Refresh Bilibili follower count
+        run: npm run refresh:stats
       - name: Build public files
         run: npm run build
       - name: Configure Pages

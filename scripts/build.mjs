@@ -1,4 +1,4 @@
-import { copyFile, lstat, mkdir, readdir, realpath, rm } from 'node:fs/promises';
+import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,9 +48,20 @@ async function copyAssets(relative) {
     for (const item of await readdir(source)) {
       if (!item.startsWith('.')) await copyAssets(path.join(relative, item));
     }
-  } else if (info.isFile() && assetExtensions.has(path.extname(relative).toLowerCase())) {
+  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || relative.split(path.sep).join('/') === 'assets/data/bilibili.json')) {
     await copy(source, path.join(output, relative));
   }
 }
 if (await exists(path.join(root, 'assets'))) await copyAssets('assets');
+// Keep the initial HTML reading useful even before JavaScript or if a request fails.
+const stats = JSON.parse(await readFile(path.join(root, 'assets/data/bilibili.json'), 'utf8'));
+if (stats.mid !== 43483079 || !Number.isSafeInteger(stats.followers) || stats.followers < 0 || !Number.isFinite(Date.parse(stats.updated_at))) {
+  throw new Error('A verified Bilibili snapshot is required.');
+}
+const indexPath = path.join(output, 'index.html');
+const initialTime = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(stats.updated_at));
+const index = (await readFile(indexPath, 'utf8'))
+  .replace(/<strong id="follower-count"[^>]*>[^<]*<\/strong>/, `<strong id="follower-count" data-updated-at="${new Date(stats.updated_at).toISOString()}">${stats.followers.toLocaleString('en-US')}</strong>`)
+  .replace(/(id="follower-status"[^>]*>)[^<]*/, `$1最近读取：${initialTime} (UTC+8)`);
+await writeFile(indexPath, index);
 console.log(`Built ${count} public files into dist/.`);

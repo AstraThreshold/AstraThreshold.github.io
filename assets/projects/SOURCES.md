@@ -30,3 +30,9 @@ GitHub REST snapshot on 2026-11-10: astra UI 2,417 stars / 241 forks; Altium lib
 - [Earlier astra UI demonstration](https://www.bilibili.com/video/BV16x421S7qc), linked from the repository README and Wiki.
 
 The Bilibili profile URL returned HTTP 412 to direct retrieval. Video pages and indexed public search results were available. Subscriber and play counts from search caches should not be treated as current.
+
+## Altium library hover preview
+
+- `altium-library.jpg`: Original cover of the owner's Bilibili video [BV12N4y117hD](https://www.bilibili.com/video/BV12N4y117hD/), retrieved on 2026-11-10 via the public video metadata API.
+- Original image: https://i1.hdslb.com/bfs/archive/c784f7b93347ff76f3435cdc65c6976ddb7658a1.jpg
+- Used only as an on-demand project-title preview; the image is unchanged.
