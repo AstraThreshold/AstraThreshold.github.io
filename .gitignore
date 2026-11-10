@@ -1,0 +1,11 @@
+/dist/
+/node_modules/
+/.research/
+/wooolab-logo/
+/*.docx
+/*.pdf
+/.DS_Store
+/Thumbs.db
+*.log
+/.env
+/.env.*

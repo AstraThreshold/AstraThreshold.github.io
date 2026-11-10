@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://astrathreshold.github.io/sitemap.xml

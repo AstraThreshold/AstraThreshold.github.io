@@ -1,0 +1,31 @@
+{
+  "source": "wooolab-logo/logo/ver3_logo_only_mono_hd.png",
+  "source_dimensions": [
+    5920,
+    2560
+  ],
+  "wordmark_foreground_bbox": [
+    560,
+    1000,
+    5360,
+    1560
+  ],
+  "head_crop": [
+    560,
+    1160,
+    800,
+    1560
+  ],
+  "tail_crop": [
+    5120,
+    1480,
+    5360,
+    1560
+  ],
+  "composition": "head pasted at (0,0), tail at (320,320) on 560x400; original 80px cell; one-cell horizontal gap",
+  "adaptation": "Extracted supplied white glyph foreground; removed supplied black extrusion for clean one-color wordmark. No typography replacement or generative modification.",
+  "colors": {
+    "dark": "#191c1b",
+    "light": "#f5f6f2"
+  }
+}
