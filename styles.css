@@ -101,6 +101,7 @@ a:hover .link-arrow { color: var(--accent); }
 .refresh-count:disabled { opacity: .5; cursor: progress; }
 .section-heading { display: flex; align-items: baseline; gap: 14px; }
 h2 { font-size: 22px; font-weight: 600; line-height: 1.4; letter-spacing: -.02em; }
+#work-title, #experience-title, #recognition-title { font-weight: 700; -webkit-text-stroke: .15px currentColor; }
 .section-rule { height: 1px; flex: 1; background: var(--hairline); margin-left: 8px; align-self: center; }
 .project-entry { position: relative; padding: 24px 0; border-bottom: 1px solid var(--hairline); }
 .entry-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
