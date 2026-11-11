@@ -18,14 +18,15 @@ npm run preview
 ## 内容维护
 
 - `index.html`：页面结构、中文默认内容及 `data-en` 英文文案、元数据和外链。
-- `script.js`：语言切换、粉丝数读取、进入页面和手动刷新时的数字递增动画；遵循系统减少动态效果设置。
-- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题及头像下方的英文使用 Consolas，正文保留衬线字体。
+- `script.js`：语言切换、粉丝数和 GitHub stars 读取。
+- `rolling-counter.js`：两个统计数字共用的逐位纵向滚轮动画，进入页面和手动刷新时从零开始；支持减少动态效果与后台中止。
+- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题、头像下方和实习经历中的英文使用 Consolas。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon。
 - `assets/projects/`：项目展示素材。
 - `assets/profile/`：Bilibili 个人头像与来源记录。
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
 - `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。
-- `assets/affiliations/`：港科广及强脑科技官网提供的方形标志；网站品牌和 favicon 保持 WoooLAB。
+- `assets/affiliations/`：官方素材制作的黑白透明机构标志；CSS 随系统配色切换深浅。网站品牌和 favicon 保持 WoooLAB。
 - `github-stats.js`：浏览器与定时任务共用的 GitHub 分页统计逻辑。
 - `scripts/build.mjs`：将公开网页与允许的媒体文件复制至 `dist/`。
 
@@ -57,6 +58,6 @@ npm run preview
 
 页面打开和点击“刷新”时优先请求 GitHub 公开 API，可见期间约每 5 分钟尝试直接更新。匿名访问遇到限流或网络错误时，使用同站 JSON 和最近一次有效缓存，并将自动重试间隔延长至 15 分钟。同站 JSON 随现有 GitHub Actions 任务约每 15 分钟更新，不需要服务器或个人令牌。任务只在运行时使用 GitHub 自动提供的短期令牌，提高 API 配额；凭据不进入公开文件。
 
-顶部总数和项目列表的 stars 使用同一份数据，展示真实读取时间。Bilibili 数字在进入页面及手动刷新时从零递增到实际值；后台检查不重复播放动画，系统开启“减少动态效果”时直接显示最终值。
+顶部总数和项目列表的 stars 使用同一份数据，展示真实读取时间。Bilibili 粉丝数与 GitHub 总 stars 在进入页面及手动刷新时，均以老虎机式滚轮从零开始逐位滚动、依次停稳；后台检查不重复播放。动画期间收到新数据时会衔接到最新数值，系统开启“减少动态效果”或页面进入后台时直接显示最终值。
 
 WoooLAB 标识和项目作品归原作者所有；各开源项目的许可以其独立仓库为准。

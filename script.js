@@ -1,4 +1,5 @@
 import { fetchGithubSnapshot, validGithubSnapshot, githubUsername } from './github-stats.js';
+import { RollingCounter } from './rolling-counter.js';
 
 /* Both languages remain in the HTML, including the no-JavaScript default. */
 const translations = [...document.querySelectorAll('[data-en]')].map(element => ({
@@ -21,9 +22,9 @@ let language = 'zh';
 let snapshot = null;
 let fetching = false;
 let refreshFailed = false;
-let countFrame = 0;
-let countTarget = null;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const followerReels = new RollingCounter(countElement, reducedMotion);
+const githubReels = new RollingCounter(githubElement, reducedMotion);
 
 function validSnapshot(value) {
   return value?.mid === 43483079 && Number.isSafeInteger(value.followers) && value.followers >= 0
@@ -43,28 +44,7 @@ function renderCount(animate) {
   const format = new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'zh-CN');
   const finalText = format.format(target);
   countElement.closest('a')?.setAttribute('aria-label', `${finalText} ${language === 'en' ? 'Bilibili followers' : 'Bilibili 关注者'}`);
-  countElement.style.minWidth = `${finalText.length}ch`;
-  // A background fetch or language switch must not interrupt the opening count-up.
-  if (countFrame && !animate) {
-    countTarget = target;
-    return;
-  }
-  cancelAnimationFrame(countFrame);
-  countFrame = 0;
-  countTarget = target;
-  if (!animate || reducedMotion.matches || document.hidden) {
-    countElement.textContent = finalText;
-    return;
-  }
-  countElement.textContent = '0';
-  const start = performance.now();
-  const tick = now => {
-    const progress = Math.min(1, (now - start) / 1100);
-    const value = Math.round(countTarget * (1 - (1 - progress) ** 3));
-    countElement.textContent = format.format(value);
-    countFrame = progress < 1 ? requestAnimationFrame(tick) : 0;
-  };
-  countFrame = requestAnimationFrame(tick);
+  followerReels.render(target, { animate });
 }
 
 function renderFollowers({ animate = false } = {}) {
@@ -83,10 +63,10 @@ function renderFollowers({ animate = false } = {}) {
     : `实际读取时间：${updated.toISOString()}。约每 15 分钟采集一次，页面每分钟检查更新；任务调度与缓存可能造成延迟。`;
 }
 
-function renderGithub() {
+function renderGithub({ animate = false } = {}) {
   if (!githubSnapshot || !githubElement || !githubStatus) return;
   const format = new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'zh-CN');
-  githubElement.textContent = format.format(githubSnapshot.stars);
+  githubReels.render(githubSnapshot.stars, { animate });
   githubElement.closest('a')?.setAttribute('aria-label', `${format.format(githubSnapshot.stars)} GitHub stars`);
   const updated = new Date(githubSnapshot.updated_at);
   const stale = githubFailed || Date.now() - updated.getTime() > 2 * 60 * 60 * 1000;
@@ -154,7 +134,11 @@ async function refreshStatistics({ animate = false, forceLive = false } = {}) {
   if (manualRefreshing) return;
   manualRefreshing = true;
   if (refreshButton) refreshButton.disabled = true;
-  try { await Promise.all([refreshFollowers({ animate }), refreshGithub({ forceLive })]); }
+  if (animate) {
+    renderFollowers({ animate: true });
+    renderGithub({ animate: true });
+  }
+  try { await Promise.all([refreshFollowers(), refreshGithub({ forceLive })]); }
   finally {
     manualRefreshing = false;
     if (refreshButton) refreshButton.disabled = false;
@@ -178,7 +162,7 @@ function setLanguage(value) {
   if (refreshButton) refreshButton.title = language === 'en' ? 'Refresh public statistics' : '刷新公开统计';
 }
 
-async function refreshFollowers({ animate = false } = {}) {
+async function refreshFollowers() {
   if (fetching || !countElement) return;
   fetching = true;
   try {
@@ -196,7 +180,7 @@ async function refreshFollowers({ animate = false } = {}) {
   } catch { refreshFailed = true; }
   finally {
     fetching = false;
-    renderFollowers({ animate });
+    renderFollowers();
   }
 }
 
@@ -212,6 +196,7 @@ try {
 if (!['zh', 'en'].includes(preferredLanguage)) preferredLanguage = navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 setLanguage(preferredLanguage);
 renderFollowers({ animate: true });
+renderGithub({ animate: true });
 refreshButton?.addEventListener('click', () => refreshStatistics({ animate: true, forceLive: true }));
 refreshStatistics();
 setInterval(() => {
@@ -226,16 +211,14 @@ document.addEventListener('visibilitychange', () => {
     refreshGithub();
   }
   else {
-    cancelAnimationFrame(countFrame);
-    countFrame = 0;
-    renderFollowers();
+    followerReels.finish();
+    githubReels.finish();
   }
 });
 reducedMotion.addEventListener('change', () => {
   if (reducedMotion.matches) {
-    cancelAnimationFrame(countFrame);
-    countFrame = 0;
-    renderFollowers();
+    followerReels.finish();
+    githubReels.finish();
   }
 });
 
