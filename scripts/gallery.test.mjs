@@ -2,107 +2,205 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { initGallery } from '../gallery.js';
 
-// Exercise the event handlers without a browser or network requests.
-class Element extends EventTarget {
-  attributes = new Map();
-  children = new Map();
-  dataset = {};
-  setAttribute(name, value) { this.attributes.set(name, value); }
-  querySelector(selector) { return this.children.get(selector); }
-  focus(options) { this.focusOptions = options; }
-  showModal() { this.open = true; }
-  close() { this.open = false; this.dispatchEvent(new Event('close')); }
-  getBoundingClientRect() { return { left: 20, right: 980, top: 20, bottom: 700 }; }
-}
-
-function fixture({ dialogSupported = true } = {}) {
-  const ids = Object.fromEntries(['photo-viewer', 'photo-viewer-image', 'photo-viewer-caption', 'photo-viewer-count'].map(id => [id, new Element()]));
-  const viewer = ids['photo-viewer'];
-  if (!dialogSupported) viewer.showModal = undefined;
-  for (const name of ['close', 'previous', 'next']) viewer.children.set(`[data-photo-${name}]`, new Element());
-  const links = ['相机', '工作台', '电路板'].map((captionZh, index) => {
-    const link = new Element();
-    link.href = `https://example.test/photo-${index}.webp`;
-    link.dataset = { captionZh, captionEn: ['Camera', 'Workbench', 'Circuit board'][index], width: '1600', height: '1200' };
-    link.children.set('img', new Element());
-    return link;
+// A small DOM adapter keeps these interaction checks dependency-free.
+// Layout, compositor animation and native dialog behavior need browser review.
+function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) {
+  const animations = [];
+  class Element extends EventTarget {
+    constructor(tag = 'div') {
+      super(); this.tagName = tag; this.children = []; this.dataset = {}; this.attributes = new Map();
+      this.style = { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] || ''; } };
+      this.className = ''; this.parent = null; this.hidden = false;
+      this.bounds = { left: 1140, top: 200, width: 120, height: 100, right: 1260, bottom: 300 };
+      this.classList = {
+        contains: name => this.className.split(' ').includes(name),
+        add: name => { if (!this.classList.contains(name)) this.className = `${this.className} ${name}`.trim(); },
+        remove: name => { this.className = this.className.split(' ').filter(item => item !== name).join(' '); },
+        toggle: (name, value) => { this.classList[value ? 'add' : 'remove'](name); }
+      };
+    }
+    setAttribute(name, value) { this.attributes.set(name, value); }
+    matches(selector) {
+      if (selector === ':focus-visible') return Boolean(this.focusVisible);
+      if (selector.startsWith('.')) return this.classList.contains(selector.slice(1));
+      if (selector.startsWith('[')) return this.attributes.has(selector.slice(1, -1));
+      return this.tagName === selector;
+    }
+    querySelectorAll(selector) { return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]); }
+    querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
+    closest(selector) { return this.matches(selector) ? this : this.parent?.closest(selector); }
+    contains(element) { return Boolean(element && (element === this || this.children.some(child => child.contains(element)))); }
+    append(...children) {
+      children.forEach(child => { child.remove(); this.children.push(child); child.parent = this; });
+    }
+    replaceChildren(...children) { this.children.forEach(child => { child.parent = null; }); this.children = []; this.append(...children); }
+    remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.parent = null; }
+    cloneNode(deep) {
+      const clone = new Element(this.tagName);
+      Object.assign(clone, { className: this.className, dataset: { ...this.dataset }, attributes: new Map(this.attributes), href: this.href, src: this.src });
+      Object.assign(clone.style, this.style);
+      if (deep) clone.append(...this.children.map(child => child.cloneNode(true)));
+      return clone;
+    }
+    get isConnected() { return this === body || Boolean(this.parent?.isConnected); }
+    getBoundingClientRect() { return this.className === 'photo-group' ? { ...this.bounds, height: this.children.length * 108 } : this.bounds; }
+    focus(options) { this.focusOptions = options; }
+    showModal() { this.open = true; }
+    close() { this.open = false; this.dispatchEvent(new Event('close')); }
+    animate(frames, options) {
+      let finish;
+      const animation = { frames, options, finished: new Promise(resolve => { finish = resolve; }), cancel() { this.cancelled = true; }, finish() { finish(); } };
+      animations.push(animation); return animation;
+    }
+  }
+  const body = new Element('body');
+  const root = new Element('html');
+  root.append(body);
+  const gallery = new Element();
+  const wall = new Element();
+  wall.setAttribute('data-photo-wall', ''); wall.clientWidth = 260;
+  const openButton = new Element('button');
+  openButton.setAttribute('data-gallery-open', ''); openButton.hidden = true;
+  gallery.append(openButton, wall); body.append(gallery);
+  const links = Array.from({ length: 7 }, (_, index) => {
+    const link = new Element('a');
+    link.className = 'photo-link'; link.href = `https://example.test/photo-${index}.webp`;
+    link.dataset = { photoIndex: String(index), width: '1600', height: '1200' };
+    const thumbnail = new Element('img'); thumbnail.src = `https://example.test/thumb-${index}.webp`;
+    link.append(thumbnail); return link;
   });
-  const classes = new Set();
-  globalThis.document = {
-    querySelectorAll: () => links,
-    getElementById: id => ids[id],
-    documentElement: { classList: { add: name => classes.add(name), remove: name => classes.delete(name) } }
-  };
+  wall.append(...links);
+  const viewer = new Element('dialog');
+  if (!dialogSupported) viewer.showModal = undefined;
+  for (const name of ['close', 'previous', 'next']) {
+    const button = new Element('button'); button.setAttribute(`data-photo-${name}`, ''); viewer.append(button);
+  }
+  const image = new Element('img'); const count = new Element();
+  viewer.append(image, count); body.append(viewer);
+  const ids = { gallery, 'photo-viewer': viewer, 'photo-viewer-image': image, 'photo-viewer-count': count };
+  const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => new Element(tag), body, documentElement: root, hidden: false });
+  const reduced = Object.assign(new EventTarget(), { matches: reduce });
+  const timers = new Map(); const frames = new Map(); let sequence = 0;
+  const win = Object.assign(new EventTarget(), {
+    innerWidth: 1280, innerHeight: 800,
+    matchMedia: query => query.includes('reduced-motion') ? reduced : { matches: hover },
+    getComputedStyle: element => ({ transform: element.style.transform || 'none' }),
+    setTimeout: callback => { const id = ++sequence; timers.set(id, callback); return id; },
+    clearTimeout: id => timers.delete(id),
+    requestAnimationFrame: callback => { const id = ++sequence; frames.set(id, callback); return id; }
+  });
+  globalThis.window = win; globalThis.document = doc;
   let language = 'zh';
-  const gallery = initGallery(() => language);
-  return { links, viewer, image: ids['photo-viewer-image'], caption: ids['photo-viewer-caption'], count: ids['photo-viewer-count'], classes,
-    translate(value) { language = value; gallery.updateLanguage(); } };
+  const controller = initGallery(() => language);
+  return { body, root, gallery, wall, links, viewer, image, count, openButton, win, doc, reduced, animations,
+    translate(value) { language = value; controller.updateLanguage(); },
+    flushTimers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); },
+    resize(width) { wall.clientWidth = width; win.dispatchEvent(new Event('resize')); const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); },
+    async finishAnimations() { animations.forEach(animation => animation.finish()); await Promise.resolve(); }
+  };
 }
 
-function fire(element, type, values = {}) {
-  const event = Object.assign(new Event(type, { cancelable: true }), { button: 0, ...values });
+function fire(element, type, values = {}, target = element) {
+  const event = Object.assign(new Event(type, { cancelable: true }), { button: 0, pointerType: 'mouse', ...values });
+  Object.defineProperty(event, 'target', { value: target });
   element.dispatchEvent(event);
   return event;
 }
 
-test('photos load on demand and navigation wraps in both directions', () => {
+test('responsive columns retain every photo and repeated copies stay out of keyboard navigation', () => {
   const f = fixture();
-  assert.equal(f.image.src, undefined);
-  assert.equal(fire(f.links[0], 'click').defaultPrevented, true);
-  assert.equal(f.viewer.open, true);
-  assert.equal(f.image.src, f.links[0].href);
-  assert.equal(f.count.textContent, '1 / 3');
-  assert.deepEqual([f.image.width, f.image.height], [1600, 1200]);
-  fire(f.viewer.querySelector('[data-photo-previous]'), 'click');
-  assert.equal(f.image.src, f.links[2].href);
-  fire(f.viewer, 'keydown', { key: 'ArrowRight' });
-  assert.equal(f.count.textContent, '1 / 3');
-  fire(f.viewer.querySelector('[data-photo-next]'), 'click');
-  assert.equal(f.count.textContent, '2 / 3');
-  fire(f.viewer, 'keydown', { key: 'ArrowLeft' });
-  assert.equal(f.count.textContent, '1 / 3');
-  assert.equal(fire(f.viewer, 'keydown', { key: 'Tab' }).defaultPrevented, false);
-});
-
-test('language changes update thumbnail labels and the open photo', () => {
-  const f = fixture();
-  fire(f.links[1], 'click');
-  assert.equal(f.caption.textContent, '工作台');
-  f.translate('en');
-  assert.equal(f.caption.textContent, 'Workbench');
-  assert.equal(f.image.alt, 'Workbench');
-  assert.equal(f.links[0].querySelector('img').alt, 'Camera');
-  assert.equal(f.links[0].attributes.get('aria-label'), 'View photo: Camera');
-  f.translate('zh');
-  assert.equal(f.image.alt, '工作台');
-});
-
-test('close and backdrop clicks unlock scrolling and return focus', () => {
-  const f = fixture();
-  fire(f.links[2], 'click');
-  assert.equal(f.classes.has('photo-viewer-open'), true);
-  fire(f.viewer, 'click', { clientX: 100, clientY: 100 });
-  assert.equal(f.viewer.open, true);
-  fire(f.viewer, 'click', { clientX: 0, clientY: 0 });
-  assert.equal(f.viewer.open, false);
-  assert.equal(f.classes.size, 0);
-  assert.deepEqual(f.links[2].focusOptions, { preventScroll: true });
-  fire(f.links[0], 'click');
-  fire(f.viewer.querySelector('[data-photo-close]'), 'click');
-  assert.equal(f.viewer.open, false);
-  assert.deepEqual(f.links[0].focusOptions, { preventScroll: true });
-});
-
-test('modified clicks and unsupported dialogs preserve ordinary image links', () => {
-  const f = fixture();
-  for (const modifier of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }]) {
-    assert.equal(fire(f.links[0], 'click', modifier).defaultPrevented, false);
+  assert.equal(f.wall.querySelectorAll('.photo-column').length, 2);
+  assert.equal(f.wall.querySelectorAll('.photo-link').length, 14);
+  for (const width of [720, 360, 260]) {
+    f.resize(width);
+    const originals = f.wall.querySelectorAll('.photo-link').filter(link => f.links.includes(link));
+    assert.equal(new Set(originals).size, 7);
+    assert.equal(f.wall.querySelectorAll('.photo-link').length, 14);
+    assert.equal(f.wall.querySelectorAll('.photo-column').length, Math.min(6, Math.max(2, Math.round(width / 120))));
+    f.wall.querySelectorAll('.photo-link').filter(link => !f.links.includes(link)).forEach(link => assert.equal(link.tabIndex, -1));
   }
+});
+
+test('hover pauses the wall, lifts outside its mask, then returns before resuming', async () => {
+  const f = fixture();
+  fire(f.wall, 'pointerenter');
+  fire(f.wall, 'pointerover', {}, f.links[0].querySelector('img'));
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  const floating = f.body.querySelector('.photo-float');
+  assert.ok(floating && !f.wall.contains(floating));
+  assert.equal(f.links[0].classList.contains('is-lifted'), true);
+  const transform = floating.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/);
+  const [, x, , scale] = transform.map(Number);
+  assert.ok(1200 + x + 60 * scale <= f.win.innerWidth - 16);
+  fire(f.wall, 'pointerleave');
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  await f.finishAnimations();
+  assert.equal(f.body.querySelector('.photo-float'), null);
+  assert.equal(f.links[0].classList.contains('is-lifted'), false);
+  f.flushTimers();
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+});
+
+test('fast pointer changes and reentry do not leave blank photos or resume underneath the pointer', async () => {
+  const f = fixture();
+  fire(f.wall, 'pointerover', {}, f.links[0]);
+  fire(f.wall, 'pointerover', {}, f.links[1]);
+  fire(f.wall, 'pointerover', {}, f.links[0]);
+  await f.finishAnimations();
+  assert.equal(f.body.querySelectorAll('.photo-float').length, 1);
+  assert.equal(f.links[0].classList.contains('is-lifted'), true);
+  assert.equal(f.links[1].classList.contains('is-lifted'), false);
+  fire(f.wall, 'pointerleave');
+  fire(f.wall, 'pointerenter');
+  f.flushTimers();
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  await f.finishAnimations();
+});
+
+test('clicking a repeated photo opens the correct original and viewer navigation wraps', () => {
+  const f = fixture();
+  const repeat = f.wall.querySelectorAll('.photo-link').find(link => !f.links.includes(link) && link.dataset.photoIndex === '6');
   assert.equal(f.image.src, undefined);
-  const fallback = fixture({ dialogSupported: false });
-  assert.equal(fire(fallback.links[0], 'click').defaultPrevented, false);
-  assert.equal(fallback.links[0].attributes.has('aria-haspopup'), false);
-  fallback.translate('en');
-  assert.equal(fallback.links[0].querySelector('img').alt, 'Camera');
-  delete globalThis.document;
+  assert.equal(fire(f.wall, 'click', { ctrlKey: true }, repeat).defaultPrevented, false);
+  assert.equal(fire(f.wall, 'click', {}, repeat).defaultPrevented, true);
+  assert.equal(f.viewer.open, true);
+  assert.equal(f.image.src, f.links[6].href);
+  assert.equal(f.count.textContent, '7 / 7');
+  fire(f.viewer, 'keydown', { key: 'ArrowRight' });
+  assert.equal(f.count.textContent, '1 / 7');
+  fire(f.viewer.querySelector('[data-photo-previous]'), 'click');
+  assert.equal(f.count.textContent, '7 / 7');
+  f.translate('en');
+  assert.equal(f.image.alt, 'Photo 7');
+  assert.equal(repeat.attributes.get('aria-label'), 'View photo 7 of 7');
+  fire(f.viewer.querySelector('[data-photo-close]'), 'click');
+  assert.equal(f.root.classList.contains('photo-viewer-open'), false);
+  assert.deepEqual(repeat.focusOptions, { preventScroll: true });
+});
+
+test('keyboard entry, reduced motion, touch and background changes preserve usable photo access', () => {
+  const f = fixture({ reduce: true });
+  f.openButton.focusVisible = true;
+  fire(f.gallery, 'focusin', {}, f.openButton);
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.openButton, 'click');
+  assert.equal(f.image.src, f.links[0].href);
+  f.viewer.close();
+  assert.deepEqual(f.openButton.focusOptions, { preventScroll: true });
+  fire(f.wall, 'pointerover', { pointerType: 'touch' }, f.links[0]);
+  assert.equal(f.body.querySelector('.photo-float'), null);
+  fire(f.wall, 'pointerover', {}, f.links[1]);
+  assert.equal(f.animations.length, 0);
+  fire(f.wall, 'scroll');
+  assert.equal(f.body.querySelector('.photo-float'), null);
+  f.doc.hidden = true; fire(f.doc, 'visibilitychange');
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+});
+
+test('unsupported dialogs preserve native image links', () => {
+  const f = fixture({ dialogSupported: false });
+  assert.equal(f.openButton.hidden, true);
+  assert.equal(fire(f.wall, 'click', {}, f.links[0]).defaultPrevented, false);
+  assert.equal(f.links[0].tabIndex, undefined);
+  delete globalThis.window; delete globalThis.document;
 });
