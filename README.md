@@ -20,9 +20,11 @@ npm run preview
 - `index.html`：页面结构、中文默认内容及 `data-en` 英文文案、元数据和外链。
 - `script.js`：语言切换、粉丝数和 GitHub stars 读取。
 - `rolling-counter.js`：两个统计数字共用的逐位纵向滚轮动画，进入页面和手动刷新时从零开始；支持减少动态效果与后台中止。
+- `gallery.js`：照片大图查看、前后切换、方向键浏览、关闭后返回原缩略图，以及中英文图片说明。
 - `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题、头像下方和实习经历中的英文使用 Consolas。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon。
 - `assets/projects/`：项目展示素材。
+- `assets/gallery/`：从 banner PSD 提取的照片网页副本和缩略图；`SOURCES.md` 记录对应源文件与图层。
 - `assets/profile/`：Bilibili 个人头像与来源记录。
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
 - `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。
@@ -31,6 +33,8 @@ npm run preview
 - `scripts/build.mjs`：将公开网页与允许的媒体文件复制至 `dist/`。
 
 项目资料、简历原件、品牌源文件和研究目录不进入发布产物，也不加入此仓库。联系方式、身份和项目状态变更时，请同时维护两种语言。
+
+照片墙位于获奖与证书之后，桌面三列、手机两列。缩略图延迟加载；点击才读取完整构图的大图，支持上一张、下一张、左右方向键及 Esc 关闭。关闭后焦点返回原来的缩略图。禁用 JavaScript 时，照片链接仍可直接打开。大图和缩略图均使用 WebP，不放大原图、不带 EXIF 等原始元数据。新增照片时，同时填写 `index.html` 中的中英文说明、实际尺寸与缩略图路径。
 
 ## GitHub Pages 发布
 

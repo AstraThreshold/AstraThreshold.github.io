@@ -1,5 +1,6 @@
 import { fetchGithubSnapshot, validGithubSnapshot, githubUsername } from './github-stats.js';
 import { RollingCounter } from './rolling-counter.js';
+import { initGallery } from './gallery.js';
 
 /* Both languages remain in the HTML, including the no-JavaScript default. */
 const translations = [...document.querySelectorAll('[data-en]')].map(element => ({
@@ -19,6 +20,7 @@ let githubMode = 'snapshot';
 let nextGithubLiveRead = 0;
 let manualRefreshing = false;
 let language = 'zh';
+const gallery = initGallery(() => language);
 let snapshot = null;
 let fetching = false;
 let refreshFailed = false;
@@ -150,6 +152,7 @@ function setLanguage(value) {
   document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
   // These fragments are trusted, repository-owned translations, never remote data.
   translations.forEach(item => { item.element.innerHTML = item[language]; });
+  gallery.updateLanguage();
   document.querySelectorAll('[data-language]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.language === language));
   });

@@ -26,7 +26,7 @@
   <a class="skip-link" href="#main"><span data-en="Skip to content">跳至正文</span></a>
   <header class="site-header shell">
     <a class="brand" href="#" aria-label="WoooLAB"><img src="assets/brand/wooolab-dark.svg" width="120" height="14" alt="WoooLAB"></a>
-    <nav aria-label="Navigation"><a href="#work"><span data-en="Work">作品</span></a><a href="#experience"><span data-en="Experience">实习</span></a><a href="#recognition"><span data-en="Honors">荣誉</span></a><a href="#contact"><span data-en="Contact">联系</span></a></nav>
+    <nav aria-label="Navigation"><a href="#work"><span data-en="Work">作品</span></a><a href="#experience"><span data-en="Experience">实习</span></a><a href="#recognition"><span data-en="Honors">荣誉</span></a><a href="#gallery"><span data-en="Photos">照片</span></a><a href="#contact"><span data-en="Contact">联系</span></a></nav>
     <div class="language-switch" role="group" aria-label="Language"><button type="button" data-language="zh" aria-pressed="true">中</button><span aria-hidden="true">/</span><button type="button" data-language="en" aria-pressed="false">EN</button></div>
   </header>
   <main id="main">
@@ -93,8 +93,31 @@
       <div class="affiliations"><h3 data-en="Other activities" class="minor-heading">其他经历</h3><p><span data-en="JLCPCB Campus Ambassador (2023) · DJI RoboMaster Campus Ambassador (2020)">嘉立创校园大使（2023） · DJI RoboMaster 校园大使（2020）</span></p></div>
     </section>
 
+    <section id="gallery" class="content-section" aria-labelledby="gallery-title">
+      <div class="section-heading"><h2 data-en="Gallery" id="gallery-title">照片墙</h2><span class="section-rule"></span></div>
+      <div class="photo-wall">
+        <a class="photo-link" href="assets/gallery/circuit-board.webp" data-width="869" data-height="1220" data-caption-zh="电路板特写" data-caption-en="Circuit board detail" aria-label="查看照片：电路板特写" style="--photo-focus: center 62%"><img src="assets/gallery/circuit-board-thumb.webp" width="513" height="720" alt="电路板特写" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/astra-boards.webp" data-width="2000" data-height="1500" data-caption-zh="OLED 开发板" data-caption-en="OLED development boards" aria-label="查看照片：OLED 开发板"><img src="assets/gallery/astra-boards-thumb.webp" width="720" height="540" alt="OLED 开发板" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/astra-ui.webp" data-width="1704" data-height="1278" data-caption-zh="astra UI · OLED" data-caption-en="astra UI on OLED" aria-label="查看照片：astra UI · OLED"><img src="assets/gallery/astra-ui-thumb.webp" width="720" height="540" alt="astra UI · OLED" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/workbench.webp" data-width="1707" data-height="1280" data-caption-zh="工作台与调试设备" data-caption-en="Workbench and test equipment" aria-label="查看照片：工作台与调试设备"><img src="assets/gallery/workbench-thumb.webp" width="720" height="540" alt="工作台与调试设备" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/pcb-detail.webp" data-width="1045" data-height="845" data-caption-zh="PCB 与器件" data-caption-en="PCB and components" aria-label="查看照片：PCB 与器件"><img src="assets/gallery/pcb-detail-thumb.webp" width="720" height="582" alt="PCB 与器件" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/camera-display.webp" data-width="871" data-height="701" data-caption-zh="相机状态显示" data-caption-en="Camera status display" aria-label="查看照片：相机状态显示"><img src="assets/gallery/camera-display-thumb.webp" width="720" height="579" alt="相机状态显示" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/camera.webp" data-width="2000" data-height="1489" data-caption-zh="相机" data-caption-en="Camera" aria-label="查看照片：相机"><img src="assets/gallery/camera-thumb.webp" width="720" height="536" alt="相机" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/seaside.webp" data-width="2000" data-height="1125" data-caption-zh="海边暮色" data-caption-en="Dusk by the sea" aria-label="查看照片：海边暮色"><img src="assets/gallery/seaside-thumb.webp" width="720" height="405" alt="海边暮色" loading="lazy" decoding="async"></a>
+        <a class="photo-link" href="assets/gallery/live-music.webp" data-width="2000" data-height="1500" data-caption-zh="音乐现场" data-caption-en="Live music" aria-label="查看照片：音乐现场" style="--photo-focus: center 42%"><img src="assets/gallery/live-music-thumb.webp" width="720" height="540" alt="音乐现场" loading="lazy" decoding="async"></a>
+      </div>
+    </section>
+
     <section id="contact" class="contact-section content-section" aria-labelledby="contact-title"><div class="section-heading"><h2 data-en="Contact" id="contact-title">联系</h2><span class="section-rule"></span></div><div class="contact-links"><a href="mailto:fir@live.it">fir@live.it <span class="link-arrow" aria-hidden="true">↗</span></a><a href="https://github.com/AstraThreshold" target="_blank" rel="noopener noreferrer">GitHub <span class="link-arrow" aria-hidden="true">↗</span></a><a href="https://space.bilibili.com/43483079" target="_blank" rel="noopener noreferrer">Bilibili <span class="link-arrow" aria-hidden="true">↗</span></a></div></section>
   </main>
+  <dialog class="photo-viewer" id="photo-viewer" aria-labelledby="photo-viewer-caption" aria-describedby="photo-viewer-count">
+    <div class="photo-viewer-bar"><button type="button" data-photo-close autofocus><span data-en="Close">关闭</span></button></div>
+    <img class="photo-viewer-image" id="photo-viewer-image" alt="" decoding="async">
+    <div class="photo-viewer-footer">
+      <p class="photo-viewer-caption" id="photo-viewer-caption" aria-live="polite"></p>
+      <div class="photo-viewer-controls"><button type="button" data-photo-previous><span data-en="Previous">上一张</span></button><span class="photo-viewer-count" id="photo-viewer-count" aria-live="polite" aria-atomic="true"></span><button type="button" data-photo-next><span data-en="Next">下一张</span></button></div>
+    </div>
+  </dialog>
   <footer class="site-footer shell"><a class="brand" href="#" aria-label="WoooLAB / Back to top"><img src="assets/brand/wooolab-dark.svg" alt="WoooLAB" width="105" height="13"></a><p>© 2026 Heng Zhang / AstraThreshold</p><a href="#"><span data-en="Back to top">回到顶部</span> ↑</a></footer>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Heng Zhang","alternateName":["AstraThreshold","WoooLAB","无理造物"],"url":"https://astrathreshold.github.io/","email":"mailto:fir@live.it","sameAs":["https://github.com/AstraThreshold","https://space.bilibili.com/43483079"],"image":"https://astrathreshold.github.io/assets/profile/avatar.webp"}</script>
 </body>
