@@ -63,7 +63,7 @@ h1 { font: 600 32px/1.12 var(--mono); letter-spacing: -.035em; }
 .aliases { font-family: var(--mono); margin-top: 9px; font-size: 13px; line-height: 1.8; color: var(--muted); }
 .aliases span { font-family: var(--serif); font-size: 12px; }
 .signature { margin-top: 14px; font-size: 14px; letter-spacing: .25em; color: var(--accent); }
-.profile-social { font-family: var(--mono); display: flex; gap: 15px; margin-top: auto; padding-top: 22px; font-size: 11px; }
+.profile-social { font-family: var(--mono); display: flex; flex-direction: column; align-items: flex-start; gap: 7px; margin-top: auto; padding-top: 22px; font-size: 11px; }
 .profile-social a { white-space: nowrap; }
 .profile-social a, .entry-links a, .contact-links a { display: inline-flex; align-items: baseline; gap: 5px; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line); }
 .profile-social a:hover, .entry-links a:hover, .contact-links a:hover { text-decoration-color: var(--accent); }
@@ -201,7 +201,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .aliases { font-size: 12px; margin-top: 7px; line-height: 1.65; }
   .aliases span { font-family: var(--serif); font-size: 11px; }
   .signature { font-size: 13px; margin-top: 10px; }
-  .profile-social { grid-column: 2; margin-top: 12px; padding-top: 0; flex-wrap: wrap; gap: 5px 14px; font-size: 11px; }
+  .profile-social { grid-column: 2; margin-top: 12px; padding-top: 0; gap: 6px; font-size: 11px; }
   .profile-details { padding-top: 28px; }
   .affiliation-row { align-items: flex-start; gap: 10px; }
   .affiliation-icon { --mark-size: 21px; margin-top: 2px; }
