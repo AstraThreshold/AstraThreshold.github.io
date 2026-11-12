@@ -16,10 +16,10 @@ export function initGallery(getLanguage) {
   let origin = null;
   let pointerInside = false;
   let keyboardInside = false;
-  let resumeTimer = null;
   let resizeFrame = null;
   let columnCount = 0;
   let active = null;
+  const returning = new Set();
 
   const label = index => getLanguage() === 'en'
     ? `View photo ${index + 1} of ${links.length}` : `查看照片 ${index + 1} / ${links.length}`;
@@ -34,17 +34,30 @@ export function initGallery(getLanguage) {
   }
 
   function syncMotion() {
-    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(viewer?.open) || document.hidden);
+    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || returning.size > 0 || Boolean(viewer?.open) || document.hidden);
   }
 
   function returnPhoto(immediate = false) {
+    if (immediate) {
+      for (const previous of [...returning]) previous.finish();
+    }
     if (!active) return;
     const previous = active;
     active = null;
+    previous.phase = 'shrinking';
+    returning.add(previous);
+    const sourceIsLifted = () => active?.link === previous.link
+      || [...returning].some(other => other !== previous && other.link === previous.link && other.phase === 'shrinking');
     const finish = () => {
-      if (active?.link !== previous.link) previous.link.classList.remove('is-lifted');
+      if (previous.finished) return;
+      previous.finished = true;
+      returning.delete(previous);
+      previous.animation?.cancel();
+      if (!sourceIsLifted()) previous.link.classList.remove('is-lifted');
       previous.floating.remove();
+      syncMotion();
     };
+    previous.finish = finish;
     if (immediate || reducedMotion.matches || typeof previous.floating.animate !== 'function') {
       previous.animation?.cancel();
       finish();
@@ -54,9 +67,23 @@ export function initGallery(getLanguage) {
     previous.animation?.cancel();
     const retreat = previous.floating.animate([
       { transform, opacity: 1 },
-      { transform: 'translate(0px, 0px) scale(1)', opacity: .85 }
-    ], { duration: 210, easing: 'cubic-bezier(.3,0,.3,1)', fill: 'forwards' });
-    retreat.finished.then(finish, finish);
+      { transform: 'translate(0px, 0px) scale(1)', opacity: 1, outlineColor: 'transparent', boxShadow: '0 0 0 0 transparent' }
+    ], { duration: 180, easing: 'cubic-bezier(.3,0,.3,1)', fill: 'forwards' });
+    previous.animation = retreat;
+    retreat.finished.then(() => {
+      if (previous.finished) return;
+      // Match the source geometry first, then reveal it behind the fading copy.
+      // This also blends into the wall's edge mask instead of switching masks.
+      previous.phase = 'handoff';
+      if (!sourceIsLifted()) previous.link.classList.remove('is-lifted');
+      Object.assign(previous.floating.style, { transform: 'translate(0px, 0px) scale(1)', outlineColor: 'transparent', boxShadow: 'none' });
+      retreat.cancel();
+      const handoff = previous.floating.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 80, easing: 'linear', fill: 'forwards'
+      });
+      previous.animation = handoff;
+      return handoff.finished;
+    }).then(finish, finish);
   }
 
   function liftPhoto(link) {
@@ -87,15 +114,10 @@ export function initGallery(getLanguage) {
     link.classList.add('is-lifted');
     const animation = !reducedMotion.matches && typeof floating.animate === 'function'
       ? floating.animate([
-        { transform: 'translate(0px, 0px) scale(1)', opacity: .85 },
+        { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
         { transform, opacity: 1 }
       ], { duration: 270, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'forwards' }) : null;
     active = { link, floating, animation };
-  }
-
-  function resumeAfterReturn() {
-    window.clearTimeout(resumeTimer);
-    resumeTimer = window.setTimeout(syncMotion, reducedMotion.matches ? 0 : 220);
   }
 
   function show(index) {
@@ -175,13 +197,11 @@ export function initGallery(getLanguage) {
     wall.addEventListener('pointerenter', event => {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
       pointerInside = true;
-      window.clearTimeout(resumeTimer);
       syncMotion();
     });
     const pointToPhoto = event => {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
       pointerInside = true;
-      window.clearTimeout(resumeTimer);
       syncMotion();
       const link = event.target.closest('.photo-link');
       if (link && wall.contains(link)) liftPhoto(link);
@@ -192,7 +212,7 @@ export function initGallery(getLanguage) {
     wall.addEventListener('pointerleave', () => {
       pointerInside = false;
       returnPhoto();
-      resumeAfterReturn();
+      syncMotion();
     });
     gallery.addEventListener('focusin', event => {
       if (!event.target.matches(':focus-visible')) return;
@@ -202,7 +222,7 @@ export function initGallery(getLanguage) {
     gallery.addEventListener('focusout', event => {
       if (gallery.contains(event.relatedTarget)) return;
       keyboardInside = false;
-      resumeAfterReturn();
+      syncMotion();
     });
     wall.addEventListener('click', event => {
       const link = event.target.closest('.photo-link');

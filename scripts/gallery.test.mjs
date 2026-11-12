@@ -96,7 +96,12 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
     translate(value) { language = value; controller.updateLanguage(); },
     flushTimers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); },
     resize(width) { wall.clientWidth = width; win.dispatchEvent(new Event('resize')); const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); },
-    async finishAnimations() { animations.forEach(animation => animation.finish()); await Promise.resolve(); }
+    async finishAnimations() {
+      for (let pass = 0; pass < 5; pass++) {
+        animations.forEach(animation => animation.finish());
+        await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      }
+    }
   };
 }
 
@@ -155,6 +160,22 @@ test('fast pointer changes and reentry do not leave blank photos or resume under
   f.flushTimers();
   assert.equal(f.wall.classList.contains('is-paused'), true);
   await f.finishAnimations();
+});
+
+test('the source is revealed behind the returned copy before it fades away and the film resumes', async () => {
+  const f = fixture();
+  fire(f.wall, 'pointerover', {}, f.links[0]);
+  fire(f.wall, 'pointerleave');
+  const floating = f.body.querySelector('.photo-float');
+  assert.equal(f.links[0].classList.contains('is-lifted'), true);
+  f.animations.at(-1).finish();
+  await Promise.resolve();
+  assert.equal(f.links[0].classList.contains('is-lifted'), false);
+  assert.equal(floating.isConnected, true);
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  await f.finishAnimations();
+  assert.equal(floating.isConnected, false);
+  assert.equal(f.wall.classList.contains('is-paused'), false);
 });
 
 test('clicking a repeated photo opens the correct original and viewer navigation wraps', () => {
