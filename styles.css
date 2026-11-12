@@ -105,10 +105,9 @@ h2 { font-size: 22px; font-weight: 600; line-height: 1.4; letter-spacing: -.02em
 .section-rule { height: 1px; flex: 1; background: var(--hairline); margin-left: 8px; align-self: center; }
 .project-entry { position: relative; padding: 24px 0; border-bottom: 1px solid var(--hairline); }
 .entry-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
-.project-entry h3 { font-family: var(--mono); font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
 .project-entry .entry-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 .project-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-.project-stars { display: inline-flex; align-items: baseline; gap: 6px; color: var(--ink); font-family: var(--mono); white-space: nowrap; }
+.project-stars { display: inline-flex; align-items: baseline; gap: 6px; color: var(--ink); font-family: inherit; white-space: nowrap; }
 .project-stars strong { font-size: 18px; font-weight: 600; letter-spacing: -.04em; }
 .project-stars > span { font-size: 11px; color: var(--muted); }
 .project-stars:hover strong { text-decoration: underline; text-underline-offset: 4px; }
@@ -122,7 +121,7 @@ h3 { font-weight: 400; font-size: 22px; letter-spacing: -.02em; line-height: 1.4
 .entry-tags { color: var(--soft); font-size: 10px; margin-top: 7px; }
 .project-preview { display: none; position: absolute; z-index: 4; left: calc(100% + 22px); top: -66px; width: 255px; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 4px; box-shadow: var(--shadow); pointer-events: none; }
 .project-preview img { width: 100%; height: 150px; object-fit: cover; }
-.project-preview > span { display: block; padding: 5px 3px 1px; color: var(--muted); font: 10px/1.4 var(--serif); letter-spacing: .02em; }
+.project-preview > span { display: block; padding: 5px 3px 1px; color: var(--muted); font: 10px/1.4 var(--mixed-mono); letter-spacing: .02em; }
 @media (hover: hover) and (pointer: fine) {
   .preview-trigger:hover + .project-preview { display: block; }
 }
@@ -130,9 +129,9 @@ h3 { font-weight: 400; font-size: 22px; letter-spacing: -.02em; line-height: 1.4
 .project-title.preview-dismissed .project-preview { display: none; }
 .section-footnote { display: flex; justify-content: space-between; gap: 20px; font-size: 10px; color: var(--muted); margin-top: 15px; }
 .experience-list { margin-top: 13px; }
-#experience { font-family: var(--mixed-mono); }
+#work, #experience, #recognition { font-family: var(--mixed-mono); }
 .experience-entry { border-bottom: 1px solid var(--hairline); padding: 22px 0; }
-.experience-entry h3 { font-size: 17px; font-weight: 600; line-height: 1.65; }
+.experience-entry h3, .project-entry h3 { font-size: 17px; font-weight: 600; line-height: 1.65; }
 .company-detail { color: var(--soft); font-size: 10px; margin-top: 3px; }
 .job-role { font-size: 12px; font-weight: 600; color: var(--ink); margin-top: 6px; }
 .experience-entry .entry-description { margin-top: 7px; }
@@ -150,7 +149,7 @@ details[open] > summary:before { content: "−"; }
 .school-list li { display: flex; justify-content: space-between; gap: 20px; font-size: 11px; padding: 5px 0; }
 .minor-heading { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 24px; margin-bottom: 13px; }
 .honor-list { padding: 0; list-style: none; }
-.honor-list li { display: grid; grid-template-columns: 68px 1fr; gap: 18px; font-size: 12px; line-height: 1.85; padding: 8px 0; }
+.honor-list li { display: grid; grid-template-columns: 68px 1fr; gap: 18px; font-size: 13px; line-height: 1.9; padding: 8px 0; }
 .honor-list time { font-size: 10px; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
 .more-awards { margin-top: 10px; }
 .more-awards summary { font-size: 11px; color: var(--muted); }
@@ -158,7 +157,7 @@ details[open] > summary:before { content: "−"; }
 .more-awards .honor-list { margin-top: 10px; }
 .certificates-heading { border-top: 1px solid var(--line); padding-top: 21px; margin-top: 25px; }
 .affiliations { border-top: 1px solid var(--line); margin-top: 23px; }
-.affiliations p { font-size: 12px; color: var(--muted); }
+.affiliations p { font-size: 13px; line-height: 1.9; color: var(--muted); }
 .profile-gallery { position: relative; min-width: 0; min-height: 350px; }
 .photo-wall { --photo-columns: 2; position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--photo-columns), minmax(0, 1fr)); align-items: start; gap: 8px; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .photo-wall::-webkit-scrollbar { display: none; }
@@ -191,8 +190,6 @@ details[open] > summary:before { content: "−"; }
 .site-footer { display: flex; align-items: center; gap: 26px; border-top: 1px solid var(--line); padding: 23px 0; font-size: 10px; color: var(--muted); }
 .site-footer p { margin-left: auto; }
 html[lang=en] body { font-size: 16px; }
-html[lang=en] :is(#work, #recognition) { font-family: var(--mixed-mono); }
-html[lang=en] #work :is(.project-stars, .project-preview > span) { font-family: inherit; }
 html[lang=en] .profile-description, html[lang=en] .entry-description { font-size: 15px; line-height: 1.7; }
 html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 13px; }
 html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 13px; line-height: 1.85; }
@@ -254,7 +251,6 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   h2 { font-size: 21px; }
   .section-heading { gap: 10px; }
   .project-entry { padding: 23px 0 21px; }
-  .project-entry h3 { font-size: 18px; }
   .project-stars strong { font-size: 16px; }
   .project-stars > span { font-size: 10px; }
   h3 { font-size: 21px; }
@@ -265,7 +261,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .entry-tags { font-size: 9px; }
   .project-preview { left: 0; top: calc(100% + 8px); width: 230px; }
   .section-footnote { font-size: 9px; gap: 12px; }
-  .experience-entry h3 { font-size: 16px; }
+  .experience-entry h3, .project-entry h3 { font-size: 16px; }
   .experience-entry { padding: 21px 0; }
   .experience-entry .entry-heading { display: block; }
   .experience-entry .entry-date { display: block; margin-top: 4px; }
@@ -275,10 +271,10 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .details-content { padding-left: 0; }
   .school-list li { display: block; font-size: 11px; padding: 7px 0; }
   .school-list .entry-date { display: block; }
-  .honor-list li { grid-template-columns: 55px 1fr; gap: 12px; font-size: 11px; padding: 8px 0; }
+  .honor-list li { grid-template-columns: 55px 1fr; gap: 12px; font-size: 12px; padding: 8px 0; }
   .honor-list time { font-size: 9px; }
   .minor-heading { font-size: 13px; margin-top: 20px; margin-bottom: 10px; }
-  .affiliations p { font-size: 11px; }
+  .affiliations p { font-size: 12px; }
   .profile-gallery { height: 230px; margin-top: 28px; }
   .photo-viewer { width: calc(100% - 20px); max-height: calc(100dvh - 20px); padding: 10px; }
   .photo-viewer button { min-height: 44px; padding-inline: 8px; }
