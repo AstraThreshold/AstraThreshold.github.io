@@ -18,6 +18,8 @@
   --accent: #516549;
   --accent-wash: #e7ecdf;
   --logo-filter: none;
+  --brand-glow: rgb(115 137 93 / .25);
+  --brand-halo: rgb(115 137 93 / .12);
   --shadow: 0 12px 40px #20282024;
   --cjk: "WoooLAB PingFang SC";
   --serif: var(--cjk), "WoooLAB Serif", "WoooLAB Symbols", serif;
@@ -38,6 +40,8 @@
     --accent: #b1c49e;
     --accent-wash: #283324;
     --logo-filter: invert(1) brightness(.94);
+    --brand-glow: rgb(232 233 223 / .3);
+    --brand-halo: rgb(177 196 158 / .14);
     --shadow: 0 12px 40px #0008;
   }
 }
@@ -60,6 +64,11 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 .site-header { display: flex; gap: 28px; align-items: center; padding: 24px 0 20px; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; flex-shrink: 0; }
 .brand img { filter: var(--logo-filter); }
+.site-header .brand { filter: drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 10px var(--brand-halo)); animation: brand-glow-in 2.5s ease-out both; }
+@keyframes brand-glow-in {
+  from { opacity: .65; filter: drop-shadow(0 0 0 transparent) drop-shadow(0 0 0 transparent); }
+  to { opacity: 1; filter: drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 10px var(--brand-halo)); }
+}
 .site-header nav { display: flex; gap: 27px; margin-left: auto; font-size: 13px; letter-spacing: .025em; }
 .site-header nav a:hover { text-decoration: underline; }
 .language-switch { display: flex; align-items: center; gap: 9px; margin-left: 12px; font-size: 11px; color: var(--soft); }
@@ -320,6 +329,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   [data-photo-clone] { display: none; }
 }
 @media print {
+  .site-header .brand { filter: none; animation: none; }
   .site-header nav, .language-switch, .refresh-count, .project-preview, .profile-gallery, .photo-viewer, .photo-float { display: none !important; }
   .profile { grid-template-columns: 218px minmax(0, 1fr); }
   :root { --paper: white; --ink: #111; --muted: #444; --soft: #666; --line: #ddd; --hairline: #e5e5e5; --accent: #333; --logo-filter: none; }
