@@ -13,6 +13,8 @@ let count = 0;
 // Keep every authored CJK character in the embedded fonts when content changes.
 const fontCoverage = JSON.parse(await readFile(path.join(root, 'assets/fonts/coverage.json'), 'utf8'));
 const coveredCharacters = new Set(fontCoverage.characters);
+const latinCoverage = JSON.parse(await readFile(path.join(root, 'assets/fonts/latin-coverage.json'), 'utf8'));
+const coveredLatin = new Set(latinCoverage.characters);
 const fontSources = [...required, ...optional].filter(file => /\.(html|css|js)$/.test(file));
 const cjkPattern = /[\u2e80-\u9fff\uf900-\ufaff\ufe10-\ufe1f\ufe30-\ufe4f\uff00-\uffef\u{20000}-\u{323af}]/gu;
 for (const file of [...fontSources, 'scripts/build.mjs']) {
@@ -22,9 +24,16 @@ for (const file of [...fontSources, 'scripts/build.mjs']) {
   });
   const missing = [...new Set(source.match(cjkPattern))].filter(character => !coveredCharacters.has(character));
   if (missing.length) throw new Error(`Embedded PingFang lacks ${missing.join('')} in ${file}; regenerate with scripts/prepare-pingfang.py.`);
+  const cjkCharacters = new Set(source.match(cjkPattern));
+  const missingLatin = [...new Set(source)].filter(character => character.codePointAt(0) >= 0x20 && !cjkCharacters.has(character) && !coveredLatin.has(character));
+  if (missingLatin.length) throw new Error(`Embedded Latin fonts lack ${missingLatin.join('')} in ${file}; regenerate with scripts/prepare-latin-fonts.py.`);
 }
 for (const face of fontCoverage.faces) {
   if (!/^pingfang-sc-(light|regular|semibold)\.[a-f0-9]{12}\.woff2$/.test(face.file)) throw new Error('Invalid webfont asset.');
+  await readFile(path.join(root, 'assets/fonts', face.file));
+}
+for (const face of latinCoverage.faces) {
+  if (!/^(serif|mono|sans|symbols)-(regular|bold|italic|bold-italic)\.[a-f0-9]{12}\.woff2$/.test(face.file)) throw new Error('Invalid Latin webfont asset.');
   await readFile(path.join(root, 'assets/fonts', face.file));
 }
 
@@ -67,7 +76,7 @@ async function copyAssets(relative) {
     for (const item of await readdir(source)) {
       if (!item.startsWith('.')) await copyAssets(path.join(relative, item));
     }
-  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/CASCADIA-LICENSE.txt'].includes(relative.split(path.sep).join('/')))) {
+  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/latin.css', 'assets/fonts/CASCADIA-LICENSE.txt'].includes(relative.split(path.sep).join('/')))) {
     await copy(source, path.join(output, relative));
   }
 }

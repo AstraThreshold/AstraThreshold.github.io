@@ -1,0 +1,135 @@
+{
+  "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑↗−",
+  "faces": [
+    {
+      "file": "serif-regular.44f750c99652.woff2",
+      "family": "WoooLAB Serif",
+      "style": "regular",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 55956,
+      "sha256": "44f750c99652f1fcbf3f53284fcd8cb8ae8f2eb507d03ab0ca6f73e847d02e50",
+      "source": "times.ttf",
+      "source_sha256": "931c5de5c70401d9324d5014c123802b4fb753000360ceb2f56c589403cd58c5"
+    },
+    {
+      "file": "serif-bold.ada3b2f5085c.woff2",
+      "family": "WoooLAB Serif",
+      "style": "bold",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 44404,
+      "sha256": "ada3b2f5085ca8c9fb9fbc31ad6fc40d0ed81dfe6324b524a2fd8be5573c3d67",
+      "source": "timesbd.ttf",
+      "source_sha256": "54fbe2c70af7c85a97bed0573227e3ccc4b2486012e3ca2a40c6bc77065846f5"
+    },
+    {
+      "file": "serif-italic.98c1a497419c.woff2",
+      "family": "WoooLAB Serif",
+      "style": "italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 57876,
+      "sha256": "98c1a497419c49e52fc538aa13f4465cde3647c122d95a08c35f88b6bbf98016",
+      "source": "timesi.ttf",
+      "source_sha256": "e7f7a88b65188328aea58670f955022e23c712f55679524729da1e4e03c49d88"
+    },
+    {
+      "file": "serif-bold-italic.455c1ea32699.woff2",
+      "family": "WoooLAB Serif",
+      "style": "bold-italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 52572,
+      "sha256": "455c1ea32699e78cb2af04550c5a3cafb29acc4cb484779fbc935b7b9af9ad0e",
+      "source": "timesbi.ttf",
+      "source_sha256": "3a29d114cb5229e8dbda5bef6c69be4a210a13b7277de4d66e9fc86963226f6c"
+    },
+    {
+      "file": "mono-regular.3722ede64d73.woff2",
+      "family": "WoooLAB Mono",
+      "style": "regular",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 28244,
+      "sha256": "3722ede64d7375625a129cb3bed607bfc77ee0fb86d1f82919aa7950e12766d4",
+      "source": "consola.ttf",
+      "source_sha256": "cf00b507b3286870cc5064ebd0633c303f70b491a4af25eec2d32df413db0179"
+    },
+    {
+      "file": "mono-bold.42e1a2e0e2ee.woff2",
+      "family": "WoooLAB Mono",
+      "style": "bold",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 25248,
+      "sha256": "42e1a2e0e2ee5ac44e10c69cfac467447a43307f96bc26bcc933d1f5fe10e14e",
+      "source": "consolab.ttf",
+      "source_sha256": "7e8de70c92a891722bd3fbd623db005caab2bfe267e5dab5be46b95a44e0c7f1"
+    },
+    {
+      "file": "mono-italic.2e56e28ff84e.woff2",
+      "family": "WoooLAB Mono",
+      "style": "italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 29908,
+      "sha256": "2e56e28ff84e87e838c6f48f13c1527a76f46989fb02354a96824a9aa99e2d03",
+      "source": "consolai.ttf",
+      "source_sha256": "0b5b0484cf69ae973bd39380069f141271a4c9299b8885fa2d13f42aadbefef9"
+    },
+    {
+      "file": "mono-bold-italic.14bb83843c1e.woff2",
+      "family": "WoooLAB Mono",
+      "style": "bold-italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 27836,
+      "sha256": "14bb83843c1e805a0611dff88fa0719f207e7c5ecc45857e332507043eb0119b",
+      "source": "consolaz.ttf",
+      "source_sha256": "9bc225ec52aa8f4b88b98bb735b1908bd72c9e31a12139fafcc1bd6c86bed3b4"
+    },
+    {
+      "file": "sans-regular.2021fa9de9d6.woff2",
+      "family": "WoooLAB Sans",
+      "style": "regular",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 45748,
+      "sha256": "2021fa9de9d628fd44ebb72333be03189af492f9def24238025080599f156314",
+      "source": "arial.ttf",
+      "source_sha256": "b3658eadae55e682b5f69eb64c439c1ecc8f196c0bb8d4756d145d13bc86476a"
+    },
+    {
+      "file": "sans-bold.9c1880334da1.woff2",
+      "family": "WoooLAB Sans",
+      "style": "bold",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 36820,
+      "sha256": "9c1880334da1124d75adbba76b9d411f4b8d5135c6c1c66a9cd37fc7858972dd",
+      "source": "arialbd.ttf",
+      "source_sha256": "e8f4e3baf6cc35fed6fcce3a540e8b39e8f6cda1d22a28f2ec8f526fef7a43f5"
+    },
+    {
+      "file": "sans-italic.7349c898a0e7.woff2",
+      "family": "WoooLAB Sans",
+      "style": "italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 35040,
+      "sha256": "7349c898a0e7864e2dd04d385d5fd5e2b87928970346c79d9b478129e9bb9bab",
+      "source": "ariali.ttf",
+      "source_sha256": "86b32db9a06f9694e2a3760c42e5117bcdc5cc1255bb5186ca8ce0305e22f288"
+    },
+    {
+      "file": "sans-bold-italic.d0ec8fba1fc8.woff2",
+      "family": "WoooLAB Sans",
+      "style": "bold-italic",
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑−",
+      "bytes": 40348,
+      "sha256": "d0ec8fba1fc859d00d931da8d38a3d5070447339f859385de765e6679446a8e4",
+      "source": "arialbi.ttf",
+      "source_sha256": "267a411525980d648f10a7222a6ff1ebe4d4feeefbf9b3100cae2b5cfab5594a"
+    },
+    {
+      "file": "symbols-regular.ae53feb5a71a.woff2",
+      "family": "WoooLAB Symbols",
+      "style": "regular",
+      "characters": "©·–—“”↑↗−",
+      "bytes": 5564,
+      "sha256": "ae53feb5a71a17549876d53d2de8cb9401215b8d0133e931972e30ec937f1ed0",
+      "source": "seguisym.ttf",
+      "source_sha256": "a4a35dcc62cd30e1a6c97b695ecef83e59d2b149e3af834f6a49f11851d56b37"
+    }
+  ]
+}

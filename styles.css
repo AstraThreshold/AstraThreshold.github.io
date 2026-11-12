@@ -20,11 +20,11 @@
   --logo-filter: none;
   --shadow: 0 12px 40px #20282024;
   --cjk: "WoooLAB PingFang SC";
-  --serif: var(--cjk), "Times New Roman", Times, "PingFang SC", "Microsoft YaHei", serif;
-  --sans: var(--cjk), "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --mono: var(--cjk), Consolas, "SFMono-Regular", "Liberation Mono", "PingFang SC", "Microsoft YaHei", monospace;
+  --serif: var(--cjk), "WoooLAB Serif", "WoooLAB Symbols", serif;
+  --sans: var(--cjk), "WoooLAB Sans", "WoooLAB Symbols", sans-serif;
+  --mono: var(--cjk), "WoooLAB Mono", "WoooLAB Symbols", monospace;
   --mixed-mono: var(--mono);
-  --project-title: var(--cjk), "WoooLAB Project Cursive", Consolas, monospace;
+  --project-title: var(--cjk), "WoooLAB Project Cursive", "WoooLAB Mono", "WoooLAB Symbols", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {

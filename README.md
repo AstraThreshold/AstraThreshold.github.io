@@ -21,10 +21,11 @@ npm run preview
 - `script.js`：语言切换、粉丝数和 GitHub stars 读取。
 - `rolling-counter.js`：两个统计数字共用的逐位纵向滚轮动画，进入页面和手动刷新时从零开始；支持减少动态效果与后台中止。
 - `gallery.js`：照片墙的循环滚动、悬停暂停、浮起放大与归位动画，以及点击查看大图和键盘浏览。
-- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；所有中文使用随站点打包的苹方，英文正文使用原有 Times / Consolas 等字体。项目标题使用内嵌的 Cascadia 花体斜体；个人简介、履历、荣誉与证书正文稍作放大，粉丝数与 GitHub stars 的滚轮数字维持原尺寸。
+- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；中文苹方、英文 Times New Roman / Consolas / Arial、链接箭头等符号均随网站打包。项目标题使用内嵌的 Cascadia 花体斜体；个人简介、履历、荣誉与证书正文稍作放大，粉丝数与 GitHub stars 的滚轮数字维持原尺寸。
 - `assets/fonts/`：本人提供的苹方字体生成的 WOFF2 子集与 CJK 专用样式，未安装字体的设备也会从同站加载。`coverage.json` 仅供构建时检查缺字，不发布。修改中文文案后，若构建提示缺字，使用 `fonttools[woff]` 运行 `python scripts/prepare-pingfang.py 字体源目录` 重新生成；源目录包含本人提供的 `msyhl.ttc`、`msyh.ttc`、`msyhbd.ttc`，原始字体文件不进入仓库。
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。
-- `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon。
+- `scripts/prepare-latin-fonts.py`：将本机提供的 Times New Roman、Consolas、Arial 各四个字重/字形，以及 Segoe UI Symbol 的所需符号转换为 WOFF2。浏览器按实际使用加载，`latin-coverage.json` 只在构建时检查缺字，不发布；网页不使用 `local()` 字体来源。
+- `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。
 - `assets/profile/`：Bilibili 个人头像与来源记录。
