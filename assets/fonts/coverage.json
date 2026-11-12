@@ -1,0 +1,30 @@
+{
+  "family": "WoooLAB PingFang SC",
+  "characters": "、。一七三上下不与专世业个中丰主之也习书二于互五交产享京人今仓他令以件任优传作使供依便信修做像光入全公关其冬决凑分划创初到制刷功加务动助包北区十华单博即历原参及发取叠口可台司合同名向和品哈哔哩嘉器回园围固国图在地圳坚型城基堂墙士备夏外多大天奖套子存学安定实客家对导封将小层届屏展属嵌州工已市师常幕平广库度延开式张强录思总息意感慧成我或所执扩技护抽担拉括持指据探接控推提搭支教数整文新方无早时昌显景智更最有期本术机材杯松板构果架查树校核框桥械检植次正每永江油法注流测浙涉润深清港源滑演照片物率现理生用电画的盖目相看石研硬示种科积移程究立竞端第等算管系索紧累约级纪纯练组经结绕绘统续维缓编网者联育胜能脑自至节芳草荣获菜营蓝行装要覆视誉计训记设证试读调象负资赖赛起路跳软轻载辰过近返进连迟选造遥部配采量钟锦长闭间附际限院雅集面页顶项频香马驱验高（），：；",
+  "faces": [
+    {
+      "file": "pingfang-sc-light.51f71e93823a.woff2",
+      "weight": 300,
+      "bytes": 39640,
+      "sha256": "51f71e93823a69eb396cb80417970a1cbdd4ce72d17c9fbb2c03bc9da1789ede",
+      "source": "msyhl.ttc",
+      "source_sha256": "4879f7f7e60794e9f6b2385db5baa751e7977dee15a057ae01b5412a4752afae"
+    },
+    {
+      "file": "pingfang-sc-regular.e732916b1eb3.woff2",
+      "weight": 400,
+      "bytes": 39960,
+      "sha256": "e732916b1eb3274a963e49ac55d480c922c536eba6668fc451bc71047be08667",
+      "source": "msyh.ttc",
+      "source_sha256": "19c236a380697c5472f23f6028618f900a49e39ec0378c7126ad545461bba86f"
+    },
+    {
+      "file": "pingfang-sc-semibold.cd0f0c3ee498.woff2",
+      "weight": 600,
+      "bytes": 39984,
+      "sha256": "cd0f0c3ee49862c23ad61b714a38d14bafe25ea6357f071496e3701e89a34082",
+      "source": "msyhbd.ttc",
+      "source_sha256": "822e0b3d3526d68b8eb27c47548addbf9a6677aec051ed1c87f00cd3455dceee"
+    }
+  ]
+}

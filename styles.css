@@ -11,10 +11,11 @@
   --accent-wash: #e7ecdf;
   --logo-filter: none;
   --shadow: 0 12px 40px #20282024;
-  --serif: "Times New Roman", Times, "Songti SC", "Noto Serif CJK SC", SimSun, serif;
-  --sans: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --mono: Consolas, "SFMono-Regular", "Liberation Mono", monospace;
-  --mixed-mono: Consolas, "SFMono-Regular", "Liberation Mono", "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+  --cjk: "WoooLAB PingFang SC";
+  --serif: var(--cjk), "Times New Roman", Times, "PingFang SC", "Microsoft YaHei", serif;
+  --sans: var(--cjk), "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: var(--cjk), Consolas, "SFMono-Regular", "Liberation Mono", "PingFang SC", "Microsoft YaHei", monospace;
+  --mixed-mono: var(--mono);
 }
 @media (prefers-color-scheme: dark) {
   :root {

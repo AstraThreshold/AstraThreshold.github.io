@@ -10,6 +10,24 @@ const optional = ['404.html', 'robots.txt', 'sitemap.xml', 'site.webmanifest', '
 const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2']);
 let count = 0;
 
+// Keep every authored CJK character in the embedded fonts when content changes.
+const fontCoverage = JSON.parse(await readFile(path.join(root, 'assets/fonts/coverage.json'), 'utf8'));
+const coveredCharacters = new Set(fontCoverage.characters);
+const fontSources = [...required, ...optional].filter(file => /\.(html|css|js)$/.test(file));
+const cjkPattern = /[\u2e80-\u9fff\uf900-\ufaff\ufe10-\ufe1f\ufe30-\ufe4f\uff00-\uffef\u{20000}-\u{323af}]/gu;
+for (const file of [...fontSources, 'scripts/build.mjs']) {
+  const source = await readFile(path.join(root, file), 'utf8').catch(error => {
+    if (optional.includes(file) && error.code === 'ENOENT') return '';
+    throw error;
+  });
+  const missing = [...new Set(source.match(cjkPattern))].filter(character => !coveredCharacters.has(character));
+  if (missing.length) throw new Error(`Embedded PingFang lacks ${missing.join('')} in ${file}; regenerate with scripts/prepare-pingfang.py.`);
+}
+for (const face of fontCoverage.faces) {
+  if (!/^pingfang-sc-(light|regular|semibold)\.[a-f0-9]{12}\.woff2$/.test(face.file)) throw new Error('Invalid webfont asset.');
+  await readFile(path.join(root, 'assets/fonts', face.file));
+}
+
 async function exists(file) {
   try { return await lstat(file); }
   catch (error) { if (error.code === 'ENOENT') return null; throw error; }
@@ -49,7 +67,7 @@ async function copyAssets(relative) {
     for (const item of await readdir(source)) {
       if (!item.startsWith('.')) await copyAssets(path.join(relative, item));
     }
-  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json'].includes(relative.split(path.sep).join('/')))) {
+  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css'].includes(relative.split(path.sep).join('/')))) {
     await copy(source, path.join(output, relative));
   }
 }

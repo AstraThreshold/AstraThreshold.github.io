@@ -1,0 +1,25 @@
+/* Generated from the owner's supplied PingFang fonts; CJK glyphs only. */
+@font-face {
+  font-family: "WoooLAB PingFang SC";
+  src: url("pingfang-sc-light.51f71e93823a.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF, U+20000-323AF;
+}
+@font-face {
+  font-family: "WoooLAB PingFang SC";
+  src: url("pingfang-sc-regular.e732916b1eb3.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF, U+20000-323AF;
+}
+@font-face {
+  font-family: "WoooLAB PingFang SC";
+  src: url("pingfang-sc-semibold.cd0f0c3ee498.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF, U+20000-323AF;
+}
