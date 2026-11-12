@@ -18,8 +18,12 @@
   --accent: #516549;
   --accent-wash: #e7ecdf;
   --logo-filter: none;
-  --brand-glow: rgb(115 137 93 / .25);
-  --brand-halo: rgb(115 137 93 / .12);
+  --header-logo-filter: brightness(1.18);
+  --brand-glow: rgb(115 137 93 / .3);
+  --brand-halo: rgb(115 137 93 / .16);
+  --brand-aura-core: rgb(188 208 153 / .3);
+  --brand-aura-mid: rgb(188 208 153 / .16);
+  --brand-aura-edge: rgb(188 208 153 / .055);
   --shadow: 0 12px 40px #20282024;
   --cjk: "WoooLAB PingFang SC";
   --serif: var(--cjk), "WoooLAB Serif", "WoooLAB Symbols", serif;
@@ -40,14 +44,19 @@
     --accent: #b1c49e;
     --accent-wash: #283324;
     --logo-filter: invert(1) brightness(.94);
-    --brand-glow: rgb(232 233 223 / .3);
-    --brand-halo: rgb(177 196 158 / .14);
+    --header-logo-filter: invert(1) brightness(1.11);
+    --brand-glow: rgb(232 233 223 / .35);
+    --brand-halo: rgb(177 196 158 / .18);
+    --brand-aura-core: rgb(226 239 204 / .3);
+    --brand-aura-mid: rgb(177 196 158 / .18);
+    --brand-aura-edge: rgb(143 169 120 / .065);
     --shadow: 0 12px 40px #0008;
   }
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 28px; scrollbar-gutter: stable; }
-body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.8 var(--serif); -webkit-font-smoothing: antialiased; }
+/* Keep the logo's decorative halo below all foreground content. */
+body { margin: 0; isolation: isolate; color: var(--ink); background: var(--paper); font: 15px/1.8 var(--serif); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; text-underline-offset: 4px; }
 a, button { transition: color .15s ease, text-decoration-color .15s ease; }
 a:hover { color: var(--accent); }
@@ -64,10 +73,16 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 .site-header { display: flex; gap: 28px; align-items: center; padding: 24px 0 20px; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; flex-shrink: 0; }
 .brand img { filter: var(--logo-filter); }
-.site-header .brand { filter: brightness(1.15) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 10px var(--brand-halo)); animation: brand-glow-in 2.5s ease-out both; }
+.site-header .brand { position: relative; }
+.site-header .brand::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; background: radial-gradient(ellipse 260px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); transform: translate(-50%, -38%); transform-origin: 50% 38%; opacity: 1; animation: brand-aura-in 2.5s ease-out both; }
+.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in 2.5s ease-out both; }
 @keyframes brand-glow-in {
-  from { filter: brightness(1) drop-shadow(0 0 0 transparent) drop-shadow(0 0 0 transparent); }
-  to { filter: brightness(1.15) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 10px var(--brand-halo)); }
+  from { filter: var(--logo-filter); }
+  to { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); }
+}
+@keyframes brand-aura-in {
+  from { opacity: 0; transform: translate(-50%, -38%) scale(.85); }
+  to { opacity: 1; transform: translate(-50%, -38%) scale(1); }
 }
 .site-header nav { display: flex; gap: 27px; margin-left: auto; font-size: 13px; letter-spacing: .025em; }
 .site-header nav a:hover { text-decoration: underline; }
@@ -249,6 +264,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .shell, .content-section { width: calc(100% - 40px); }
   .site-header { padding-top: 22px; padding-bottom: 16px; flex-wrap: wrap; gap: 18px; }
   .brand img { width: 112px; }
+  .site-header .brand::before { width: 400px; background: radial-gradient(ellipse 190px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); }
   .site-header nav { order: 3; margin: 0; width: 100%; justify-content: space-between; gap: 15px; font-size: 12px; }
   .language-switch { margin-left: auto; }
   .profile { display: block; padding-top: 28px; padding-bottom: 28px; }
@@ -329,7 +345,8 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   [data-photo-clone] { display: none; }
 }
 @media print {
-  .site-header .brand { filter: none; animation: none; }
+  .site-header .brand img { filter: none; animation: none; }
+  .site-header .brand::before { display: none; }
   .site-header nav, .language-switch, .refresh-count, .project-preview, .profile-gallery, .photo-viewer, .photo-float { display: none !important; }
   .profile { grid-template-columns: 218px minmax(0, 1fr); }
   :root { --paper: white; --ink: #111; --muted: #444; --soft: #666; --line: #ddd; --hairline: #e5e5e5; --accent: #333; --logo-filter: none; }
