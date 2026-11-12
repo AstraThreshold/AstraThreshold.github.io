@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "WoooLAB Project Cursive";
+  src: url("assets/fonts/cascadia-cursive-semibold.01d3f8eb3253.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0020-007E;
+}
 :root {
   color-scheme: light dark;
   --paper: #f7f6f2;
@@ -16,6 +24,7 @@
   --sans: var(--cjk), "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: var(--cjk), Consolas, "SFMono-Regular", "Liberation Mono", "PingFang SC", "Microsoft YaHei", monospace;
   --mixed-mono: var(--mono);
+  --project-title: var(--cjk), "WoooLAB Project Cursive", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -81,24 +90,24 @@ a:hover .link-arrow { color: var(--accent); }
 .affiliation-name { font-size: 17px; font-weight: 700; line-height: 1.6; }
 .affiliation-role { font-size: 12px; color: var(--muted); line-height: 1.7; }
 .profile-stats { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px 26px; margin-top: 20px; }
-.stat-value { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; }
+.stat-value { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; }
 .stat-value strong { display: inline-block; text-align: right; font: 600 22px/1.2 var(--mono); letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .stat-value strong.rolling-counter { display: inline-flex; vertical-align: baseline; height: 1.2em; }
 .counter-reel { display: block; height: 1.2em; width: 1ch; overflow: hidden; }
 .counter-track { display: block; will-change: transform; }
 .counter-digit { display: block; height: 1.2em; line-height: 1.2em; text-align: center; }
 .counter-separator { display: block; width: 1ch; line-height: 1.2em; }
-.stats-status { display: block; color: var(--soft); font: 9px/1.6 var(--sans); margin-top: 2px; }
+.stats-status { display: block; color: var(--soft); font: 10px/1.6 var(--sans); margin-top: 2px; }
 .profile-stats .refresh-count { margin-top: 5px; }
-.profile-description { color: var(--muted); font-size: 13px; line-height: 1.95; }
+.profile-description { color: var(--muted); font-size: 14px; line-height: 1.95; }
 .mini-cv { display: grid; gap: 7px; padding-top: 16px; margin-top: 17px; border-top: 1px solid var(--line); }
 .mini-cv > div { display: grid; grid-template-columns: 108px 1fr; gap: 16px; align-items: baseline; }
-.mini-cv dt { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.mini-cv dd { font-size: 12px; line-height: 1.7; }
-.profile-honors { margin-top: 17px; font-size: 11px; line-height: 1.8; }
-.profile-honors p:first-child { font-size: 12px; margin-bottom: 3px; }
+.mini-cv dt { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mini-cv dd { font-size: 13px; line-height: 1.7; }
+.profile-honors { margin-top: 17px; font-size: 12px; line-height: 1.8; }
+.profile-honors p:first-child { font-size: 13px; margin-bottom: 3px; }
 .profile-honors p:last-child { color: var(--muted); }
-.refresh-count { border: 0; background: none; color: var(--muted); font: 10px/1.5 var(--serif); padding: 3px 0; text-decoration: underline; text-decoration-color: var(--line); }
+.refresh-count { border: 0; background: none; color: var(--muted); font: 11px/1.5 var(--serif); padding: 3px 0; text-decoration: underline; text-decoration-color: var(--line); }
 .refresh-count:disabled { opacity: .5; cursor: progress; }
 .section-heading { display: flex; align-items: baseline; gap: 14px; }
 h2 { font-size: 22px; font-weight: 600; line-height: 1.4; letter-spacing: -.02em; }
@@ -133,6 +142,7 @@ h3 { font-weight: 400; font-size: 22px; letter-spacing: -.02em; line-height: 1.4
 #work, #experience, #recognition { font-family: var(--mixed-mono); }
 .experience-entry { border-bottom: 1px solid var(--hairline); padding: 22px 0; }
 .experience-entry h3, .project-entry h3 { font-size: 17px; font-weight: 600; line-height: 1.65; }
+#work .project-entry h3 { font-family: var(--project-title); font-size: 19px; font-style: italic; font-feature-settings: "ss01" 1; font-synthesis: none; }
 .company-detail { color: var(--soft); font-size: 10px; margin-top: 3px; }
 .job-role { font-size: 12px; font-weight: 600; color: var(--ink); margin-top: 6px; }
 .experience-entry .entry-description { margin-top: 7px; }
@@ -148,17 +158,17 @@ details[open] > summary:before { content: "−"; }
 .details-content > p { font-size: 12px; color: var(--muted); }
 .school-list { list-style: none; padding: 0; margin-top: 14px; }
 .school-list li { display: flex; justify-content: space-between; gap: 20px; font-size: 11px; padding: 5px 0; }
-.minor-heading { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 24px; margin-bottom: 13px; }
+.minor-heading { font-size: 15px; font-weight: 600; color: var(--ink); margin-top: 24px; margin-bottom: 13px; }
 .honor-list { padding: 0; list-style: none; }
-.honor-list li { display: grid; grid-template-columns: 68px 1fr; gap: 18px; font-size: 13px; line-height: 1.9; padding: 8px 0; }
-.honor-list time { font-size: 10px; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.honor-list li { display: grid; grid-template-columns: 68px 1fr; gap: 18px; font-size: 14px; line-height: 1.9; padding: 8px 0; }
+.honor-list time { font-size: 11px; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
 .more-awards { margin-top: 10px; }
-.more-awards summary { font-size: 11px; color: var(--muted); }
-.more-awards summary > span:last-child { margin-left: 10px; font-size: 10px; color: var(--soft); }
+.more-awards summary { font-size: 12px; color: var(--muted); }
+.more-awards summary > span:last-child { margin-left: 10px; font-size: 11px; color: var(--soft); }
 .more-awards .honor-list { margin-top: 10px; }
 .certificates-heading { border-top: 1px solid var(--line); padding-top: 21px; margin-top: 25px; }
 .affiliations { border-top: 1px solid var(--line); margin-top: 23px; }
-.affiliations p { font-size: 13px; line-height: 1.9; color: var(--muted); }
+.affiliations p { font-size: 14px; line-height: 1.9; color: var(--muted); }
 .profile-gallery { position: relative; min-width: 0; min-height: 350px; }
 .photo-wall { --photo-columns: 2; position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--photo-columns), minmax(0, 1fr)); align-items: start; gap: 8px; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .photo-wall::-webkit-scrollbar { display: none; }
@@ -191,9 +201,10 @@ details[open] > summary:before { content: "−"; }
 .site-footer { display: flex; align-items: center; gap: 26px; border-top: 1px solid var(--line); padding: 23px 0; font-size: 10px; color: var(--muted); }
 .site-footer p { margin-left: auto; }
 html[lang=en] body { font-size: 16px; }
-html[lang=en] .profile-description, html[lang=en] .entry-description { font-size: 15px; line-height: 1.7; }
-html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 13px; }
-html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 13px; line-height: 1.85; }
+html[lang=en] .profile-description { font-size: 16px; line-height: 1.7; }
+html[lang=en] .entry-description { font-size: 15px; line-height: 1.7; }
+html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 14px; }
+html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 14px; line-height: 1.85; }
 html[lang=en] .job-role { font-size: 14px; }
 html[lang=en] :is(.experience-entry, .project-entry) h3 { font-family: var(--mixed-mono); font-size: 18px; line-height: 1.65; letter-spacing: -.035em; }
 html[lang=en] :is(#experience, #work) .entry-description { font-size: 13px; line-height: 1.85; }
@@ -211,9 +222,9 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .content-section { width: calc(100% - 80px); }
   .profile { grid-template-columns: 190px 1fr; gap: 32px; }
   .mini-cv > div { grid-template-columns: 94px 1fr; gap: 12px; }
-  .mini-cv dt { font-size: 10px; }
+  .mini-cv dt { font-size: 11px; }
   h1 { font-size: 32px; }
-  .profile-description { font-size: 12px; }
+  .profile-description { font-size: 13px; }
   .site-header nav { gap: 20px; }
   .project-preview { width: 215px; left: calc(100% + 14px); }
   .project-preview img { height: 125px; }
@@ -241,12 +252,12 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .affiliation-role { font-size: 12px; }
   .profile-stats { gap: 10px 18px; }
   .stat-value strong { font-size: 20px; }
-  .stat-value { font-size: 10px; gap: 6px; }
-  .stats-status { font-size: 9px; }
-  .profile-description { font-size: 12px; line-height: 1.85; }
+  .stat-value { font-size: 11px; gap: 6px; }
+  .stats-status { font-size: 10px; }
+  .profile-description { font-size: 13px; line-height: 1.85; }
   .mini-cv { gap: 9px; margin-top: 15px; padding-top: 14px; }
   .mini-cv > div { grid-template-columns: 94px 1fr; gap: 12px; }
-  .mini-cv dd { font-size: 11px; }
+  .mini-cv dd { font-size: 12px; }
   .profile-honors { margin-top: 17px; }
   .content-section { margin-top: 40px; }
   h2 { font-size: 21px; }
@@ -263,6 +274,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .project-preview { left: 0; top: calc(100% + 8px); width: 230px; }
   .section-footnote { font-size: 9px; gap: 12px; }
   .experience-entry h3, .project-entry h3 { font-size: 16px; }
+  #work .project-entry h3 { font-size: 18px; }
   .experience-entry { padding: 21px 0; }
   .experience-entry .entry-heading { display: block; }
   .experience-entry .entry-date { display: block; margin-top: 4px; }
@@ -272,10 +284,10 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .details-content { padding-left: 0; }
   .school-list li { display: block; font-size: 11px; padding: 7px 0; }
   .school-list .entry-date { display: block; }
-  .honor-list li { grid-template-columns: 55px 1fr; gap: 12px; font-size: 12px; padding: 8px 0; }
-  .honor-list time { font-size: 9px; }
-  .minor-heading { font-size: 13px; margin-top: 20px; margin-bottom: 10px; }
-  .affiliations p { font-size: 12px; }
+  .honor-list li { grid-template-columns: 55px 1fr; gap: 12px; font-size: 13px; padding: 8px 0; }
+  .honor-list time { font-size: 10px; }
+  .minor-heading { font-size: 14px; margin-top: 20px; margin-bottom: 10px; }
+  .affiliations p { font-size: 13px; }
   .profile-gallery { height: 230px; margin-top: 28px; }
   .photo-viewer { width: calc(100% - 20px); max-height: calc(100dvh - 20px); padding: 10px; }
   .photo-viewer button { min-height: 44px; padding-inline: 8px; }
@@ -286,9 +298,10 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .site-footer { gap: 15px; flex-wrap: wrap; font-size: 9px; padding: 20px 0; }
   .site-footer .brand img { width: 94px; }
   .site-footer > a:last-child { margin-left: auto; }
-  html[lang=en] .profile-description, html[lang=en] .entry-description { font-size: 14px; }
-  html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 12px; }
-  html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 12px; }
+  html[lang=en] .profile-description { font-size: 15px; }
+  html[lang=en] .entry-description { font-size: 14px; }
+  html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 13px; }
+  html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 13px; }
   html[lang=en] .job-role { font-size: 13px; }
   html[lang=en] :is(.experience-entry, .project-entry) h3 { font-size: 17px; }
   html[lang=en] :is(#experience, #work) .entry-description { font-size: 12px; }
