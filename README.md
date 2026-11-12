@@ -32,6 +32,7 @@ npm run preview
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
 - `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。
 - `assets/affiliations/`：官方素材制作的黑白透明机构标志；CSS 随系统配色切换深浅。网站品牌和 favicon 保持 WoooLAB。
+- `assets/icons/`：GitHub、Bilibili 与邮箱的透明底 SVG 图标及许可证。头像下方与底部联系区均横向排列，深浅模式自动变色；链接保留可访问名称及悬停提示。
 - `github-stats.js`：浏览器与定时任务共用的 GitHub 分页统计逻辑。
 - `scripts/build.mjs`：将公开网页与允许的媒体文件复制至 `dist/`。
 

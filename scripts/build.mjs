@@ -76,7 +76,7 @@ async function copyAssets(relative) {
     for (const item of await readdir(source)) {
       if (!item.startsWith('.')) await copyAssets(path.join(relative, item));
     }
-  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/latin.css', 'assets/fonts/CASCADIA-LICENSE.txt'].includes(relative.split(path.sep).join('/')))) {
+  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/latin.css', 'assets/fonts/CASCADIA-LICENSE.txt', 'assets/icons/LICENSE-octicons.txt', 'assets/icons/LICENSE-simple-icons.txt', 'assets/icons/LICENSE-heroicons.txt'].includes(relative.split(path.sep).join('/')))) {
     await copy(source, path.join(output, relative));
   }
 }

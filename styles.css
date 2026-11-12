@@ -73,10 +73,16 @@ h1 { font: 600 32px/1.12 var(--mono); letter-spacing: -.035em; }
 .aliases { font-family: var(--mono); margin-top: 9px; font-size: 13px; line-height: 1.8; color: var(--muted); }
 .aliases span { font-family: var(--serif); font-size: 12px; }
 .signature { margin-top: 14px; font-size: 14px; letter-spacing: .25em; color: var(--accent); }
-.profile-social { font-family: var(--mono); display: flex; flex-direction: column; align-items: flex-start; gap: 7px; margin-top: auto; padding-top: 22px; font-size: 11px; }
-.profile-social a { white-space: nowrap; }
-.profile-social a, .entry-links a, .contact-links a { display: inline-flex; align-items: baseline; gap: 5px; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line); }
-.profile-social a:hover, .entry-links a:hover, .contact-links a:hover { text-decoration-color: var(--accent); }
+.social-links { display: flex; align-items: center; gap: 12px; }
+.social-link { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: var(--social-hit-size, 32px); height: var(--social-hit-size, 32px); color: var(--ink); border-radius: 3px; }
+.social-link:hover { color: var(--accent); }
+.social-icon { display: block; width: var(--social-icon-size, 22px); height: var(--social-icon-size, 22px); background-color: currentColor; -webkit-mask: var(--social-icon-source) center / contain no-repeat; mask: var(--social-icon-source) center / contain no-repeat; }
+.social-icon--github { --social-icon-source: url("assets/icons/github.svg"); }
+.social-icon--bilibili { --social-icon-source: url("assets/icons/bilibili.svg"); }
+.social-icon--email { --social-icon-source: url("assets/icons/email.svg"); }
+.profile-social { margin-top: auto; padding-top: 22px; }
+.entry-links a { display: inline-flex; align-items: baseline; gap: 5px; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line); }
+.entry-links a:hover { text-decoration-color: var(--accent); }
 .link-arrow { font-family: var(--sans); font-size: .9em; color: var(--soft); }
 a:hover .link-arrow { color: var(--accent); }
 .profile-details { min-width: 0; }
@@ -197,7 +203,7 @@ details[open] > summary:before { content: "−"; }
 .photo-viewer-controls { display: flex; align-items: center; gap: 12px; margin-inline: auto; }
 .photo-viewer-count { color: var(--soft); font: 11px/1.5 var(--mono); white-space: nowrap; }
 .contact-section { margin-bottom: 54px; }
-.contact-links { display: flex; flex-wrap: wrap; gap: 30px; font-size: 15px; margin-top: 16px; }
+.contact-links { --social-hit-size: 40px; --social-icon-size: 26px; gap: 16px; margin-top: 16px; }
 .site-footer { display: flex; align-items: center; gap: 26px; border-top: 1px solid var(--line); padding: 23px 0; font-size: 10px; color: var(--muted); }
 .site-footer p { margin-left: auto; }
 html[lang=en] body { font-size: 16px; }
@@ -244,7 +250,8 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .aliases { font-size: 12px; margin-top: 7px; line-height: 1.65; }
   .aliases span { font-family: var(--serif); font-size: 11px; }
   .signature { font-size: 13px; margin-top: 10px; }
-  .profile-social { grid-column: 2; margin-top: 12px; padding-top: 0; gap: 6px; font-size: 11px; }
+  .social-links { --social-hit-size: 44px; gap: 8px; }
+  .profile-social { grid-column: 2; margin-top: 12px; padding-top: 0; }
   .profile-details { padding-top: 28px; }
   .affiliation-row { align-items: flex-start; gap: 10px; }
   .affiliation-icon { --mark-size: 21px; margin-top: 2px; }
@@ -293,7 +300,6 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .photo-viewer button { min-height: 44px; padding-inline: 8px; }
   .photo-viewer-image { max-height: calc(100dvh - 180px); }
   .photo-viewer-controls { gap: 6px; }
-  .contact-links { font-size: 13px; gap: 25px; }
   .contact-section { margin-bottom: 36px; }
   .site-footer { gap: 15px; flex-wrap: wrap; font-size: 9px; padding: 20px 0; }
   .site-footer .brand img { width: 94px; }
