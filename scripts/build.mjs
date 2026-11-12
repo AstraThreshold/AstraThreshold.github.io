@@ -1,11 +1,12 @@
 import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { validGithubSnapshot } from '../github-stats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
-const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js'];
+const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js'];
 const optional = ['404.html', 'robots.txt', 'sitemap.xml', 'site.webmanifest', '.nojekyll'];
 const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2']);
 let count = 0;
@@ -81,6 +82,45 @@ async function copyAssets(relative) {
   }
 }
 if (await exists(path.join(root, 'assets'))) await copyAssets('assets');
+
+// Keep the entry module and its imports on the same fresh source version.
+const modules = required.filter(file => file.endsWith('.js'));
+const moduleContents = await Promise.all(modules.map(file => readFile(path.join(output, file), 'utf8')));
+const moduleVersion = createHash('sha256').update(moduleContents.join('\0')).digest('hex').slice(0, 12);
+for (let i = 0; i < modules.length; i++) {
+  const code = moduleContents[i].replace(/(\bfrom\s*)(['"])(\.\/[^'"?]+\.js)\2/g, (_match, before, quote, file) => `${before}${quote}${file}?v=${moduleVersion}${quote}`);
+  await writeFile(path.join(output, modules[i]), code);
+}
+
+// A changed stylesheet gets a new URL, even while older CSS is cached.
+const stylesheetVersions = new Map();
+function preloadFonts(markup, errorPage = false) {
+  const faces = [
+    ...fontCoverage.faces.filter(face => face.weight === 400 || (!errorPage && face.weight === 600)),
+    ...latinCoverage.faces.filter(face => ['regular', 'bold'].includes(face.style)
+      && (face.family === 'WoooLAB Serif' || (!errorPage && face.family === 'WoooLAB Mono')))
+  ];
+  const prefix = errorPage ? '/' : '';
+  const links = faces.map(face => `<link rel="preload" href="${prefix}assets/fonts/${face.file}" as="font" type="font/woff2" crossorigin>`);
+  return markup.replace('<!-- font-preloads -->', links.join('\n  '));
+}
+async function versionStylesheets(markup) {
+  for (const match of markup.matchAll(/<link\b[^>]*>/g)) {
+    const tag = match[0];
+    if (!/\brel="stylesheet"/.test(tag)) continue;
+    const href = tag.match(/\bhref="([^"]+)"/)?.[1];
+    if (!href || /^(?:[a-z]+:|\/\/)/i.test(href)) continue;
+    const relative = href.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+    const file = path.resolve(output, relative);
+    if (path.relative(output, file).startsWith('..')) throw new Error('Stylesheet must stay inside dist.');
+    if (!stylesheetVersions.has(relative)) {
+      stylesheetVersions.set(relative, createHash('sha256').update(await readFile(file)).digest('hex').slice(0, 12));
+    }
+    const versionedHref = `${href.startsWith('/') ? '/' : ''}${relative}?v=${stylesheetVersions.get(relative)}`;
+    markup = markup.replace(tag, tag.replace(`href="${href}"`, `href="${versionedHref}"`));
+  }
+  return markup;
+}
 // Keep the initial HTML reading useful even before JavaScript or if a request fails.
 const stats = JSON.parse(await readFile(path.join(root, 'assets/data/bilibili.json'), 'utf8'));
 if (stats.mid !== 43483079 || !Number.isSafeInteger(stats.followers) || stats.followers < 0 || !Number.isFinite(Date.parse(stats.updated_at))) {
@@ -100,5 +140,8 @@ index = index.replace(/(<a class="project-stars" data-repo="([^"]+)"[^>]*aria-la
   const stars = github.repositories?.[repo];
   return stars === undefined ? match : `${before}${stars.toLocaleString('en-US')} GitHub stars${middle}${stars.toLocaleString('en-US')}${after}`;
 });
-await writeFile(indexPath, index);
+index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
+await writeFile(indexPath, await versionStylesheets(preloadFonts(index)));
+const errorPage = path.join(output, '404.html');
+if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(preloadFonts(await readFile(errorPage, 'utf8'), true)));
 console.log(`Built ${count} public files into dist/.`);

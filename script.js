@@ -1,6 +1,9 @@
 import { fetchGithubSnapshot, validGithubSnapshot, githubUsername } from './github-stats.js';
 import { RollingCounter } from './rolling-counter.js';
 import { initGallery } from './gallery.js';
+import { initLogoGlow } from './logo-glow.js';
+
+initLogoGlow();
 
 /* Both languages remain in the HTML, including the no-JavaScript default. */
 const translations = [...document.querySelectorAll('[data-en]')].map(element => ({

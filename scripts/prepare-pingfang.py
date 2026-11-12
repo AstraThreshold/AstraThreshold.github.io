@@ -84,7 +84,7 @@ def main():
   src: url("{filename}") format("woff2");
   font-style: normal;
   font-weight: {css_weight};
-  font-display: swap;
+  font-display: block;
   unicode-range: {UNICODE_RANGE};
 }}''')
     (output / "pingfang.css").write_text("\n".join(rules) + "\n", encoding="utf-8")

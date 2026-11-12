@@ -7,6 +7,22 @@
   <meta name="color-scheme" content="light dark">
   <title>大雅之堂。</title>
   <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <!-- font-preloads -->
+  <style>
+    html[data-fonts-loading] body { visibility: hidden; }
+    html[data-fonts-loading] .brand { visibility: visible; }
+  </style>
+  <script>
+    (() => {
+      if (!document.fonts) return;
+      const root = document.documentElement;
+      root.dataset.fontsLoading = '';
+      addEventListener('DOMContentLoaded', () => {
+        const reveal = () => { delete root.dataset.fontsLoading; };
+        document.fonts.ready.then(reveal, reveal);
+      }, { once: true });
+    })();
+  </script>
   <link rel="stylesheet" href="/assets/fonts/pingfang.css">
   <link rel="stylesheet" href="/assets/fonts/latin.css">
   <link rel="stylesheet" href="/styles.css">

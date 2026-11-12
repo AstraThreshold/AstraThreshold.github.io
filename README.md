@@ -15,6 +15,10 @@ npm run preview
 
 打开终端输出的本地地址（默认 `http://127.0.0.1:4173`）。修改源文件后重新构建并刷新页面。
 
+构建时会为样式表和 JavaScript 模块链接加入内容哈希版本号；文件变化后，刷新页面会请求新的链接，避免继续复用旧缓存。
+
+首屏字体在 HTML 中预加载，文字等待本页所用字体就绪后显示，避免先显示系统字体再闪换；Logo 与照片可先显示，渐亮动画在文字就绪后从原始亮度开始。禁用 JavaScript 时仍使用原生字体加载显示机制。
+
 ## 内容维护
 
 - `index.html`：页面结构、中文默认内容及 `data-en` 英文文案、元数据和外链。
@@ -25,6 +29,7 @@ npm run preview
 - `assets/fonts/`：本人提供的苹方字体生成的 WOFF2 子集与 CJK 专用样式，未安装字体的设备也会从同站加载。`coverage.json` 仅供构建时检查缺字，不发布。修改中文文案后，若构建提示缺字，使用 `fonttools[woff]` 运行 `python scripts/prepare-pingfang.py 字体源目录` 重新生成；源目录包含本人提供的 `msyhl.ttc`、`msyh.ttc`、`msyhbd.ttc`，原始字体文件不进入仓库。
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。
 - `scripts/prepare-latin-fonts.py`：将本机提供的 Times New Roman、Consolas、Arial 各四个字重/字形，以及 Segoe UI Symbol 的所需符号转换为 WOFF2。浏览器按实际使用加载，`latin-coverage.json` 只在构建时检查缺字，不发布；网页不使用 `local()` 字体来源。
+- `logo-glow.js`：按像素计算连续柔光，并在亮度混合后做最低强度的去色带处理；优先使用 WebGL，支持 Canvas 2D 回退，动画结束后停止绘制。光晕始终位于头像和文字下方。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。

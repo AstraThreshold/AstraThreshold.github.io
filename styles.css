@@ -3,7 +3,7 @@
   src: url("assets/fonts/cascadia-cursive-semibold.01d3f8eb3253.woff2") format("woff2");
   font-style: italic;
   font-weight: 600;
-  font-display: swap;
+  font-display: block;
   unicode-range: U+0020-007E;
 }
 :root {
@@ -19,6 +19,7 @@
   --accent-wash: #e7ecdf;
   --logo-filter: none;
   --header-logo-filter: brightness(1.18);
+  --brand-intro-duration: 1s;
   --brand-glow: rgb(115 137 93 / .4);
   --brand-halo: rgb(115 137 93 / .22);
   --brand-aura-core: rgb(188 208 153 / .4);
@@ -73,16 +74,23 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 .site-header { display: flex; gap: 28px; align-items: center; padding: 24px 0 20px; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; flex-shrink: 0; }
 .brand img { filter: var(--logo-filter); }
-.site-header .brand { position: relative; }
-.site-header .brand::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; background: radial-gradient(ellipse 260px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); transform: translate(-50%, -38%); transform-origin: 50% 38%; opacity: 1; animation: brand-aura-in 1s ease-out both; }
-.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in 1s ease-out both; }
+.site-header .brand { position: relative; --brand-aura-radii: 260px 250px; }
+.site-header .brand::before, .brand-aura-canvas { position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; transform: translate(-50%, -38%); }
+.site-header .brand::before { content: ""; opacity: 1; animation: brand-aura-in var(--brand-intro-duration) cubic-bezier(.65, 0, .6, 1) both; }
+.site-header .brand::before { background: radial-gradient(ellipse var(--brand-aura-radii) at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); filter: blur(16px); }
+.brand-aura-canvas { visibility: hidden; }
+.site-header .brand[data-glow-renderer]::before { visibility: hidden; }
+.site-header .brand[data-glow-renderer] .brand-aura-canvas { visibility: visible; }
+.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in var(--brand-intro-duration) cubic-bezier(.65, 0, .6, 1) both; }
+html[data-fonts-loading] .site-header .brand::before,
+html[data-fonts-loading] .site-header .brand img { animation-play-state: paused; }
 @keyframes brand-glow-in {
   from { filter: var(--logo-filter); }
   to { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); }
 }
 @keyframes brand-aura-in {
-  from { opacity: 0; transform: translate(-50%, -38%) scale(.85); }
-  to { opacity: 1; transform: translate(-50%, -38%) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .site-header nav { display: flex; gap: 27px; margin-left: auto; font-size: 13px; letter-spacing: .025em; }
 .site-header nav a:hover { text-decoration: underline; }
@@ -264,7 +272,8 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .shell, .content-section { width: calc(100% - 40px); }
   .site-header { padding-top: 22px; padding-bottom: 16px; flex-wrap: wrap; gap: 18px; }
   .brand img { width: 112px; }
-  .site-header .brand::before { width: 400px; background: radial-gradient(ellipse 190px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); }
+  .site-header .brand { --brand-aura-radii: 190px 250px; }
+  .site-header .brand::before, .brand-aura-canvas { width: 400px; }
   .site-header nav { order: 3; margin: 0; width: 100%; justify-content: space-between; gap: 15px; font-size: 12px; }
   .language-switch { margin-left: auto; }
   .profile { display: block; padding-top: 28px; padding-bottom: 28px; }
@@ -346,7 +355,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
 }
 @media print {
   .site-header .brand img { filter: none; animation: none; }
-  .site-header .brand::before { display: none; }
+  .site-header .brand::before, .brand-aura-canvas { display: none; }
   .site-header nav, .language-switch, .refresh-count, .project-preview, .profile-gallery, .photo-viewer, .photo-float { display: none !important; }
   .profile { grid-template-columns: 218px minmax(0, 1fr); }
   :root { --paper: white; --ink: #111; --muted: #444; --soft: #666; --line: #ddd; --hairline: #e5e5e5; --accent: #333; --logo-filter: none; }

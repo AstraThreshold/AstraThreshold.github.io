@@ -4,89 +4,89 @@
   src: url("serif-regular.44f750c99652.woff2") format("woff2");
   font-style: normal;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Serif";
   src: url("serif-bold.ada3b2f5085c.woff2") format("woff2");
   font-style: normal;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Serif";
   src: url("serif-italic.98c1a497419c.woff2") format("woff2");
   font-style: italic;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Serif";
   src: url("serif-bold-italic.455c1ea32699.woff2") format("woff2");
   font-style: italic;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Mono";
   src: url("mono-regular.3722ede64d73.woff2") format("woff2");
   font-style: normal;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Mono";
   src: url("mono-bold.42e1a2e0e2ee.woff2") format("woff2");
   font-style: normal;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Mono";
   src: url("mono-italic.2e56e28ff84e.woff2") format("woff2");
   font-style: italic;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Mono";
   src: url("mono-bold-italic.14bb83843c1e.woff2") format("woff2");
   font-style: italic;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Sans";
   src: url("sans-regular.2021fa9de9d6.woff2") format("woff2");
   font-style: normal;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Sans";
   src: url("sans-bold.9c1880334da1.woff2") format("woff2");
   font-style: normal;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Sans";
   src: url("sans-italic.7349c898a0e7.woff2") format("woff2");
   font-style: italic;
   font-weight: 100 500;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Sans";
   src: url("sans-bold-italic.d0ec8fba1fc8.woff2") format("woff2");
   font-style: italic;
   font-weight: 600 900;
-  font-display: swap;
+  font-display: block;
 }
 @font-face {
   font-family: "WoooLAB Symbols";
   src: url("symbols-regular.ae53feb5a71a.woff2") format("woff2");
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
+  font-display: block;
 }

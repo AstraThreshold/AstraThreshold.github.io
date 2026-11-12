@@ -90,7 +90,7 @@ def main():
   src: url("{webfile}") format("woff2");
   font-style: {css_style};
   font-weight: {css_weight};
-  font-display: swap;
+  font-display: block;
 }}''')
     if characters - covered:
         raise ValueError(f"Font sources lack characters: {''.join(map(chr, sorted(characters - covered)))}")
