@@ -21,7 +21,7 @@ npm run preview
 - `script.js`：语言切换、粉丝数和 GitHub stars 读取。
 - `rolling-counter.js`：两个统计数字共用的逐位纵向滚轮动画，进入页面和手动刷新时从零开始；支持减少动态效果与后台中止。
 - `gallery.js`：照片墙的循环滚动、悬停暂停、浮起放大与归位动画，以及点击查看大图和键盘浏览。
-- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题、头像下方和实习经历中的英文使用 Consolas。
+- `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；项目标题、头像下方使用 Consolas，英文模式的作品、实习和获奖与证书模块统一使用实习模块的 Consolas 字体与正文排版。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。

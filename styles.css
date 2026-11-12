@@ -191,12 +191,14 @@ details[open] > summary:before { content: "−"; }
 .site-footer { display: flex; align-items: center; gap: 26px; border-top: 1px solid var(--line); padding: 23px 0; font-size: 10px; color: var(--muted); }
 .site-footer p { margin-left: auto; }
 html[lang=en] body { font-size: 16px; }
+html[lang=en] :is(#work, #recognition) { font-family: var(--mixed-mono); }
+html[lang=en] #work :is(.project-stars, .project-preview > span) { font-family: inherit; }
 html[lang=en] .profile-description, html[lang=en] .entry-description { font-size: 15px; line-height: 1.7; }
 html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 13px; }
-html[lang=en] .honor-list li { font-size: 14px; }
+html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 13px; line-height: 1.85; }
 html[lang=en] .job-role { font-size: 14px; }
-html[lang=en] .experience-entry h3 { font-size: 18px; letter-spacing: -.035em; }
-html[lang=en] #experience .entry-description { font-size: 13px; line-height: 1.85; }
+html[lang=en] :is(.experience-entry, .project-entry) h3 { font-family: var(--mixed-mono); font-size: 18px; line-height: 1.65; letter-spacing: -.035em; }
+html[lang=en] :is(#experience, #work) .entry-description { font-size: 13px; line-height: 1.85; }
 html[lang=en] #experience .job-role { font-size: 12px; }
 .error-page { width: min(100% - 48px,760px); margin: 70px auto; }
 .error-page h1 { font-size: clamp(36px,7vw,64px); margin: 45px 0 20px; }
@@ -289,10 +291,10 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .site-footer > a:last-child { margin-left: auto; }
   html[lang=en] .profile-description, html[lang=en] .entry-description { font-size: 14px; }
   html[lang=en] .mini-cv dd, html[lang=en] .profile-honors p { font-size: 12px; }
-  html[lang=en] .honor-list li { font-size: 13px; }
+  html[lang=en] .honor-list li, html[lang=en] #recognition .affiliations p { font-size: 12px; }
   html[lang=en] .job-role { font-size: 13px; }
-  html[lang=en] .experience-entry h3 { font-size: 17px; }
-  html[lang=en] #experience .entry-description { font-size: 12px; }
+  html[lang=en] :is(.experience-entry, .project-entry) h3 { font-size: 17px; }
+  html[lang=en] :is(#experience, #work) .entry-description { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
