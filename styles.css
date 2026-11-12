@@ -19,11 +19,11 @@
   --accent-wash: #e7ecdf;
   --logo-filter: none;
   --header-logo-filter: brightness(1.18);
-  --brand-glow: rgb(115 137 93 / .3);
-  --brand-halo: rgb(115 137 93 / .16);
-  --brand-aura-core: rgb(188 208 153 / .3);
-  --brand-aura-mid: rgb(188 208 153 / .16);
-  --brand-aura-edge: rgb(188 208 153 / .055);
+  --brand-glow: rgb(115 137 93 / .4);
+  --brand-halo: rgb(115 137 93 / .22);
+  --brand-aura-core: rgb(188 208 153 / .4);
+  --brand-aura-mid: rgb(188 208 153 / .23);
+  --brand-aura-edge: rgb(188 208 153 / .085);
   --shadow: 0 12px 40px #20282024;
   --cjk: "WoooLAB PingFang SC";
   --serif: var(--cjk), "WoooLAB Serif", "WoooLAB Symbols", serif;
