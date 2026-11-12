@@ -74,8 +74,8 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 .brand { display: inline-flex; flex-shrink: 0; }
 .brand img { filter: var(--logo-filter); }
 .site-header .brand { position: relative; }
-.site-header .brand::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; background: radial-gradient(ellipse 260px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); transform: translate(-50%, -38%); transform-origin: 50% 38%; opacity: 1; animation: brand-aura-in 1.5s ease-out both; }
-.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in 1.5s ease-out both; }
+.site-header .brand::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; background: radial-gradient(ellipse 260px 250px at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); transform: translate(-50%, -38%); transform-origin: 50% 38%; opacity: 1; animation: brand-aura-in 1s ease-out both; }
+.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in 1s ease-out both; }
 @keyframes brand-glow-in {
   from { filter: var(--logo-filter); }
   to { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); }
