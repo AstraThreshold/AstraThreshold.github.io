@@ -30,6 +30,7 @@ npm run preview
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。
 - `scripts/prepare-latin-fonts.py`：将本机提供的 Times New Roman、Consolas、Arial 各四个字重/字形，以及 Segoe UI Symbol 的所需符号转换为 WOFF2。浏览器按实际使用加载，`latin-coverage.json` 只在构建时检查缺字，不发布；网页不使用 `local()` 字体来源。
 - `logo-glow.js`：光晕从 Logo 中心的小点向外扩展，同时从零亮度逐渐达到正常亮度，在 1 秒内停于完整范围；按像素计算并在亮度混合后做最低强度的去色带处理。优先使用 WebGL，支持 Canvas 2D 回退，动画结束后停止绘制。光晕始终位于头像和文字下方。
+- `adaptive-cursor.js`：鼠标使用 iPad 风格的圆点光标，靠近链接、按钮和照片时缓动贴合轮廓并吸附；照片边框跟随浮起后的实际大小，查看大图时光标进入弹窗层。小范围吸附区支持直接点击，保留键盘、组合键和拖选操作；触屏及高对比度模式使用原生交互，减少动态效果时直接定位，静止后停止绘制。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。

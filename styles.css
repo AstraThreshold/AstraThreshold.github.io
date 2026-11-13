@@ -26,6 +26,9 @@
   --brand-aura-mid: rgb(188 208 153 / .23);
   --brand-aura-edge: rgb(188 208 153 / .085);
   --shadow: 0 12px 40px #20282024;
+  --cursor-dot: rgb(97 108 91 / .32);
+  --cursor-surface: rgb(97 108 91 / .11);
+  --cursor-stroke: rgb(81 101 73 / .26);
   --cjk: "WoooLAB PingFang SC";
   --serif: var(--cjk), "WoooLAB Serif", "WoooLAB Symbols", serif;
   --sans: var(--cjk), "WoooLAB Sans", "WoooLAB Symbols", sans-serif;
@@ -52,6 +55,9 @@
     --brand-aura-mid: rgb(177 196 158 / .18);
     --brand-aura-edge: rgb(143 169 120 / .065);
     --shadow: 0 12px 40px #0008;
+    --cursor-dot: rgb(225 235 211 / .37);
+    --cursor-surface: rgb(225 235 211 / .14);
+    --cursor-stroke: rgb(225 235 211 / .32);
   }
 }
 * { box-sizing: border-box; }
@@ -64,6 +70,17 @@ a:hover { color: var(--accent); }
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 1px solid var(--accent); outline-offset: 5px; }
 button, input { font: inherit; }
 button { cursor: pointer; }
+html.has-adaptive-cursor, html.has-adaptive-cursor * { cursor: none !important; }
+.adaptive-cursor { position: fixed; z-index: 1000; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; transform: translate3d(-100px, -100px, 0); pointer-events: none; visibility: visible; opacity: 0; transition: opacity .12s ease; }
+.adaptive-cursor.is-visible { opacity: 1; }
+.adaptive-cursor::before { content: ""; position: absolute; inset: 0; border: 1px solid var(--cursor-stroke); border-radius: inherit; background: var(--cursor-dot); box-shadow: 0 2px 12px #141d180d; transition: background .16s ease, transform .1s ease, box-shadow .16s ease; }
+.adaptive-cursor[data-mode="target"]::before { background: var(--cursor-surface); box-shadow: 0 2px 16px #141d180b; }
+.adaptive-cursor[data-mode="media"]::before { background: transparent; box-shadow: 0 0 0 1px var(--paper), 0 2px 16px #141d1814; }
+.adaptive-cursor.is-pressed::before { transform: scale(.95); }
+@media (forced-colors: active), print {
+  .adaptive-cursor { display: none !important; }
+  html.has-adaptive-cursor, html.has-adaptive-cursor * { cursor: revert !important; }
+}
 img { display: block; max-width: 100%; height: auto; }
 h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 ::selection { background: var(--accent-wash); color: var(--ink); }

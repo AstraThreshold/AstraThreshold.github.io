@@ -2,8 +2,10 @@ import { fetchGithubSnapshot, validGithubSnapshot, githubUsername } from './gith
 import { RollingCounter } from './rolling-counter.js';
 import { initGallery } from './gallery.js';
 import { initLogoGlow } from './logo-glow.js';
+import { initAdaptiveCursor } from './adaptive-cursor.js';
 
 initLogoGlow();
+initAdaptiveCursor();
 
 /* Both languages remain in the HTML, including the no-JavaScript default. */
 const translations = [...document.querySelectorAll('[data-en]')].map(element => ({
