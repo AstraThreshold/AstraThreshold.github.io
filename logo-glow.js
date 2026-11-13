@@ -1,5 +1,5 @@
 // Draw and dither the final backdrop colors, rather than quantizing a translucent
-// gradient first. The full-strength profile expands from the logo's center.
+// gradient first. The profile expands and brightens from the logo's center.
 const stops = [0, .36, .63, 1];
 const clamp = value => Math.max(0, Math.min(1, value));
 
@@ -47,6 +47,7 @@ void main(){
   if(r<=.36) delta=hermite(d0,d1,vec3(0.0),m1,r/.36,.36);
   else if(r<=.63) delta=hermite(d1,d2,m1,m2,(r-.36)/.27,.27);
   else if(r<1.0) delta=hermite(d2,vec3(0.0),m2,vec3(0.0),(r-.63)/.37,.37);
+  delta*=spread;
   float signal=max(max(abs(delta.r),abs(delta.g)),abs(delta.b));
   float gain=min(1.0,sqrt(signal*255.0));
   float grain=(noise(gl_FragCoord.xy)-noise(gl_FragCoord.xy+vec2(19.19,73.73)))*gain/255.0;
@@ -97,7 +98,7 @@ function canvasRenderer(canvas) {
       profile = new Float32Array((steps + 1) * 4);
       for (let i = 0; i <= steps; i++) {
         const delta = config.delta.map((channel, c) => sample(i / steps, channel, config.tangent[c]) * 255);
-        profile.set([...delta, Math.min(1, Math.sqrt(Math.max(...delta.map(Math.abs))))], i * 4);
+        profile.set([...delta, Math.max(...delta.map(Math.abs))], i * 4);
       }
       const index = [], radii = [], noise = [];
       let seed = 173;
@@ -121,10 +122,11 @@ function canvasRenderer(canvas) {
           continue;
         }
         const position = r * steps, before = Math.floor(position) * 4, mix = position % 1;
-        const grain = grains[i] * (profile[before + 3] + (profile[before + 7] - profile[before + 3]) * mix);
+        const peak = profile[before + 3] + (profile[before + 7] - profile[before + 3]) * mix;
+        const grain = grains[i] * Math.min(1, Math.sqrt(peak * spread));
         for (let c = 0; c < 3; c++) {
           const delta = profile[before + c] + (profile[before + c + 4] - profile[before + c]) * mix;
-          pixels[offsets[i] + c] = paper[c] + delta + grain;
+          pixels[offsets[i] + c] = paper[c] + delta * spread + grain;
         }
       }
       context.putImageData(image, 0, 0);
