@@ -19,7 +19,7 @@
   --accent-wash: #e7ecdf;
   --logo-filter: none;
   --header-logo-filter: brightness(1.18);
-  --brand-intro-duration: 1s;
+  --brand-intro-duration: .8s;
   --brand-glow: rgb(115 137 93 / .4);
   --brand-halo: rgb(115 137 93 / .22);
   --brand-aura-core: rgb(188 208 153 / .4);
@@ -76,12 +76,12 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 .brand img { filter: var(--logo-filter); }
 .site-header .brand { position: relative; --brand-aura-radii: 260px 250px; }
 .site-header .brand::before, .brand-aura-canvas { position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 50%; width: 600px; height: 560px; transform: translate(-50%, -38%); }
-.site-header .brand::before { content: ""; opacity: 1; transform-origin: 50% 38%; animation: brand-aura-in var(--brand-intro-duration) cubic-bezier(.65, 0, .6, 1) both; }
+.site-header .brand::before { content: ""; opacity: 1; transform-origin: 50% 38%; animation: brand-aura-in var(--brand-intro-duration) cubic-bezier(.97, 0, .995, 1) both; }
 .site-header .brand::before { background: radial-gradient(ellipse var(--brand-aura-radii) at 50% 38%, var(--brand-aura-core) 0%, var(--brand-aura-mid) 36%, var(--brand-aura-edge) 63%, transparent 100%); filter: blur(16px); }
 .brand-aura-canvas { visibility: hidden; }
 .site-header .brand[data-glow-renderer]::before { visibility: hidden; }
 .site-header .brand[data-glow-renderer] .brand-aura-canvas { visibility: visible; }
-.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in var(--brand-intro-duration) cubic-bezier(.65, 0, .6, 1) both; }
+.site-header .brand img { filter: var(--header-logo-filter) drop-shadow(0 0 3px var(--brand-glow)) drop-shadow(0 0 12px var(--brand-halo)); animation: brand-glow-in var(--brand-intro-duration) cubic-bezier(.97, 0, .995, 1) both; }
 html[data-fonts-loading] .site-header .brand::before,
 html[data-fonts-loading] .site-header .brand img { animation-play-state: paused; }
 @keyframes brand-glow-in {

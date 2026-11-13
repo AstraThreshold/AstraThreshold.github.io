@@ -29,7 +29,7 @@ npm run preview
 - `assets/fonts/`：本人提供的苹方字体生成的 WOFF2 子集与 CJK 专用样式，未安装字体的设备也会从同站加载。`coverage.json` 仅供构建时检查缺字，不发布。修改中文文案后，若构建提示缺字，使用 `fonttools[woff]` 运行 `python scripts/prepare-pingfang.py 字体源目录` 重新生成；源目录包含本人提供的 `msyhl.ttc`、`msyh.ttc`、`msyhbd.ttc`，原始字体文件不进入仓库。
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。
 - `scripts/prepare-latin-fonts.py`：将本机提供的 Times New Roman、Consolas、Arial 各四个字重/字形，以及 Segoe UI Symbol 的所需符号转换为 WOFF2。浏览器按实际使用加载，`latin-coverage.json` 只在构建时检查缺字，不发布；网页不使用 `local()` 字体来源。
-- `logo-glow.js`：光晕从 Logo 中心的小点向外扩展，在 1 秒内停于完整范围；固定光晕颜色分布，按像素计算并做最低强度的去色带处理。优先使用 WebGL，支持 Canvas 2D 回退，动画结束后停止绘制。光晕始终位于头像和文字下方。
+- `logo-glow.js`：光晕从 Logo 中心的小点向外扩展，在 0.8 秒内停于完整范围；前段较慢、后段加速，固定光晕颜色分布，按像素计算并做最低强度的去色带处理。优先使用 WebGL，支持 Canvas 2D 回退，动画结束后停止绘制。光晕始终位于头像和文字下方。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。
