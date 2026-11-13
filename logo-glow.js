@@ -1,5 +1,5 @@
 // Draw and dither the final backdrop colors, rather than quantizing a translucent
-// gradient first. This also avoids visible rings while the light fades in.
+// gradient first. The full-strength profile expands from the logo's center.
 const stops = [0, .36, .63, 1];
 const clamp = value => Math.max(0, Math.min(1, value));
 
@@ -33,7 +33,7 @@ const fragment = `
 precision highp float;
 uniform vec2 resolution, size, center, radius;
 uniform vec3 paper, d0, d1, d2, m1, m2;
-uniform float energy;
+uniform float spread;
 vec3 hermite(vec3 a,vec3 b,vec3 ma,vec3 mb,float t,float h){
   float t2=t*t,t3=t2*t;
   return (2.0*t3-3.0*t2+1.0)*a+(t3-2.0*t2+t)*h*ma
@@ -42,12 +42,11 @@ vec3 hermite(vec3 a,vec3 b,vec3 ma,vec3 mb,float t,float h){
 float noise(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
 void main(){
   vec2 p=vec2(gl_FragCoord.x/resolution.x,1.0-gl_FragCoord.y/resolution.y)*size;
-  float r=length((p-center)/radius);
+  float r=spread>0.0?length((p-center)/radius)/spread:2.0;
   vec3 delta=vec3(0.0);
   if(r<=.36) delta=hermite(d0,d1,vec3(0.0),m1,r/.36,.36);
   else if(r<=.63) delta=hermite(d1,d2,m1,m2,(r-.36)/.27,.27);
   else if(r<1.0) delta=hermite(d2,vec3(0.0),m2,vec3(0.0),(r-.63)/.37,.37);
-  delta*=energy;
   float signal=max(max(abs(delta.r),abs(delta.g)),abs(delta.b));
   float gain=min(1.0,sqrt(signal*255.0));
   float grain=(noise(gl_FragCoord.xy)-noise(gl_FragCoord.xy+vec2(19.19,73.73)))*gain/255.0;
@@ -71,7 +70,7 @@ function gpuRenderer(canvas) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
   const position = gl.getAttribLocation(program, 'p');
   gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  const locations = Object.fromEntries(['resolution','size','center','radius','paper','d0','d1','d2','m1','m2','energy'].map(name => [name, gl.getUniformLocation(program, name)]));
+  const locations = Object.fromEntries(['resolution','size','center','radius','paper','d0','d1','d2','m1','m2','spread'].map(name => [name, gl.getUniformLocation(program, name)]));
   return {
     kind: 'webgl',
     configure(config) {
@@ -81,20 +80,26 @@ function gpuRenderer(canvas) {
       for (let i = 0; i < 3; i++) gl.uniform3fv(locations['d' + i], config.delta.map(channel => channel[i]));
       for (const i of [1, 2]) gl.uniform3fv(locations['m' + i], config.tangent.map(channel => channel[i]));
     },
-    draw(energy) { gl.uniform1f(locations.energy, energy); gl.drawArrays(gl.TRIANGLES, 0, 6); }
+    draw(spread) { gl.uniform1f(locations.spread, spread); gl.drawArrays(gl.TRIANGLES, 0, 6); }
   };
 }
 
 function canvasRenderer(canvas) {
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) return null;
-  let image, pixels, offsets, deltas, grains, peaks, paper;
+  const steps = 4096;
+  let image, pixels, offsets, distances, grains, profile, paper;
   return {
     kind: 'canvas2d',
     configure(config) {
       image = context.createImageData(canvas.width, canvas.height); pixels = image.data;
       paper = config.paper.map(channel => channel * 255);
-      const index = [], fields = [], noise = [], maxima = [];
+      profile = new Float32Array((steps + 1) * 4);
+      for (let i = 0; i <= steps; i++) {
+        const delta = config.delta.map((channel, c) => sample(i / steps, channel, config.tangent[c]) * 255);
+        profile.set([...delta, Math.min(1, Math.sqrt(Math.max(...delta.map(Math.abs))))], i * 4);
+      }
+      const index = [], radii = [], noise = [];
       let seed = 173;
       const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; };
       for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
@@ -104,15 +109,23 @@ function canvasRenderer(canvas) {
         const dy = ((y + .5) / canvas.height * config.size[1] - config.center[1]) / config.radius[1];
         const r = Math.hypot(dx, dy);
         if (r >= 1) continue;
-        const delta = config.delta.map((channel, c) => sample(r, channel, config.tangent[c]) * 255);
-        index.push(offset); fields.push(...delta); noise.push(random() - random()); maxima.push(Math.max(...delta.map(Math.abs)));
+        index.push(offset); radii.push(r); noise.push(random() - random());
       }
-      offsets = Uint32Array.from(index); deltas = Float32Array.from(fields); grains = Float32Array.from(noise); peaks = Float32Array.from(maxima);
+      offsets = Uint32Array.from(index); distances = Float32Array.from(radii); grains = Float32Array.from(noise);
     },
-    draw(energy) {
+    draw(spread) {
       for (let i = 0; i < offsets.length; i++) {
-        const grain = grains[i] * Math.min(1, Math.sqrt(peaks[i] * energy));
-        for (let c = 0; c < 3; c++) pixels[offsets[i] + c] = paper[c] + deltas[i * 3 + c] * energy + grain;
+        const r = spread > 0 ? distances[i] / spread : 1;
+        if (r >= 1) {
+          for (let c = 0; c < 3; c++) pixels[offsets[i] + c] = paper[c];
+          continue;
+        }
+        const position = r * steps, before = Math.floor(position) * 4, mix = position % 1;
+        const grain = grains[i] * (profile[before + 3] + (profile[before + 7] - profile[before + 3]) * mix);
+        for (let c = 0; c < 3; c++) {
+          const delta = profile[before + c] + (profile[before + c + 4] - profile[before + c]) * mix;
+          pixels[offsets[i] + c] = paper[c] + delta + grain;
+        }
       }
       context.putImageData(image, 0, 0);
     }
@@ -161,8 +174,8 @@ export function initLogoGlow() {
 
   function draw() {
     request = 0;
-    const energy = reducedMotion.matches ? 1 : clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
-    renderer.draw(energy); brand.dataset.glowRenderer = renderer.kind;
+    const spread = reducedMotion.matches ? 1 : clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
+    renderer.draw(spread); brand.dataset.glowRenderer = renderer.kind;
     if (!reducedMotion.matches && logo.getAnimations().some(animation => animation.playState === 'running' || animation.pending)) request = requestAnimationFrame(draw);
   }
   function refresh() { if (!unavailable && configure() && !request) request = requestAnimationFrame(draw); }
