@@ -20,6 +20,7 @@ export function initGallery(getLanguage) {
   let columnCount = 0;
   let active = null;
   const returning = new Set();
+  const magneticPhoto = () => wall?.querySelector('.photo-link[data-cursor-magnet]');
 
   const label = index => getLanguage() === 'en'
     ? `View photo ${index + 1} of ${links.length}` : `查看照片 ${index + 1} / ${links.length}`;
@@ -34,7 +35,7 @@ export function initGallery(getLanguage) {
   }
 
   function syncMotion() {
-    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || returning.size > 0 || Boolean(viewer?.open) || document.hidden);
+    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(magneticPhoto()) || returning.size > 0 || Boolean(viewer?.open) || document.hidden);
   }
 
   function returnPhoto(immediate = false) {
@@ -203,7 +204,7 @@ export function initGallery(getLanguage) {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
       pointerInside = true;
       syncMotion();
-      const link = event.target.closest('.photo-link');
+      const link = document.documentElement.classList.contains('has-adaptive-cursor') ? magneticPhoto() : event.target.closest('.photo-link');
       if (link && wall.contains(link)) liftPhoto(link);
       else returnPhoto();
     };
@@ -211,7 +212,15 @@ export function initGallery(getLanguage) {
     wall.addEventListener('pointermove', pointToPhoto);
     wall.addEventListener('pointerleave', () => {
       pointerInside = false;
-      returnPhoto();
+      if (!magneticPhoto()) returnPhoto();
+      syncMotion();
+    });
+    document.addEventListener('adaptive-cursor-change', () => {
+      if (!viewer?.open) {
+        const link = magneticPhoto() || (!document.documentElement.classList.contains('has-adaptive-cursor') && wall.querySelector('.photo-link:hover'));
+        if (link) liftPhoto(link);
+        else returnPhoto();
+      }
       syncMotion();
     });
     gallery.addEventListener('focusin', event => {

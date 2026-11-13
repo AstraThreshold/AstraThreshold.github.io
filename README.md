@@ -2,6 +2,8 @@
 
 面向 GitHub Pages 的中英双语个人主页。使用原生 HTML、CSS、JavaScript，无运行时依赖，也无需安装静态站点框架。
 
+界面使用以索尼卡口橙环为灵感的柔和橙色，配合暖纸色浅色模式与暖灰深色模式；磁性光标使用无描边中性灰，照片与作品图片保留原色。
+
 线上地址：[astrathreshold.github.io](https://astrathreshold.github.io/)
 
 ## 本地预览
@@ -15,7 +17,7 @@ npm run preview
 
 打开终端输出的本地地址（默认 `http://127.0.0.1:4173`）。修改源文件后重新构建并刷新页面。
 
-构建时会为样式表和 JavaScript 模块链接加入内容哈希版本号；文件变化后，刷新页面会请求新的链接，避免继续复用旧缓存。
+构建时会为样式表、JavaScript 模块、品牌图标与网页清单链接加入内容哈希版本号；文件变化后，刷新页面会请求新的链接，避免继续复用旧缓存。
 
 首屏字体在 HTML 中预加载，文字等待本页所用字体就绪后显示，避免先显示系统字体再闪换；Logo 与照片可先显示，渐亮动画在文字就绪后从原始亮度开始。禁用 JavaScript 时仍使用原生字体加载显示机制。
 
@@ -30,7 +32,7 @@ npm run preview
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。
 - `scripts/prepare-latin-fonts.py`：将本机提供的 Times New Roman、Consolas、Arial 各四个字重/字形，以及 Segoe UI Symbol 的所需符号转换为 WOFF2。浏览器按实际使用加载，`latin-coverage.json` 只在构建时检查缺字，不发布；网页不使用 `local()` 字体来源。
 - `logo-glow.js`：光晕从 Logo 中心的小点向外扩展，同时从零亮度逐渐达到正常亮度，在 1 秒内停于完整范围；按像素计算并在亮度混合后做最低强度的去色带处理。优先使用 WebGL，支持 Canvas 2D 回退，动画结束后停止绘制。光晕始终位于头像和文字下方。
-- `adaptive-cursor.js`：鼠标使用 iPad 风格的圆点光标，靠近链接、按钮和照片时缓动贴合轮廓并吸附；照片边框跟随浮起后的实际大小，查看大图时光标进入弹窗层。小范围吸附区支持直接点击，保留键盘、组合键和拖选操作；触屏及高对比度模式使用原生交互，减少动态效果时直接定位，静止后停止绘制。
+- `adaptive-cursor.js`：鼠标使用 iPad 风格的灰色无描边圆点光标，靠近链接、按钮和照片时缓动贴合轮廓并吸附；吸附期间统一维持下划线、作品预览和照片浮起等悬浮状态，小幅偏移不会反复开关。照片吸附区跟随浮起后的实际大小，查看大图时光标进入弹窗层。吸附区支持直接点击，保留键盘、组合键和拖选操作；触屏及高对比度模式使用原生交互，减少动态效果时直接定位，静止后停止绘制。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。
@@ -38,7 +40,7 @@ npm run preview
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
 - `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。
 - `assets/affiliations/`：官方素材制作的黑白透明机构标志；CSS 随系统配色切换深浅。网站品牌和 favicon 保持 WoooLAB。
-- `assets/icons/`：GitHub、Bilibili 与邮箱的透明底 SVG 图标及许可证。头像下方与底部联系区均横向排列，深浅模式自动变色；链接保留可访问名称及悬停提示。
+- `assets/icons/`：GitHub、Bilibili、小红书与邮箱的透明底 SVG 图标及许可证。小红书采用官网的椭圆胶囊外形，搭配 Simple Icons 字标与透明镂空。头像下方与底部联系区均横向排列，深浅模式自动变色；链接保留可访问名称及悬停提示。
 - `github-stats.js`：浏览器与定时任务共用的 GitHub 分页统计逻辑。
 - `scripts/build.mjs`：将公开网页与允许的媒体文件复制至 `dist/`。
 

@@ -94,6 +94,27 @@ for (let i = 0; i < modules.length; i++) {
 
 // A changed stylesheet gets a new URL, even while older CSS is cached.
 const stylesheetVersions = new Map();
+const assetVersions = new Map();
+async function versionAsset(reference) {
+  const relative = new URL(reference, 'https://astrathreshold.github.io/').pathname.replace(/^\/+/, '');
+  const file = path.resolve(output, relative);
+  if (path.relative(output, file).startsWith('..')) throw new Error('Asset must stay inside dist.');
+  if (!assetVersions.has(relative)) assetVersions.set(relative, createHash('sha256').update(await readFile(file)).digest('hex').slice(0, 12));
+  return `${reference}?v=${assetVersions.get(relative)}`;
+}
+async function versionBrandAssets(markup) {
+  const pattern = /\b(src|href|content)="((?:(?:https:\/\/astrathreshold\.github\.io)?\/?assets\/brand\/[^"?#]+|\/?site\.webmanifest))"/g;
+  for (const match of markup.matchAll(pattern)) {
+    markup = markup.replace(match[0], `${match[1]}="${await versionAsset(match[2])}"`);
+  }
+  return markup;
+}
+const manifestPath = path.join(output, 'site.webmanifest');
+if (await exists(manifestPath)) {
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  for (const icon of manifest.icons || []) icon.src = await versionAsset(icon.src);
+  await writeFile(manifestPath, JSON.stringify(manifest) + '\n');
+}
 function preloadFonts(markup, errorPage = false) {
   const faces = [
     ...fontCoverage.faces.filter(face => face.weight === 400 || (!errorPage && face.weight === 600)),
@@ -141,7 +162,7 @@ index = index.replace(/(<a class="project-stars" data-repo="([^"]+)"[^>]*aria-la
   return stars === undefined ? match : `${before}${stars.toLocaleString('en-US')} GitHub stars${middle}${stars.toLocaleString('en-US')}${after}`;
 });
 index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
-await writeFile(indexPath, await versionStylesheets(preloadFonts(index)));
+await writeFile(indexPath, await versionStylesheets(await versionBrandAssets(preloadFonts(index))));
 const errorPage = path.join(output, '404.html');
-if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(preloadFonts(await readFile(errorPage, 'utf8'), true)));
+if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(await versionBrandAssets(preloadFonts(await readFile(errorPage, 'utf8'), true))));
 console.log(`Built ${count} public files into dist/.`);

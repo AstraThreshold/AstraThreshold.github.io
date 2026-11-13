@@ -9,15 +9,26 @@ export function initAdaptiveCursor() {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const forcedColors = matchMedia('(forced-colors: active)');
   let cursor, scope, candidates = [], dirty = true, active = false, target = null;
+  let hoverChain = [];
   let request = 0, previousTime = 0, initialized = false, pressed = false, down = null, modified = false;
   const pointer = { x: 0, y: 0 };
   const current = { x: 0, y: 0, width: 20, height: 20, radius: 10 };
 
   function markTarget(next) {
-    if (next === target) return;
+    const chain = [];
+    for (let element = next; element; element = element.parentElement) {
+      chain.push(element);
+      if (element === scope) break;
+    }
+    if (next === target && chain.length === hoverChain.length && chain.every((element, index) => element === hoverChain[index])) return;
+    const previous = target;
     target?.removeAttribute('data-cursor-magnet');
+    hoverChain.forEach(element => element.removeAttribute('data-cursor-within'));
     target = next;
+    hoverChain = chain;
     target?.setAttribute('data-cursor-magnet', '');
+    hoverChain.forEach(element => element.setAttribute('data-cursor-within', ''));
+    document.dispatchEvent(new CustomEvent('adaptive-cursor-change', { detail: { target, previous } }));
   }
 
   function hide() {
@@ -45,7 +56,8 @@ export function initAdaptiveCursor() {
   }
 
   function visibleRect(element) {
-    if (!element.isConnected || element.matches('[disabled], [aria-disabled="true"]') || element.closest('[inert]')) return null;
+    // A busy control keeps an existing attachment; disabled controls cannot attract a new one.
+    if (!element.isConnected || (element.matches('[disabled], [aria-disabled="true"]') && element !== target) || element.closest('[inert]')) return null;
     let nearest = null, best = Infinity;
     const wall = element.closest('.photo-wall');
     const clip = wall?.getBoundingClientRect();
@@ -147,6 +159,7 @@ export function initAdaptiveCursor() {
     if (!active) return;
     syncScope();
     const choice = pickTarget();
+    if (choice?.element.matches('[disabled], [aria-disabled="true"]')) { down = null; pressed = false; schedule(); return; }
     down = { x: event.clientX, y: event.clientY, control: choice?.element || null };
     pressed = true; schedule();
   }, { passive: true });
@@ -170,7 +183,7 @@ export function initAdaptiveCursor() {
       || Math.hypot(event.clientX - press.x, event.clientY - press.y) > 4 || getSelection()?.type === 'Range') return;
     pointer.x = event.clientX; pointer.y = event.clientY;
     const info = visibleRect(press.control);
-    if (!info || info.distance > 14 || !currentScope().contains(press.control)) return;
+    if (!info || info.distance > 20 || press.control.matches('[disabled], [aria-disabled="true"]') || !currentScope().contains(press.control)) return;
     event.preventDefault(); event.stopPropagation();
     press.control.click();
   }, true);
