@@ -7,12 +7,13 @@ export function initGallery(getLanguage) {
     .sort((a, b) => Number(a.dataset.photoIndex) - Number(b.dataset.photoIndex));
   const openButton = gallery?.querySelector('[data-gallery-open]');
   const viewer = document.getElementById('photo-viewer');
-  const image = document.getElementById('photo-viewer-image');
+  let image = document.getElementById('photo-viewer-image');
   const position = document.getElementById('photo-viewer-count');
   const dialogReady = links.length && viewer && image && position && typeof viewer.showModal === 'function';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const hoverPointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   let current = 0;
+  let imageRequest = 0;
   let origin = null;
   let pointerInside = false;
   let keyboardInside = false;
@@ -134,12 +135,36 @@ export function initGallery(getLanguage) {
 
   function show(index) {
     current = (index + links.length) % links.length;
+    const request = ++imageRequest;
     const link = links[current];
-    image.width = Number(link.dataset.width);
-    image.height = Number(link.dataset.height);
-    image.src = link.href;
-    image.alt = getLanguage() === 'en' ? `Photo ${current + 1}` : `照片 ${current + 1}`;
+    const thumbnail = link.querySelector('img');
+    // A reused img can keep painting its old bitmap while a new URL loads.
+    // Start with a fresh element and the requested photo's existing thumbnail.
+    const preview = document.createElement('img');
+    Object.assign(preview, {
+      id: image.id, className: image.className, decoding: 'async',
+      width: Number(link.dataset.width), height: Number(link.dataset.height),
+      alt: getLanguage() === 'en' ? `Photo ${current + 1}` : `照片 ${current + 1}`
+    });
+    preview.style.width = `${preview.width}px`;
+    preview.style.aspectRatio = `${preview.width} / ${preview.height}`;
+    preview.src = thumbnail?.currentSrc || thumbnail?.src || link.href;
+    image.replaceWith(preview);
+    image = preview;
     position.textContent = `${current + 1} / ${links.length}`;
+    viewer.setAttribute('aria-busy', 'true');
+    const isCurrent = () => request === imageRequest && image === preview && viewer.open;
+    const settle = () => { if (isCurrent()) viewer.setAttribute('aria-busy', 'false'); };
+    const full = document.createElement('img');
+    full.decoding = 'async';
+    full.addEventListener('load', async () => {
+      try { if (typeof full.decode === 'function') await full.decode(); }
+      catch { settle(); return; }
+      if (isCurrent()) preview.src = link.href;
+      settle();
+    }, { once: true });
+    full.addEventListener('error', settle, { once: true });
+    full.src = link.href;
   }
 
   function openPhoto(index, trigger) {
@@ -278,6 +303,10 @@ export function initGallery(getLanguage) {
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) viewer.close();
     });
     viewer.addEventListener('close', () => {
+      // A queued close event may arrive after another photo has reopened it.
+      if (viewer.open) return;
+      imageRequest++;
+      viewer.setAttribute('aria-busy', 'false');
       document.documentElement.classList.remove('photo-viewer-open');
       (origin?.isConnected ? origin : openButton)?.focus({ preventScroll: true });
       syncMotion();

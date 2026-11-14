@@ -34,6 +34,10 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
       children.forEach(child => { child.remove(); this.children.push(child); child.parent = this; });
     }
     replaceChildren(...children) { this.children.forEach(child => { child.parent = null; }); this.children = []; this.append(...children); }
+    replaceWith(element) {
+      const parent = this.parent, index = parent.children.indexOf(this);
+      element.remove(); parent.children.splice(index, 1, element); element.parent = parent; this.parent = null;
+    }
     remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.parent = null; }
     cloneNode(deep) {
       const clone = new Element(this.tagName);
@@ -75,10 +79,11 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
   for (const name of ['close', 'previous', 'next']) {
     const button = new Element('button'); button.setAttribute(`data-photo-${name}`, ''); viewer.append(button);
   }
-  const image = new Element('img'); const count = new Element();
+  const image = new Element('img'); image.id = 'photo-viewer-image'; image.className = 'photo-viewer-image'; const count = new Element();
   viewer.append(image, count); body.append(viewer);
   const ids = { gallery, 'photo-viewer': viewer, 'photo-viewer-image': image, 'photo-viewer-count': count };
-  const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => new Element(tag), body, documentElement: root, hidden: false });
+  const created = [];
+  const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => { const element = new Element(tag); created.push(element); return element; }, body, documentElement: root, hidden: false });
   const reduced = Object.assign(new EventTarget(), { matches: reduce });
   const timers = new Map(); const frames = new Map(); let sequence = 0;
   const win = Object.assign(new EventTarget(), {
@@ -92,7 +97,7 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
   globalThis.window = win; globalThis.document = doc;
   let language = 'zh';
   const controller = initGallery(() => language);
-  return { body, root, gallery, wall, links, viewer, image, count, openButton, win, doc, reduced, animations,
+  return { body, root, gallery, wall, links, viewer, get image() { return viewer.querySelector('img'); }, count, openButton, win, doc, reduced, animations, created,
     translate(value) { language = value; controller.updateLanguage(); },
     flushTimers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); },
     resize(width) { wall.clientWidth = width; win.dispatchEvent(new Event('resize')); const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); },
@@ -178,13 +183,16 @@ test('the source is revealed behind the returned copy before it fades away and t
   assert.equal(f.wall.classList.contains('is-paused'), false);
 });
 
-test('clicking a repeated photo opens the correct original and viewer navigation wraps', () => {
+test('clicking a repeated photo opens its thumbnail and upgrades to the correct original; navigation wraps', async () => {
   const f = fixture();
   const repeat = f.wall.querySelectorAll('.photo-link').find(link => !f.links.includes(link) && link.dataset.photoIndex === '6');
   assert.equal(f.image.src, undefined);
   assert.equal(fire(f.wall, 'click', { ctrlKey: true }, repeat).defaultPrevented, false);
   assert.equal(fire(f.wall, 'click', {}, repeat).defaultPrevented, true);
   assert.equal(f.viewer.open, true);
+  assert.equal(f.image.src, f.links[6].querySelector('img').src);
+  fire(f.created.at(-1), 'load');
+  await Promise.resolve();
   assert.equal(f.image.src, f.links[6].href);
   assert.equal(f.count.textContent, '7 / 7');
   fire(f.viewer, 'keydown', { key: 'ArrowRight' });
@@ -199,13 +207,50 @@ test('clicking a repeated photo opens the correct original and viewer navigation
   assert.deepEqual(repeat.focusOptions, { preventScroll: true });
 });
 
+test('late completions and failed large images preserve the currently selected preview', async () => {
+  const f = fixture();
+  fire(f.wall, 'click', {}, f.links[0]);
+  const first = f.image, firstRequest = f.created.at(-1);
+  f.viewer.close();
+  fire(f.wall, 'click', {}, f.links[1]);
+  const second = f.image, secondRequest = f.created.at(-1);
+  assert.notEqual(second, first);
+  fire(firstRequest, 'load');
+  await Promise.resolve();
+  assert.equal(f.image, second);
+  assert.equal(f.image.src, f.links[1].querySelector('img').src);
+  assert.equal(f.viewer.attributes.get('aria-busy'), 'true');
+  fire(secondRequest, 'error');
+  assert.equal(f.image.src, f.links[1].querySelector('img').src);
+  assert.equal(f.viewer.attributes.get('aria-busy'), 'false');
+});
+
+test('an old decode finishing after navigation cannot overwrite the new photo', async () => {
+  const f = fixture();
+  fire(f.wall, 'click', {}, f.links[0]);
+  const firstRequest = f.created.at(-1);
+  let decoded;
+  firstRequest.decode = () => new Promise(resolve => { decoded = resolve; });
+  fire(firstRequest, 'load');
+  fire(f.viewer.querySelector('[data-photo-next]'), 'click');
+  const second = f.image;
+  decoded(); await Promise.resolve(); await Promise.resolve();
+  assert.equal(f.image, second);
+  assert.equal(f.image.src, f.links[1].querySelector('img').src);
+  assert.equal(f.viewer.attributes.get('aria-busy'), 'true');
+  const secondRequest = f.created.at(-1);
+  fire(secondRequest, 'load'); await Promise.resolve();
+  assert.equal(f.image.src, f.links[1].href);
+  assert.equal(f.viewer.attributes.get('aria-busy'), 'false');
+});
+
 test('keyboard entry, reduced motion, touch and background changes preserve usable photo access', () => {
   const f = fixture({ reduce: true });
   f.openButton.focusVisible = true;
   fire(f.gallery, 'focusin', {}, f.openButton);
   assert.equal(f.wall.classList.contains('is-paused'), true);
   fire(f.openButton, 'click');
-  assert.equal(f.image.src, f.links[0].href);
+  assert.equal(f.image.src, f.links[0].querySelector('img').src);
   f.viewer.close();
   assert.deepEqual(f.openButton.focusOptions, { preventScroll: true });
   fire(f.wall, 'pointerover', { pointerType: 'touch' }, f.links[0]);
