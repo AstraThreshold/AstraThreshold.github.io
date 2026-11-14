@@ -179,12 +179,11 @@ html[data-fonts-loading] .photo-wall { pointer-events: none; }
 html[data-fonts-loading] .photo-track { animation-play-state: paused !important; }
 html[data-media-placeholders] :is(.avatar, .photo-link img, .photo-float, .project-preview img, .photo-viewer-image):not([data-media-ready]) {
   color: transparent; background: linear-gradient(105deg, transparent 25%, rgb(255 255 255 / .12) 50%, transparent 75%) var(--panel);
-  background-size: 220% 100%; animation: skeleton-sheen 1.6s ease-in-out infinite;
+  background-size: 220% 100%;
 }
 html[data-media-placeholders] .site-header .brand img:not([data-media-ready]) { color: transparent; }
 html[data-media-placeholders] .site-header .brand:has(img:not([data-media-ready]))::after { content: ""; position: absolute; inset: 0; visibility: visible; pointer-events: none; border-radius: 2px; background: var(--line); opacity: .55; }
 @keyframes skeleton-pulse { from { opacity: .35; } to { opacity: .65; } }
-@keyframes skeleton-sheen { from { background-position: 130% 0; } to { background-position: -130% 0; } }
 .social-links { display: flex; align-items: center; gap: 12px; }
 .social-link { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: var(--social-hit-size, 32px); height: var(--social-hit-size, 32px); color: var(--ink); border-radius: 3px; }
 :where(html:not(.has-adaptive-cursor)) .social-link:hover, .social-link[data-cursor-within] { color: var(--accent); }
@@ -297,7 +296,7 @@ details[open] > summary:before { content: "−"; }
 .photo-track, .photo-group { display: flex; flex-direction: column; gap: 8px; }
 .photo-wall.is-ready .photo-track { animation: photo-scroll var(--photo-duration, 120s) linear infinite; will-change: transform; }
 .photo-wall.is-ready .photo-column:nth-child(even) .photo-track { animation-direction: reverse; }
-.photo-wall.is-paused .photo-track { animation-play-state: paused; }
+.photo-wall.is-paused .photo-track { animation-play-state: paused; will-change: auto; }
 .photo-link { position: relative; display: block; flex: 0 0 auto; overflow: hidden; aspect-ratio: var(--photo-ratio, 1.3333); border-radius: 3px; background: var(--panel); cursor: zoom-in; }
 .photo-link img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--photo-focus, center); }
 .photo-link.is-lifted { opacity: 0; }

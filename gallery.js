@@ -14,6 +14,7 @@ export function initGallery(getLanguage) {
   const hoverPointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   let current = 0;
   let imageRequest = 0;
+  let fullImageLoad = null;
   let motionVersion = 0, viewerMotions = [], closing = false, viewerHandoff = false;
   let origin = null;
   let pointerInside = false;
@@ -22,6 +23,10 @@ export function initGallery(getLanguage) {
   let columnCount = 0;
   let active = null;
   let pointer = null;
+  let wallVisible = true, windowFocused = document.hasFocus?.() ?? true, resting = false, idleTimer = null;
+  const idleDelay = 30000;
+  const now = () => window.performance?.now() ?? Date.now();
+  let lastActivity = now();
   const returning = new Set();
   const magneticPhoto = () => wall?.querySelector('.photo-link[data-cursor-magnet]');
 
@@ -38,7 +43,29 @@ export function initGallery(getLanguage) {
   }
 
   function syncMotion() {
-    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(magneticPhoto()) || returning.size > 0 || Boolean(viewer?.open) || viewerHandoff || document.hidden);
+    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(magneticPhoto()) || returning.size > 0 || Boolean(viewer?.open) || viewerHandoff || document.hidden || !wallVisible || !windowFocused || resting);
+  }
+
+  function checkIdle() {
+    idleTimer = null;
+    const remaining = idleDelay - (now() - lastActivity);
+    if (remaining > 0) idleTimer = window.setTimeout(checkIdle, remaining);
+    else { resting = true; syncMotion(); }
+  }
+
+  function noteActivity() {
+    if (document.hidden) return;
+    lastActivity = now();
+    if (resting) { resting = false; syncMotion(); }
+    if (idleTimer === null) idleTimer = window.setTimeout(checkIdle, idleDelay);
+  }
+
+  function cancelFullImageLoad() {
+    if (!fullImageLoad) return;
+    const previous = fullImageLoad;
+    fullImageLoad = null;
+    previous.controller.abort();
+    previous.image.removeAttribute('src');
   }
 
   function returnPhoto(immediate = false) {
@@ -147,6 +174,7 @@ export function initGallery(getLanguage) {
     stopViewerMotion();
     current = (index + links.length) % links.length;
     const request = ++imageRequest;
+    cancelFullImageLoad();
     const link = links[current];
     const thumbnail = link.querySelector('img');
     // A reused img can keep painting its old bitmap while a new URL loads.
@@ -165,16 +193,24 @@ export function initGallery(getLanguage) {
     position.textContent = `${current + 1} / ${links.length}`;
     viewer.setAttribute('aria-busy', 'true');
     const isCurrent = () => request === imageRequest && image === preview && viewer.open;
-    const settle = () => { if (isCurrent()) viewer.setAttribute('aria-busy', 'false'); };
+    const settle = () => {
+      if (isCurrent()) viewer.setAttribute('aria-busy', 'false');
+      if (fullImageLoad?.image === full) cancelFullImageLoad();
+    };
     const full = document.createElement('img');
+    const controller = new AbortController();
+    fullImageLoad = { image: full, controller };
     full.decoding = 'async';
     full.addEventListener('load', async () => {
       try { if (typeof full.decode === 'function') await full.decode(); }
       catch { settle(); return; }
-      if (isCurrent()) preview.src = link.href;
+      if (isCurrent()) {
+        preview.src = link.href;
+        try { if (typeof preview.decode === 'function') await preview.decode(); } catch { /* Closing can cancel the decode. */ }
+      }
       settle();
-    }, { once: true });
-    full.addEventListener('error', settle, { once: true });
+    }, { once: true, signal: controller.signal });
+    full.addEventListener('error', settle, { once: true, signal: controller.signal });
     full.src = link.href;
   }
 
@@ -285,6 +321,7 @@ export function initGallery(getLanguage) {
     const panel = window.getComputedStyle(viewer, '::before'), panelCurrent = panel.transform || 'none', panelOpacity = panel.opacity || '1';
     const chromeOpacity = new Map([viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean).map(element => [element, Number(window.getComputedStyle(element).opacity)]));
     stopViewerMotion(); closing = true; imageRequest++;
+    cancelFullImageLoad();
     viewer.style.setProperty('--viewer-backdrop-from', backdrop);
     viewer.style.setProperty('--viewer-panel-current', panelCurrent);
     viewer.style.setProperty('--viewer-panel-opacity', panelOpacity);
@@ -347,7 +384,15 @@ export function initGallery(getLanguage) {
       });
     };
     if (typeof ResizeObserver === 'function') new ResizeObserver(resize).observe(wall);
+    if (typeof IntersectionObserver === 'function') new IntersectionObserver(entries => {
+      wallVisible = entries[0].isIntersecting;
+      syncMotion();
+    }).observe(wall);
     window.addEventListener('resize', resize);
+    window.addEventListener('blur', () => { windowFocused = false; pointerInside = false; returnPhoto(true); syncMotion(); });
+    window.addEventListener('focus', () => { windowFocused = true; noteActivity(); syncMotion(); });
+    document.addEventListener('pointerdown', noteActivity, { passive: true });
+    document.addEventListener('keydown', noteActivity);
     wall.addEventListener('pointerenter', event => {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
       pointerInside = true;
@@ -364,6 +409,7 @@ export function initGallery(getLanguage) {
     wall.addEventListener('pointerover', pointToPhoto);
     wall.addEventListener('pointermove', pointToPhoto);
     document.addEventListener('pointermove', event => {
+      noteActivity();
       if (event.pointerType !== 'mouse' || !hoverPointer.matches) return;
       pointer = { x: event.clientX, y: event.clientY };
       movePhoto();
@@ -389,10 +435,16 @@ export function initGallery(getLanguage) {
       if (!link || !wall.contains(link) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       if (openPhoto(Number(link.dataset.photoIndex), link)) event.preventDefault();
     });
-    window.addEventListener('scroll', () => returnPhoto(true), { passive: true });
+    window.addEventListener('scroll', () => { noteActivity(); returnPhoto(true); }, { passive: true });
     wall.addEventListener('scroll', () => returnPhoto(true), { passive: true });
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { pointerInside = false; returnPhoto(true); }
+      if (document.hidden) {
+        pointerInside = false; returnPhoto(true); resting = true;
+        window.clearTimeout(idleTimer); idleTimer = null;
+      } else {
+        windowFocused = document.hasFocus?.() ?? true;
+        noteActivity();
+      }
       syncMotion();
     });
     reducedMotion.addEventListener('change', () => {
@@ -400,6 +452,7 @@ export function initGallery(getLanguage) {
       if (reducedMotion.matches) { const finish = closing; stopViewerMotion(); if (finish && viewer?.open) viewer.close(); }
       syncMotion();
     });
+    noteActivity();
   }
 
   if (dialogReady) {
@@ -426,6 +479,9 @@ export function initGallery(getLanguage) {
       viewerHandoff = !reducedMotion.matches;
       const version = motionVersion;
       imageRequest++;
+      cancelFullImageLoad();
+      image.removeAttribute('src');
+      image.removeAttribute('data-media-ready');
       viewer.setAttribute('aria-busy', 'false');
       document.documentElement.classList.remove('photo-viewer-open');
       (origin?.isConnected ? origin : openButton)?.focus({ preventScroll: true });

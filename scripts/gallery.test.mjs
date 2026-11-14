@@ -20,6 +20,7 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
       };
     }
     setAttribute(name, value) { this.attributes.set(name, value); }
+    removeAttribute(name) { this.attributes.delete(name); if (name === 'src') this.src = ''; }
     matches(selector) {
       if (selector === ':focus-visible') return Boolean(this.focusVisible);
       if (selector.startsWith('.')) return this.classList.contains(selector.slice(1));
@@ -85,12 +86,13 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
   const created = [];
   const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => { const element = new Element(tag); created.push(element); return element; }, body, documentElement: root, hidden: false });
   const reduced = Object.assign(new EventTarget(), { matches: reduce });
-  const timers = new Map(); const frames = new Map(); let sequence = 0;
+  const timers = new Map(); const frames = new Map(); let sequence = 0, time = 0;
   const win = Object.assign(new EventTarget(), {
     innerWidth: 1280, innerHeight: 800,
+    performance: { now: () => time },
     matchMedia: query => query.includes('reduced-motion') ? reduced : { matches: hover },
     getComputedStyle: element => ({ transform: element.style.transform || 'none' }),
-    setTimeout: callback => { const id = ++sequence; timers.set(id, callback); return id; },
+    setTimeout: (callback, delay = 0) => { const id = ++sequence; timers.set(id, { callback, at: time + delay }); return id; },
     clearTimeout: id => timers.delete(id),
     requestAnimationFrame: callback => { const id = ++sequence; frames.set(id, callback); return id; }
   });
@@ -99,7 +101,8 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
   const controller = initGallery(() => language);
   return { body, root, gallery, wall, links, viewer, get image() { return viewer.querySelector('img'); }, count, openButton, win, doc, reduced, animations, created,
     translate(value) { language = value; controller.updateLanguage(); },
-    flushTimers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); },
+    flushTimers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(timer => timer.callback()); },
+    advanceTime(ms) { time += ms; for (const [id, timer] of [...timers]) if (timer.at <= time) { timers.delete(id); timer.callback(); } },
     resize(width) { wall.clientWidth = width; win.dispatchEvent(new Event('resize')); const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); },
     async finishAnimations() {
       for (let pass = 0; pass < 5; pass++) {
@@ -271,4 +274,38 @@ test('unsupported dialogs preserve native image links', () => {
   assert.equal(fire(f.wall, 'click', {}, f.links[0]).defaultPrevented, false);
   assert.equal(f.links[0].tabIndex, undefined);
   delete globalThis.window; delete globalThis.document;
+});
+
+test('idle and unfocused walls stop scrolling, then wake on activity', () => {
+  const f = fixture();
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  f.advanceTime(29000);
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  f.advanceTime(1000);
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.doc, 'pointermove');
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  fire(f.win, 'blur');
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.win, 'focus');
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  f.doc.hidden = true; fire(f.doc, 'visibilitychange');
+  f.advanceTime(60000);
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  f.doc.hidden = false; fire(f.doc, 'visibilitychange');
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+});
+
+test('switching or closing cancels unused full images and clears the hidden viewer', () => {
+  const f = fixture({ reduce: true });
+  fire(f.wall, 'click', {}, f.links[0]);
+  const firstLoad = f.created.at(-1);
+  fire(f.viewer.querySelector('[data-photo-next]'), 'click');
+  assert.equal(firstLoad.src, '');
+  const currentLoad = f.created.at(-1);
+  f.viewer.close();
+  assert.equal(currentLoad.src, '');
+  assert.equal(f.image.src, '');
+  fire(currentLoad, 'load');
+  assert.equal(f.image.src, '');
 });
