@@ -203,6 +203,8 @@ test('clicking a repeated photo opens its thumbnail and upgrades to the correct 
   assert.equal(f.image.alt, 'Photo 7');
   assert.equal(repeat.attributes.get('aria-label'), 'View photo 7 of 7');
   fire(f.viewer.querySelector('[data-photo-close]'), 'click');
+  assert.equal(f.viewer.open, true);
+  await f.finishAnimations();
   assert.equal(f.root.classList.contains('photo-viewer-open'), false);
   assert.deepEqual(repeat.focusOptions, { preventScroll: true });
 });

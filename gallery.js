@@ -14,6 +14,7 @@ export function initGallery(getLanguage) {
   const hoverPointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   let current = 0;
   let imageRequest = 0;
+  let motionVersion = 0, viewerMotions = [], closing = false;
   let origin = null;
   let pointerInside = false;
   let keyboardInside = false;
@@ -134,6 +135,7 @@ export function initGallery(getLanguage) {
   }
 
   function show(index) {
+    stopViewerMotion();
     current = (index + links.length) % links.length;
     const request = ++imageRequest;
     const link = links[current];
@@ -169,13 +171,99 @@ export function initGallery(getLanguage) {
 
   function openPhoto(index, trigger) {
     if (!dialogReady) return false;
+    const start = active?.link === trigger ? active.floating.getBoundingClientRect() : photoBox(trigger);
+    viewer.style.setProperty('--viewer-backdrop-start', backdropClip(start));
     returnPhoto(true);
     origin = trigger;
     show(index);
-    viewer.showModal();
+    if (!viewer.open) viewer.showModal();
+    viewer.style.setProperty('--viewer-panel-start', panelTransform(start));
     document.documentElement.classList.add('photo-viewer-open');
     syncMotion();
+    animateViewer(start, false);
     return true;
+  }
+
+  function stopViewerMotion() {
+    motionVersion++;
+    viewerMotions.forEach(animation => animation.cancel()); viewerMotions = [];
+    closing = false;
+    viewer?.classList.remove('is-closing', 'is-animating');
+  }
+
+  function photoBox(link) {
+    if (!link?.matches('.photo-link') || !link.isConnected) return null;
+    const box = link.getBoundingClientRect(), clip = wall.getBoundingClientRect();
+    return box.width > 0 && box.height > 0 && box.right > Math.max(0, clip.left) && box.left < Math.min(window.innerWidth, clip.right)
+      && box.bottom > Math.max(0, clip.top) && box.top < Math.min(window.innerHeight, clip.bottom) ? box : null;
+  }
+
+  function pictureBox() {
+    const box = image.getBoundingClientRect();
+    const width = image.naturalWidth || image.width, height = image.naturalHeight || image.height;
+    const scale = Math.min(box.width / width, box.height / height);
+    return { left: box.left + (box.width - width * scale) / 2, top: box.top + (box.height - height * scale) / 2,
+      width: width * scale, height: height * scale };
+  }
+
+  function photoTransform(target) {
+    if (!target) return 'scale(.94)';
+    const box = pictureBox();
+    const scale = Math.max(.04, Math.min(target.width / box.width, target.height / box.height));
+    return `translate(${target.left + target.width / 2 - box.left - box.width / 2}px, ${target.top + target.height / 2 - box.top - box.height / 2}px) scale(${scale})`;
+  }
+
+  function backdropClip(box) {
+    if (!box) return 'inset(3% 3% 3% 3% round 8px)';
+    const top = clamp(box.top, 0, window.innerHeight), left = clamp(box.left, 0, window.innerWidth);
+    const right = Math.max(0, window.innerWidth - box.left - box.width), bottom = Math.max(0, window.innerHeight - box.top - box.height);
+    return `inset(${top}px ${right}px ${bottom}px ${left}px round 4px)`;
+  }
+
+  function panelTransform(target) {
+    if (!target) return 'scale(.94)';
+    const box = viewer.getBoundingClientRect();
+    return `translate(${target.left + target.width / 2 - box.left - box.width / 2}px, ${target.top + target.height / 2 - box.top - box.height / 2}px) scale(${target.width / box.width}, ${target.height / box.height})`;
+  }
+
+  function animateViewer(target, retreat, from = 'none', chromeOpacity) {
+    const version = motionVersion;
+    if (reducedMotion.matches || typeof image.animate !== 'function') { if (retreat) viewer.close(); return; }
+    const duration = retreat ? 220 : 300, easing = 'cubic-bezier(.2,.75,.25,1)';
+    viewer.classList.add('is-animating');
+    const transform = photoTransform(target);
+    const motion = image.animate(retreat ? [{ transform: from, opacity: 1 }, { transform, opacity: 0 }]
+      : [{ transform, opacity: 1 }, { transform: 'none', opacity: 1 }], { duration, easing, fill: 'both' });
+    viewerMotions = [motion];
+    for (const element of [viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean)) {
+      viewerMotions.push(element.animate([{ opacity: retreat ? (chromeOpacity?.get(element) ?? 1) : 0 }, { opacity: retreat ? 0 : 1 }], { duration, easing, fill: 'both' }));
+    }
+    motion.finished.then(() => {
+      if (version !== motionVersion) return;
+      if (retreat && viewer.open) viewer.close();
+      else stopViewerMotion();
+    }, () => {});
+  }
+
+  function closePhoto() {
+    if (!viewer.open || closing) return;
+    const from = window.getComputedStyle(image).transform || 'none';
+    const shade = window.getComputedStyle(viewer, '::backdrop');
+    const backdrop = shade.backgroundColor || '#100d0be6';
+    const clip = shade.clipPath;
+    const panel = window.getComputedStyle(viewer, '::before'), panelCurrent = panel.transform || 'none', panelOpacity = panel.opacity || '1';
+    const chromeOpacity = new Map([viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean).map(element => [element, Number(window.getComputedStyle(element).opacity)]));
+    stopViewerMotion(); closing = true; imageRequest++;
+    viewer.style.setProperty('--viewer-backdrop-from', backdrop);
+    viewer.style.setProperty('--viewer-backdrop-current', clip && clip !== 'none' ? clip : 'inset(0px 0px 0px 0px round 0px)');
+    viewer.style.setProperty('--viewer-panel-current', panelCurrent);
+    viewer.style.setProperty('--viewer-panel-opacity', panelOpacity);
+    const link = origin?.matches('.photo-link') && Number(origin.dataset.photoIndex) === current ? origin
+      : [...wall.querySelectorAll('.photo-link')].find(link => Number(link.dataset.photoIndex) === current && photoBox(link));
+    viewer.style.setProperty('--viewer-backdrop-end', backdropClip(photoBox(link)));
+    viewer.style.setProperty('--viewer-panel-end', panelTransform(photoBox(link)));
+    viewer.classList.add('is-closing');
+    animateViewer(photoBox(link), true, from, chromeOpacity);
   }
 
   function setDurations() {
@@ -285,26 +373,34 @@ export function initGallery(getLanguage) {
       if (document.hidden) { pointerInside = false; returnPhoto(true); }
       syncMotion();
     });
-    reducedMotion.addEventListener('change', () => { returnPhoto(true); syncMotion(); });
+    reducedMotion.addEventListener('change', () => {
+      returnPhoto(true);
+      if (reducedMotion.matches) { const finish = closing; stopViewerMotion(); if (finish && viewer?.open) viewer.close(); }
+      syncMotion();
+    });
   }
 
   if (dialogReady) {
-    viewer.querySelector('[data-photo-close]').addEventListener('click', () => viewer.close());
-    viewer.querySelector('[data-photo-previous]').addEventListener('click', () => show(current - 1));
-    viewer.querySelector('[data-photo-next]').addEventListener('click', () => show(current + 1));
+    viewer.querySelector('[data-photo-close]').addEventListener('click', closePhoto);
+    viewer.querySelector('[data-photo-previous]').addEventListener('click', () => { if (!closing) show(current - 1); });
+    viewer.querySelector('[data-photo-next]').addEventListener('click', () => { if (!closing) show(current + 1); });
+    viewer.addEventListener('cancel', event => { event.preventDefault(); closePhoto(); });
     viewer.addEventListener('keydown', event => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       event.preventDefault();
-      show(current + (event.key === 'ArrowRight' ? 1 : -1));
+      if (!closing) show(current + (event.key === 'ArrowRight' ? 1 : -1));
     });
     viewer.addEventListener('click', event => {
-      if (event.target !== viewer) return;
-      const bounds = viewer.getBoundingClientRect();
-      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) viewer.close();
+      if (event.target === image) {
+        const box = pictureBox();
+        if (event.clientX >= box.left && event.clientX <= box.left + box.width && event.clientY >= box.top && event.clientY <= box.top + box.height) return;
+      } else if (!event.target.matches('.photo-viewer, .photo-viewer-bar, .photo-viewer-footer, .photo-viewer-controls')) return;
+      closePhoto();
     });
     viewer.addEventListener('close', () => {
       // A queued close event may arrive after another photo has reopened it.
       if (viewer.open) return;
+      stopViewerMotion();
       imageRequest++;
       viewer.setAttribute('aria-busy', 'false');
       document.documentElement.classList.remove('photo-viewer-open');

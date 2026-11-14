@@ -35,6 +35,16 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
         meta.content = root.dataset.theme === 'dark' ? '#292522' : '#f8f5f1'; meta.removeAttribute('media');
       });
+      root.dataset.mediaPlaceholders = '';
+      const mediaSelector = '.site-header .brand img, .avatar, .photo-link img, .photo-float, .project-preview img, .photo-viewer-image';
+      const readyMedia = async image => {
+        if (!image.matches?.(mediaSelector) || !image.complete || !image.naturalWidth) return;
+        const source = image.currentSrc || image.src;
+        try { if (image.decode) await image.decode(); } catch { return; }
+        if ((image.currentSrc || image.src) === source) image.dataset.mediaReady = '';
+      };
+      document.addEventListener('load', event => readyMedia(event.target), true);
+      addEventListener('DOMContentLoaded', () => document.querySelectorAll(mediaSelector).forEach(readyMedia), { once: true });
       if (!document.fonts) return;
       root.dataset.fontsLoading = '';
       addEventListener('DOMContentLoaded', () => {
