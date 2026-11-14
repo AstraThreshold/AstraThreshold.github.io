@@ -14,11 +14,16 @@
   </style>
   <script>
     (() => {
-      if (!document.fonts) return;
       const root = document.documentElement;
+      let theme;
+      try { theme = localStorage.getItem('wooolab-theme'); } catch { /* Storage is optional. */ }
+      root.dataset.theme = ['light', 'dark'].includes(theme) ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      root.style.colorScheme = root.dataset.theme;
+      root.style.backgroundColor = root.dataset.theme === 'dark' ? '#292522' : '#f8f5f1';
+      if (!document.fonts) return;
       root.dataset.fontsLoading = '';
       addEventListener('DOMContentLoaded', () => {
-        const reveal = () => { delete root.dataset.fontsLoading; };
+        const reveal = () => { delete root.dataset.fontsLoading; root.style.removeProperty('background-color'); root.style.removeProperty('color-scheme'); };
         document.fonts.ready.then(reveal, reveal);
       }, { once: true });
     })();

@@ -6,7 +6,7 @@ import { validGithubSnapshot } from '../github-stats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
-const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js'];
+const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js', 'theme.js'];
 const optional = ['404.html', 'robots.txt', 'sitemap.xml', 'site.webmanifest', '.nojekyll'];
 const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2']);
 let count = 0;

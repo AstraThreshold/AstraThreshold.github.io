@@ -221,7 +221,7 @@ export function initLogoGlow() {
   if (!renderer) { canvas.remove(); return; }
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const scheme = matchMedia('(prefers-color-scheme: dark)');
-  let request = 0, configuration = '', maskKey = '', near, startBrightness = 1, endBrightness = 1.18, unavailable = false;
+  let request = 0, configuration = '', maskKey = '', near, startBrightness = 1, endBrightness = 1.18, unavailable = false, introComplete = false, themeSnapshot;
   const brightness = filter => Number(filter.match(/brightness\(([\d.]+)\)/)?.[1] ?? 1);
 
   function configure() {
@@ -252,7 +252,7 @@ export function initLogoGlow() {
 
   function draw() {
     request = 0;
-    const spread = reducedMotion.matches ? 1 : clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
+    const spread = reducedMotion.matches || introComplete ? 1 : clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
     renderer.draw(spread); brand.dataset.glowRenderer = renderer.kind;
     if (!reducedMotion.matches && logo.getAnimations().some(animation => animation.playState === 'running' || animation.pending)) request = requestAnimationFrame(draw);
   }
@@ -265,5 +265,27 @@ export function initLogoGlow() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   document.fonts.ready.then(refresh);
   document.addEventListener('site-fonts-ready', refresh);
+  document.addEventListener('site-theme-before-change', () => {
+    const intro = logo.getAnimations().find(animation => animation.animationName === 'brand-glow-in');
+    if (intro?.playState === 'finished') { introComplete = true; logo.style.animation = 'none'; }
+  });
+  document.addEventListener('site-theme-change', event => {
+    const duration = event.detail?.duration || 0;
+    if (duration && brand.dataset.glowRenderer) {
+      const snapshot = canvas.cloneNode(), context = snapshot.getContext('2d');
+      context.drawImage(canvas, 0, 0);
+      if (themeSnapshot) {
+        context.globalAlpha = Number(getComputedStyle(themeSnapshot).opacity);
+        context.drawImage(themeSnapshot, 0, 0);
+      }
+      themeSnapshot?.remove(); themeSnapshot = snapshot; canvas.after(snapshot);
+      snapshot.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing: 'cubic-bezier(.3,0,.2,1)', fill: 'forwards' }).finished.then(() => {
+        snapshot.remove(); if (themeSnapshot === snapshot) themeSnapshot = null;
+      }, () => snapshot.remove());
+    } else { themeSnapshot?.remove(); themeSnapshot = null; }
+    // View transitions pause rendering during the update callback: draw the new
+    // palette now, so its snapshot cannot capture the previous theme's canvas.
+    if (!unavailable && configure()) { cancelAnimationFrame(request); request = 0; draw(); }
+  });
   refresh();
 }

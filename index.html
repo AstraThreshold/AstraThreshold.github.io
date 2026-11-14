@@ -26,8 +26,16 @@
   </style>
   <script>
     (() => {
-      if (!document.fonts) return;
       const root = document.documentElement;
+      let theme;
+      try { theme = localStorage.getItem('wooolab-theme'); } catch { /* Storage is optional. */ }
+      root.dataset.theme = ['light', 'dark'].includes(theme) ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      root.style.colorScheme = root.dataset.theme;
+      root.style.backgroundColor = root.dataset.theme === 'dark' ? '#292522' : '#f8f5f1';
+      document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+        meta.content = root.dataset.theme === 'dark' ? '#292522' : '#f8f5f1'; meta.removeAttribute('media');
+      });
+      if (!document.fonts) return;
       root.dataset.fontsLoading = '';
       addEventListener('DOMContentLoaded', () => {
         const reveal = () => {
@@ -48,7 +56,13 @@
   <header class="site-header shell">
     <a class="brand" href="#" aria-label="WoooLAB"><img src="assets/brand/wooolab-dark.svg" width="120" height="14" alt="WoooLAB"></a>
     <nav aria-label="Navigation"><a href="#work"><span data-en="Work">作品</span></a><a href="#experience"><span data-en="Experience">实习</span></a><a href="#recognition"><span data-en="Honors">荣誉</span></a><a href="#gallery"><span data-en="Photos">照片</span></a><a href="#contact"><span data-en="Contact">联系</span></a></nav>
-    <div class="language-switch" role="group" aria-label="Language"><button type="button" data-language="zh" aria-pressed="true">中</button><span aria-hidden="true">/</span><button type="button" data-language="en" aria-pressed="false">EN</button></div>
+    <div class="header-controls">
+      <div class="language-switch" role="group" aria-label="Language"><button type="button" data-language="zh" aria-pressed="true">中</button><span aria-hidden="true">/</span><button type="button" data-language="en" aria-pressed="false">EN</button></div>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme" aria-pressed="false" hidden>
+        <svg class="theme-icon theme-icon--moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.9 13.25A8.6 8.6 0 0 1 10.75 3.1a8.6 8.6 0 1 0 10.15 10.15Z"/></svg>
+        <svg class="theme-icon theme-icon--sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.6"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      </button>
+    </div>
   </header>
   <main id="main">
     <section id="profile" class="profile shell" aria-labelledby="profile-name">

@@ -19,6 +19,7 @@ export function initGallery(getLanguage) {
   let resizeFrame = null;
   let columnCount = 0;
   let active = null;
+  let pointer = null;
   const returning = new Set();
   const magneticPhoto = () => wall?.querySelector('.photo-link[data-cursor-magnet]');
 
@@ -46,6 +47,7 @@ export function initGallery(getLanguage) {
     const previous = active;
     active = null;
     previous.phase = 'shrinking';
+    previous.floating.style.translate = '0px 0px';
     returning.add(previous);
     const sourceIsLifted = () => active?.link === previous.link
       || [...returning].some(other => other !== previous && other.link === previous.link && other.phase === 'shrinking');
@@ -119,6 +121,15 @@ export function initGallery(getLanguage) {
         { transform, opacity: 1 }
       ], { duration: 270, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'forwards' }) : null;
     active = { link, floating, animation };
+    movePhoto();
+  }
+
+  function movePhoto() {
+    if (!active || !pointer || reducedMotion.matches || viewer?.open) return;
+    const box = active.link.getBoundingClientRect();
+    const x = clamp((pointer.x - box.left - box.width / 2) * .035, -3, 3);
+    const y = clamp((pointer.y - box.top - box.height / 2) * .035, -3, 3);
+    active.floating.style.translate = `${x}px ${y}px`;
   }
 
   function show(index) {
@@ -210,6 +221,11 @@ export function initGallery(getLanguage) {
     };
     wall.addEventListener('pointerover', pointToPhoto);
     wall.addEventListener('pointermove', pointToPhoto);
+    document.addEventListener('pointermove', event => {
+      if (event.pointerType !== 'mouse' || !hoverPointer.matches) return;
+      pointer = { x: event.clientX, y: event.clientY };
+      movePhoto();
+    }, { passive: true });
     wall.addEventListener('pointerleave', () => {
       pointerInside = false;
       if (!magneticPhoto()) returnPhoto();

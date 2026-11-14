@@ -2,7 +2,7 @@
 
 面向 GitHub Pages 的中英双语个人主页。使用原生 HTML、CSS、JavaScript，无运行时依赖，也无需安装静态站点框架。
 
-界面使用以索尼卡口橙环为灵感的柔和橙色，配合暖纸色浅色模式与暖灰深色模式；磁性光标使用无描边中性灰，照片与作品图片保留原色。
+界面使用以索尼卡口橙环为灵感的柔和橙色，配合暖纸色浅色模式与暖灰深色模式。右上角的单色日月图标可手动切换并记住选择；首次访问跟随系统，切换时平滑过渡。磁性光标使用无描边中性灰，照片与作品图片保留原色。
 
 线上地址：[astrathreshold.github.io](https://astrathreshold.github.io/)
 
@@ -25,8 +25,9 @@ npm run preview
 
 - `index.html`：页面结构、中文默认内容及 `data-en` 英文文案、元数据和外链。
 - `script.js`：语言切换、粉丝数和 GitHub stars 读取。
+- `theme.js`：手动深浅模式切换、系统配色跟随与偏好保存；支持中英文可访问提示，刷新前提前应用主题。优先使用页面交叉淡化，不支持时采用颜色过渡与光晕快照淡化；减少动态效果时直接切换。
 - `rolling-counter.js`：两个统计数字共用的逐位纵向滚轮动画，进入页面和手动刷新时从零开始；支持减少动态效果与后台中止。
-- `gallery.js`：照片墙的循环滚动、悬停暂停、浮起放大与归位动画，以及点击查看大图和键盘浏览。
+- `gallery.js`：照片墙的循环滚动、悬停暂停、浮起放大与归位动画，以及点击查看大图和键盘浏览。吸附期间照片随鼠标轻微缓动，离开时同步消除位移再归位。
 - `styles.css`：紧凑版式、响应式和跟随系统的深浅配色；中文苹方、英文 Times New Roman / Consolas / Arial、链接箭头等符号均随网站打包。项目标题使用内嵌的 Cascadia 花体斜体；个人简介、履历、荣誉与证书正文稍作放大，粉丝数与 GitHub stars 的滚轮数字维持原尺寸。
 - `assets/fonts/`：本人提供的苹方字体生成的 WOFF2 子集与 CJK 专用样式，未安装字体的设备也会从同站加载。`coverage.json` 仅供构建时检查缺字，不发布。修改中文文案后，若构建提示缺字，使用 `fonttools[woff]` 运行 `python scripts/prepare-pingfang.py 字体源目录` 重新生成；源目录包含本人提供的 `msyhl.ttc`、`msyh.ttc`、`msyhbd.ttc`，原始字体文件不进入仓库。
 - 项目标题的 Cascadia 子集覆盖 ASCII，并保留花体字形；`scripts/prepare-cascadia.py` 可从本人的斜体源文件重新生成，生成后同步 `styles.css` 中带哈希的字体路径。原字体采用 SIL Open Font License，许可文本随网页打包。

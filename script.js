@@ -3,6 +3,7 @@ import { RollingCounter } from './rolling-counter.js';
 import { initGallery } from './gallery.js';
 import { initLogoGlow } from './logo-glow.js';
 import { initAdaptiveCursor } from './adaptive-cursor.js';
+import { initTheme } from './theme.js';
 
 initLogoGlow();
 initAdaptiveCursor();
@@ -25,6 +26,7 @@ let githubMode = 'snapshot';
 let nextGithubLiveRead = 0;
 let manualRefreshing = false;
 let language = 'zh';
+const theme = initTheme(() => language);
 const gallery = initGallery(() => language);
 let snapshot = null;
 let fetching = false;
@@ -158,6 +160,7 @@ function setLanguage(value) {
   // These fragments are trusted, repository-owned translations, never remote data.
   translations.forEach(item => { item.element.innerHTML = item[language]; });
   gallery.updateLanguage();
+  theme.updateLabel();
   document.querySelectorAll('[data-language]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.language === language));
   });
