@@ -14,7 +14,7 @@ export function initGallery(getLanguage) {
   const hoverPointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   let current = 0;
   let imageRequest = 0;
-  let motionVersion = 0, viewerMotions = [], closing = false;
+  let motionVersion = 0, viewerMotions = [], closing = false, viewerHandoff = false;
   let origin = null;
   let pointerInside = false;
   let keyboardInside = false;
@@ -38,7 +38,7 @@ export function initGallery(getLanguage) {
   }
 
   function syncMotion() {
-    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(magneticPhoto()) || returning.size > 0 || Boolean(viewer?.open) || document.hidden);
+    wall?.classList.toggle('is-paused', pointerInside || keyboardInside || Boolean(magneticPhoto()) || returning.size > 0 || Boolean(viewer?.open) || viewerHandoff || document.hidden);
   }
 
   function returnPhoto(immediate = false) {
@@ -92,7 +92,7 @@ export function initGallery(getLanguage) {
   }
 
   function liftPhoto(link) {
-    if (active?.link === link || viewer?.open) return;
+    if (active?.link === link || viewer?.open || viewerHandoff) return;
     returnPhoto();
     const bounds = link.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
@@ -134,6 +134,15 @@ export function initGallery(getLanguage) {
     active.floating.style.translate = `${x}px ${y}px`;
   }
 
+  function syncPhotoHover() {
+    if (!viewer?.open && !viewerHandoff) {
+      const link = magneticPhoto() || (!document.documentElement.classList.contains('has-adaptive-cursor') && wall.querySelector('.photo-link:hover'));
+      if (link) liftPhoto(link);
+      else returnPhoto();
+    }
+    syncMotion();
+  }
+
   function show(index) {
     stopViewerMotion();
     current = (index + links.length) % links.length;
@@ -172,13 +181,14 @@ export function initGallery(getLanguage) {
   function openPhoto(index, trigger) {
     if (!dialogReady) return false;
     const start = active?.link === trigger ? active.floating.getBoundingClientRect() : photoBox(trigger);
-    viewer.style.setProperty('--viewer-backdrop-start', backdropClip(start));
     returnPhoto(true);
     origin = trigger;
     show(index);
+    const root = document.documentElement;
+    if (!root.classList.contains('photo-viewer-open')) root.style.setProperty('--viewer-scrollbar-gap', `${Math.max(0, window.innerWidth - root.getBoundingClientRect().width)}px`);
+    root.classList.add('photo-viewer-open');
     if (!viewer.open) viewer.showModal();
     viewer.style.setProperty('--viewer-panel-start', panelTransform(start));
-    document.documentElement.classList.add('photo-viewer-open');
     syncMotion();
     animateViewer(start, false);
     return true;
@@ -187,7 +197,7 @@ export function initGallery(getLanguage) {
   function stopViewerMotion() {
     motionVersion++;
     viewerMotions.forEach(animation => animation.cancel()); viewerMotions = [];
-    closing = false;
+    closing = false; viewerHandoff = false;
     viewer?.classList.remove('is-closing', 'is-animating');
   }
 
@@ -213,34 +223,56 @@ export function initGallery(getLanguage) {
     return `translate(${target.left + target.width / 2 - box.left - box.width / 2}px, ${target.top + target.height / 2 - box.top - box.height / 2}px) scale(${scale})`;
   }
 
-  function backdropClip(box) {
-    if (!box) return 'inset(3% 3% 3% 3% round 8px)';
-    const top = clamp(box.top, 0, window.innerHeight), left = clamp(box.left, 0, window.innerWidth);
-    const right = Math.max(0, window.innerWidth - box.left - box.width), bottom = Math.max(0, window.innerHeight - box.top - box.height);
-    return `inset(${top}px ${right}px ${bottom}px ${left}px round 4px)`;
-  }
-
   function panelTransform(target) {
     if (!target) return 'scale(.94)';
     const box = viewer.getBoundingClientRect();
     return `translate(${target.left + target.width / 2 - box.left - box.width / 2}px, ${target.top + target.height / 2 - box.top - box.height / 2}px) scale(${target.width / box.width}, ${target.height / box.height})`;
   }
 
-  function animateViewer(target, retreat, from = 'none', chromeOpacity) {
+  function photoReturnPose(target, link) {
+    if (!target) return { transform: 'scale(.94)', clipPath: 'inset(0px round 0px)' };
+    const box = image.getBoundingClientRect(), picture = pictureBox();
+    const scale = Math.max(target.width / picture.width, target.height / picture.height);
+    const source = link?.querySelector('img');
+    const focus = (source && window.getComputedStyle(source).objectPosition || '50% 50%').split(/\s+/)
+      .map(value => { const percent = parseFloat(value); return Number.isFinite(percent) ? clamp(percent / 100, 0, 1) : .5; });
+    const left = target.left + (target.width - picture.width * scale) * focus[0];
+    const top = target.top + (target.height - picture.height * scale) * (focus[1] ?? .5);
+    const x = left + picture.width * scale / 2 - picture.left - picture.width / 2;
+    const y = top + picture.height * scale / 2 - picture.top - picture.height / 2;
+    const clipLeft = picture.left - box.left + (target.left - left) / scale;
+    const clipTop = picture.top - box.top + (target.top - top) / scale;
+    const clipRight = Math.max(0, box.width - clipLeft - target.width / scale);
+    const clipBottom = Math.max(0, box.height - clipTop - target.height / scale);
+    return { transform: `translate(${x}px, ${y}px) scale(${scale})`,
+      clipPath: `inset(${clipTop}px ${clipRight}px ${clipBottom}px ${clipLeft}px round ${3 / scale}px)` };
+  }
+
+  function animateViewer(target, retreat, from = 'none', chromeOpacity, returnLink) {
     const version = motionVersion;
     if (reducedMotion.matches || typeof image.animate !== 'function') { if (retreat) viewer.close(); return; }
-    const duration = retreat ? 220 : 300, easing = 'cubic-bezier(.2,.75,.25,1)';
+    const duration = retreat ? 220 : 300, easing = retreat ? 'cubic-bezier(.3,0,.3,1)' : 'cubic-bezier(.2,.75,.25,1)';
     viewer.classList.add('is-animating');
     const transform = photoTransform(target);
-    const motion = image.animate(retreat ? [{ transform: from, opacity: 1 }, { transform, opacity: 0 }]
-      : [{ transform, opacity: 1 }, { transform: 'none', opacity: 1 }], { duration, easing, fill: 'both' });
+    // Match the wall's cover crop before blending into its stationary thumbnail.
+    const motion = image.animate(retreat ? [
+      { transform: from, clipPath: 'inset(0px round 0px)', opacity: 1 },
+      { ...photoReturnPose(target, returnLink), opacity: target ? 1 : 0 }
+    ] : [{ transform, opacity: 1 }, { transform: 'none', opacity: 1 }], { duration, easing, fill: 'both' });
     viewerMotions = [motion];
     for (const element of [viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean)) {
       viewerMotions.push(element.animate([{ opacity: retreat ? (chromeOpacity?.get(element) ?? 1) : 0 }, { opacity: retreat ? 0 : 1 }], { duration, easing, fill: 'both' }));
     }
-    motion.finished.then(() => {
+    motion.finished.then(async () => {
       if (version !== motionVersion) return;
-      if (retreat && viewer.open) viewer.close();
+      if (retreat && viewer.open) {
+        if (target) {
+          const handoff = image.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 80, easing: 'linear', fill: 'both' });
+          viewerMotions.push(handoff);
+          try { await handoff.finished; } catch { return; }
+        }
+        if (version === motionVersion && viewer.open) viewer.close();
+      }
       else stopViewerMotion();
     }, () => {});
   }
@@ -250,20 +282,17 @@ export function initGallery(getLanguage) {
     const from = window.getComputedStyle(image).transform || 'none';
     const shade = window.getComputedStyle(viewer, '::backdrop');
     const backdrop = shade.backgroundColor || '#100d0be6';
-    const clip = shade.clipPath;
     const panel = window.getComputedStyle(viewer, '::before'), panelCurrent = panel.transform || 'none', panelOpacity = panel.opacity || '1';
     const chromeOpacity = new Map([viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean).map(element => [element, Number(window.getComputedStyle(element).opacity)]));
     stopViewerMotion(); closing = true; imageRequest++;
     viewer.style.setProperty('--viewer-backdrop-from', backdrop);
-    viewer.style.setProperty('--viewer-backdrop-current', clip && clip !== 'none' ? clip : 'inset(0px 0px 0px 0px round 0px)');
     viewer.style.setProperty('--viewer-panel-current', panelCurrent);
     viewer.style.setProperty('--viewer-panel-opacity', panelOpacity);
     const link = origin?.matches('.photo-link') && Number(origin.dataset.photoIndex) === current ? origin
       : [...wall.querySelectorAll('.photo-link')].find(link => Number(link.dataset.photoIndex) === current && photoBox(link));
-    viewer.style.setProperty('--viewer-backdrop-end', backdropClip(photoBox(link)));
     viewer.style.setProperty('--viewer-panel-end', panelTransform(photoBox(link)));
     viewer.classList.add('is-closing');
-    animateViewer(photoBox(link), true, from, chromeOpacity);
+    animateViewer(photoBox(link), true, from, chromeOpacity, link);
   }
 
   function setDurations() {
@@ -344,14 +373,7 @@ export function initGallery(getLanguage) {
       if (!magneticPhoto()) returnPhoto();
       syncMotion();
     });
-    document.addEventListener('adaptive-cursor-change', () => {
-      if (!viewer?.open) {
-        const link = magneticPhoto() || (!document.documentElement.classList.contains('has-adaptive-cursor') && wall.querySelector('.photo-link:hover'));
-        if (link) liftPhoto(link);
-        else returnPhoto();
-      }
-      syncMotion();
-    });
+    document.addEventListener('adaptive-cursor-change', syncPhotoHover);
     gallery.addEventListener('focusin', event => {
       if (!event.target.matches(':focus-visible')) return;
       keyboardInside = true;
@@ -401,11 +423,18 @@ export function initGallery(getLanguage) {
       // A queued close event may arrive after another photo has reopened it.
       if (viewer.open) return;
       stopViewerMotion();
+      viewerHandoff = !reducedMotion.matches;
+      const version = motionVersion;
       imageRequest++;
       viewer.setAttribute('aria-busy', 'false');
       document.documentElement.classList.remove('photo-viewer-open');
       (origin?.isConnected ? origin : openButton)?.focus({ preventScroll: true });
       syncMotion();
+      if (viewerHandoff) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        if (version !== motionVersion) return;
+        viewerHandoff = false;
+        syncPhotoHover();
+      }));
     });
   }
   return { updateLanguage };
