@@ -308,8 +308,9 @@ details[open] > summary:before { content: "−"; }
 /* The animated border extends past the dialog's padding; it must not create a scrollport. */
 .photo-viewer { width: min(1040px, calc(100% - 40px)); max-width: none; max-height: calc(100dvh - 40px); padding: 12px 16px 14px; border: 1px solid transparent; border-radius: 5px; color: var(--ink); background: transparent; overflow: visible; }
 .photo-viewer:not([open]) { display: none; }
-.photo-viewer::before { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; border: 1px solid var(--line); border-radius: inherit; background: var(--paper); animation: viewer-panel-in .3s cubic-bezier(.2,.75,.25,1) both; }
-.photo-viewer.is-closing::before { animation: viewer-panel-out .22s cubic-bezier(.2,.75,.25,1) both; }
+.photo-viewer::before { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; border: 1px solid var(--line); border-radius: inherit; background: var(--paper); }
+.photo-viewer.is-animating::before, .photo-viewer.is-animating :is(.photo-viewer-bar, .photo-viewer-footer) { animation: viewer-panel-in .3s cubic-bezier(.2,.75,.25,1) both; }
+.photo-viewer.is-animating.is-closing::before, .photo-viewer.is-animating.is-closing :is(.photo-viewer-bar, .photo-viewer-footer) { animation: viewer-panel-out .22s cubic-bezier(.2,.75,.25,1) both; }
 @keyframes viewer-panel-in { from { opacity: 0; transform: var(--viewer-panel-start, scale(.94)); } to { opacity: 1; transform: none; } }
 @keyframes viewer-panel-out { from { opacity: var(--viewer-panel-opacity, 1); transform: var(--viewer-panel-current, none); } to { opacity: 0; transform: var(--viewer-panel-end, scale(.94)); } }
 .photo-viewer::backdrop { background: #100d0be6; animation: viewer-backdrop-in .3s cubic-bezier(.2,.75,.25,1) both; }

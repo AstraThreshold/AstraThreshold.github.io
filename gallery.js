@@ -284,10 +284,17 @@ export function initGallery(getLanguage) {
       clipPath: `inset(${clipTop}px ${clipRight}px ${clipBottom}px ${clipLeft}px round ${3 / scale}px)` };
   }
 
-  function animateViewer(target, retreat, from = 'none', chromeOpacity, returnLink) {
+  function animateViewer(target, retreat, from = 'none', returnLink) {
     const version = motionVersion;
     if (reducedMotion.matches || typeof image.animate !== 'function') { if (retreat) viewer.close(); return; }
     const duration = retreat ? 220 : 300, easing = retreat ? 'cubic-bezier(.3,0,.3,1)' : 'cubic-bezier(.2,.75,.25,1)';
+    // Shared keyframes need the panel's center in each control row's coordinates.
+    // Measure before enabling them, while every row is still untransformed.
+    const panel = viewer.getBoundingClientRect();
+    for (const element of [viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean)) {
+      const box = element.getBoundingClientRect();
+      element.style.setProperty('transform-origin', `${panel.left + panel.width / 2 - box.left}px ${panel.top + panel.height / 2 - box.top}px`);
+    }
     viewer.classList.add('is-animating');
     const transform = photoTransform(target);
     // Match the wall's cover crop before blending into its stationary thumbnail.
@@ -296,9 +303,6 @@ export function initGallery(getLanguage) {
       { ...photoReturnPose(target, returnLink), opacity: target ? 1 : 0 }
     ] : [{ transform, opacity: 1 }, { transform: 'none', opacity: 1 }], { duration, easing, fill: 'both' });
     viewerMotions = [motion];
-    for (const element of [viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean)) {
-      viewerMotions.push(element.animate([{ opacity: retreat ? (chromeOpacity?.get(element) ?? 1) : 0 }, { opacity: retreat ? 0 : 1 }], { duration, easing, fill: 'both' }));
-    }
     motion.finished.then(async () => {
       if (version !== motionVersion) return;
       if (retreat && viewer.open) {
@@ -319,7 +323,6 @@ export function initGallery(getLanguage) {
     const shade = window.getComputedStyle(viewer, '::backdrop');
     const backdrop = shade.backgroundColor || '#100d0be6';
     const panel = window.getComputedStyle(viewer, '::before'), panelCurrent = panel.transform || 'none', panelOpacity = panel.opacity || '1';
-    const chromeOpacity = new Map([viewer.querySelector('.photo-viewer-bar'), viewer.querySelector('.photo-viewer-footer')].filter(Boolean).map(element => [element, Number(window.getComputedStyle(element).opacity)]));
     stopViewerMotion(); closing = true; imageRequest++;
     cancelFullImageLoad();
     viewer.style.setProperty('--viewer-backdrop-from', backdrop);
@@ -329,7 +332,7 @@ export function initGallery(getLanguage) {
       : [...wall.querySelectorAll('.photo-link')].find(link => Number(link.dataset.photoIndex) === current && photoBox(link));
     viewer.style.setProperty('--viewer-panel-end', panelTransform(photoBox(link)));
     viewer.classList.add('is-closing');
-    animateViewer(photoBox(link), true, from, chromeOpacity, link);
+    animateViewer(photoBox(link), true, from, link);
   }
 
   function setDurations() {
