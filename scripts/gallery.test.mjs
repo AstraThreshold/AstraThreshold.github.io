@@ -23,6 +23,7 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
     removeAttribute(name) { this.attributes.delete(name); if (name === 'src') this.src = ''; }
     matches(selector) {
       if (selector === ':focus-visible') return Boolean(this.focusVisible);
+      if (selector === '.photo-link:hover') return this.classList.contains('photo-link') && Boolean(this.hovered);
       if (selector.startsWith('.')) return this.classList.contains(selector.slice(1));
       if (selector.startsWith('[')) return this.attributes.has(selector.slice(1, -1));
       return this.tagName === selector;
@@ -49,7 +50,8 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
     }
     get isConnected() { return this === body || Boolean(this.parent?.isConnected); }
     getBoundingClientRect() { return this.className === 'photo-group' ? { ...this.bounds, height: this.children.length * 108 } : this.bounds; }
-    focus(options) { this.focusOptions = options; }
+    focus(options) { this.focusOptions = options; doc.activeElement = this; }
+    blur() { if (doc.activeElement === this) doc.activeElement = body; }
     showModal() { this.open = true; }
     close() { this.open = false; this.dispatchEvent(new Event('close')); }
     animate(frames, options) {
@@ -84,7 +86,7 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
   viewer.append(image, count); body.append(viewer);
   const ids = { gallery, 'photo-viewer': viewer, 'photo-viewer-image': image, 'photo-viewer-count': count };
   const created = [];
-  const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => { const element = new Element(tag); created.push(element); return element; }, body, documentElement: root, hidden: false });
+  const doc = Object.assign(new EventTarget(), { getElementById: id => ids[id], createElement: tag => { const element = new Element(tag); created.push(element); return element; }, body, documentElement: root, activeElement: body, hidden: false });
   const reduced = Object.assign(new EventTarget(), { matches: reduce });
   const timers = new Map(); const frames = new Map(); let sequence = 0, time = 0;
   const win = Object.assign(new EventTarget(), {
@@ -274,6 +276,50 @@ test('unsupported dialogs preserve native image links', () => {
   assert.equal(fire(f.wall, 'click', {}, f.links[0]).defaultPrevented, false);
   assert.equal(f.links[0].tabIndex, undefined);
   delete globalThis.window; delete globalThis.document;
+});
+
+test('touch-restored focus never holds the photo wall or forces a source focus after closing', () => {
+  const f = fixture({ reduce: true, hover: false });
+  f.root.dataset.inputMode = 'pointer';
+  fire(f.wall, 'click', { pointerType: 'touch' }, f.links[0]);
+  // A native dialog can restore its source with :focus-visible still matching.
+  f.doc.activeElement = f.links[0]; f.links[0].focusVisible = true;
+  fire(f.gallery, 'focusin', {}, f.links[0]);
+  f.viewer.close();
+  assert.equal(f.links[0].focusOptions, undefined);
+  assert.equal(f.doc.activeElement, f.body);
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+});
+
+test('switching from keyboard to touch releases a focused wall without losing keyboard access', () => {
+  const f = fixture({ reduce: true });
+  f.root.dataset.inputMode = 'keyboard'; f.openButton.focusVisible = true;
+  f.openButton.focus(); fire(f.gallery, 'focusin', {}, f.openButton);
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  f.root.dataset.inputMode = 'pointer'; fire(f.doc, 'site-input-mode-change');
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  f.root.dataset.inputMode = 'keyboard'; fire(f.doc, 'site-input-mode-change');
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.openButton, 'click'); f.viewer.close();
+  assert.equal(f.doc.activeElement, f.openButton);
+  assert.deepEqual(f.openButton.focusOptions, { preventScroll: true });
+});
+
+test('sticky native hover cannot lift a photo after touch on phones or hybrid devices', () => {
+  for (const hover of [false, true]) {
+    const f = fixture({ hover });
+    if (hover) fire(f.wall, 'pointerover', {}, f.links[0]);
+    f.links[0].hovered = true;
+    fire(f.doc, 'pointerdown', { pointerType: 'touch' });
+    fire(f.doc, 'adaptive-cursor-change');
+    assert.equal(f.body.querySelector('.photo-float'), null);
+    assert.equal(f.links[0].classList.contains('is-lifted'), false);
+    assert.equal(f.wall.classList.contains('is-paused'), false);
+    if (hover) {
+      fire(f.wall, 'pointerover', { pointerType: 'mouse' }, f.links[0]);
+      assert.ok(f.body.querySelector('.photo-float'));
+    }
+  }
 });
 
 test('idle and unfocused walls stop scrolling, then wake on activity', () => {

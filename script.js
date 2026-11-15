@@ -5,6 +5,20 @@ import { initLogoGlow } from './logo-glow.js';
 import { initAdaptiveCursor } from './adaptive-cursor.js';
 import { initTheme } from './theme.js';
 
+// Native dialog focus can inherit a keyboard ring after touch activation.
+// Track actual input so pointer focus does not enable keyboard-only behavior.
+const inputRoot = document.documentElement;
+const setInputMode = mode => {
+  if (inputRoot.dataset.inputMode === mode) return;
+  inputRoot.dataset.inputMode = mode;
+  document.dispatchEvent(new Event('site-input-mode-change'));
+};
+document.addEventListener('pointerdown', () => setInputMode('pointer'), { capture: true, passive: true });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Tab' || (!event.ctrlKey && !event.metaKey && !event.altKey
+    && !['Shift', 'Control', 'Meta', 'Alt'].includes(event.key))) setInputMode('keyboard');
+}, true);
+
 initLogoGlow();
 initAdaptiveCursor();
 

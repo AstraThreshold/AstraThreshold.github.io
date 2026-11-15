@@ -11,7 +11,7 @@ export function initGallery(getLanguage) {
   const position = document.getElementById('photo-viewer-count');
   const dialogReady = links.length && viewer && image && position && typeof viewer.showModal === 'function';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const hoverPointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const hoverPointer = window.matchMedia('(any-hover: hover) and (any-pointer: fine)');
   let current = 0;
   let imageRequest = 0;
   let fullImageLoad = null;
@@ -23,6 +23,7 @@ export function initGallery(getLanguage) {
   let columnCount = 0;
   let active = null;
   let pointer = null;
+  let touchActive = false;
   let wallVisible = true, windowFocused = document.hasFocus?.() ?? true, resting = false, idleTimer = null;
   const idleDelay = 30000;
   const now = () => window.performance?.now() ?? Date.now();
@@ -163,7 +164,8 @@ export function initGallery(getLanguage) {
 
   function syncPhotoHover() {
     if (!viewer?.open && !viewerHandoff) {
-      const link = magneticPhoto() || (!document.documentElement.classList.contains('has-adaptive-cursor') && wall.querySelector('.photo-link:hover'));
+      const link = hoverPointer.matches && !touchActive
+        && (magneticPhoto() || (!document.documentElement.classList.contains('has-adaptive-cursor') && wall.querySelector('.photo-link:hover')));
       if (link) liftPhoto(link);
       else returnPhoto();
     }
@@ -394,7 +396,15 @@ export function initGallery(getLanguage) {
     window.addEventListener('resize', resize);
     window.addEventListener('blur', () => { windowFocused = false; pointerInside = false; returnPhoto(true); syncMotion(); });
     window.addEventListener('focus', () => { windowFocused = true; noteActivity(); syncMotion(); });
-    document.addEventListener('pointerdown', noteActivity, { passive: true });
+    document.addEventListener('pointerdown', event => {
+      noteActivity();
+      touchActive = event.pointerType === 'touch';
+      if (touchActive) {
+        pointerInside = false; pointer = null;
+        returnPhoto(true);
+        syncMotion();
+      }
+    }, { passive: true });
     document.addEventListener('keydown', noteActivity);
     wall.addEventListener('pointerenter', event => {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
@@ -403,6 +413,7 @@ export function initGallery(getLanguage) {
     });
     const pointToPhoto = event => {
       if (event.pointerType === 'touch' || !hoverPointer.matches) return;
+      touchActive = false;
       pointerInside = true;
       syncMotion();
       const link = document.documentElement.classList.contains('has-adaptive-cursor') ? magneticPhoto() : event.target.closest('.photo-link');
@@ -414,6 +425,7 @@ export function initGallery(getLanguage) {
     document.addEventListener('pointermove', event => {
       noteActivity();
       if (event.pointerType !== 'mouse' || !hoverPointer.matches) return;
+      touchActive = false;
       pointer = { x: event.clientX, y: event.clientY };
       movePhoto();
     }, { passive: true });
@@ -423,9 +435,14 @@ export function initGallery(getLanguage) {
       syncMotion();
     });
     document.addEventListener('adaptive-cursor-change', syncPhotoHover);
+    document.addEventListener('site-input-mode-change', () => {
+      const focused = document.activeElement;
+      keyboardInside = document.documentElement.dataset.inputMode !== 'pointer'
+        && gallery.contains(focused) && focused.matches(':focus-visible');
+      syncMotion();
+    });
     gallery.addEventListener('focusin', event => {
-      if (!event.target.matches(':focus-visible')) return;
-      keyboardInside = true;
+      keyboardInside = document.documentElement.dataset.inputMode !== 'pointer' && event.target.matches(':focus-visible');
       syncMotion();
     });
     gallery.addEventListener('focusout', event => {
@@ -487,7 +504,11 @@ export function initGallery(getLanguage) {
       image.removeAttribute('data-media-ready');
       viewer.setAttribute('aria-busy', 'false');
       document.documentElement.classList.remove('photo-viewer-open');
-      (origin?.isConnected ? origin : openButton)?.focus({ preventScroll: true });
+      if (document.documentElement.dataset.inputMode === 'pointer') {
+        // close() may natively restore a touch-activated link before this event.
+        keyboardInside = false;
+        if (gallery.contains(document.activeElement)) document.activeElement.blur();
+      } else (origin?.isConnected ? origin : openButton)?.focus({ preventScroll: true });
       syncMotion();
       if (viewerHandoff) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
         if (version !== motionVersion) return;
