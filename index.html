@@ -36,7 +36,7 @@
         meta.content = root.dataset.theme === 'dark' ? '#292522' : '#f8f5f1'; meta.removeAttribute('media');
       });
       root.dataset.mediaPlaceholders = '';
-      const mediaSelector = '.site-header .brand img, .avatar, .photo-link img, .photo-float, .project-preview img, .photo-viewer-image';
+      const mediaSelector = '.site-header .brand img, .avatar, .photo-link img, .photo-float-image, .project-preview img, .photo-viewer-image';
       const readyMedia = async image => {
         if (!image.matches?.(mediaSelector) || !image.complete || !image.naturalWidth) return;
         const source = image.currentSrc || image.src;

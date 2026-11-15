@@ -102,7 +102,7 @@ export function initAdaptiveCursor() {
     const media = target.matches('.photo-link');
     if (media && target.classList.contains('is-lifted')) {
       const source = target.querySelector('img');
-      const floating = [...document.querySelectorAll('.photo-float')].reverse().find(image => image.src === (source?.currentSrc || source?.src));
+      const floating = [...document.querySelectorAll('.photo-float')].reverse().find(element => element.querySelector('img')?.src === (source?.currentSrc || source?.src));
       if (floating) {
         rect = floating.getBoundingClientRect();
         moving = floating.getAnimations().some(animation => animation.playState === 'running');

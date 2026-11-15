@@ -1,5 +1,53 @@
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+function photoShadow(width, height, scale) {
+  const canvas = document.createElement('canvas');
+  if (typeof canvas.getContext !== 'function') return null;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return null;
+  const padding = 88, outerWidth = width + padding * 2, outerHeight = height + padding * 2;
+  const density = Math.min((window.devicePixelRatio || 1) * scale, 3,
+    Math.sqrt(700000 / (outerWidth * outerHeight)));
+  canvas.width = Math.ceil(outerWidth * density); canvas.height = Math.ceil(outerHeight * density);
+  const pixelWidth = canvas.width, pixelHeight = canvas.height;
+  canvas.className = 'photo-float-shadow';
+  canvas.setAttribute('aria-hidden', 'true');
+  Object.assign(canvas.style, { left: `${-padding}px`, top: `${-padding}px`, width: `${outerWidth}px`, height: `${outerHeight}px` });
+  const normal = value => {
+    const absolute = Math.abs(value), t = 1 / (1 + .2316419 * absolute);
+    const tail = Math.exp(-absolute * absolute / 2) / Math.sqrt(2 * Math.PI)
+      * t * (.31938153 + t * (-.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    return value >= 0 ? 1 - tail : tail;
+  };
+  const coverage = (length, edge, sigma, offset = 0) => Float32Array.from({ length }, (_, index) => {
+    const distance = (index + .5) / density - padding - offset;
+    return Math.max(0, normal(distance / sigma) - normal((distance - edge) / sigma));
+  });
+  const layers = [[12, 8, .14], [24, 14, .09]].map(([sigma, offset, opacity]) => ({
+    x: coverage(pixelWidth, width, sigma), y: coverage(pixelHeight, height, sigma, offset), opacity
+  }));
+  const paper = window.getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
+  const channels = /^#[a-f\d]{6}$/i.test(paper) ? [1, 3, 5].map(start => parseInt(paper.slice(start, start + 2), 16)) : [128];
+  const levels = Math.max(24, Math.min(...channels));
+  const alphaBytes = Uint8Array.from({ length: levels + 1 }, (_, shade) => Math.round(shade / levels * 255));
+  const pixels = context.createImageData(pixelWidth, pixelHeight), data = pixels.data;
+  const nearX = layers[0].x, wideX = layers[1].x;
+  let seed = 0x7152a93b;
+  // Quantize the final shade on the current paper, not just the shadow alpha.
+  // This distributes one-level steps instead of leaving long, flat contours.
+  for (let y = 0; y < pixelHeight; y++) {
+    const near = layers[0].y[y] * layers[0].opacity, wide = layers[1].y[y] * layers[1].opacity;
+    for (let x = 0; x < pixelWidth; x++) {
+      const alpha = 1 - (1 - nearX[x] * near) * (1 - wideX[x] * wide);
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+      const shade = (alpha * levels + (seed >>> 0) / 4294967296) | 0;
+      data[(y * pixelWidth + x) * 4 + 3] = alphaBytes[shade];
+    }
+  }
+  context.putImageData(pixels, 0, 0);
+  return canvas;
+}
+
 export function initGallery(getLanguage) {
   const gallery = document.getElementById('gallery');
   const wall = gallery?.querySelector('[data-photo-wall]');
@@ -98,6 +146,7 @@ export function initGallery(getLanguage) {
     }
     const transform = window.getComputedStyle(previous.floating).transform;
     previous.animation?.cancel();
+    previous.floating.classList.add('is-returning');
     const retreat = previous.floating.animate([
       { transform, opacity: 1 },
       { transform: 'translate(0px, 0px) scale(1)', opacity: 1, outlineColor: 'transparent', boxShadow: '0 0 0 0 transparent' }
@@ -125,17 +174,20 @@ export function initGallery(getLanguage) {
     const bounds = link.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
     const source = link.querySelector('img');
-    const floating = document.createElement('img');
+    const floating = document.createElement('div');
     floating.className = 'photo-float';
-    floating.src = source.currentSrc || source.src;
-    floating.alt = '';
     floating.setAttribute('aria-hidden', 'true');
     Object.assign(floating.style, {
-      left: `${bounds.left}px`, top: `${bounds.top}px`, width: `${bounds.width}px`, height: `${bounds.height}px`,
-      objectPosition: link.style.getPropertyValue('--photo-focus') || 'center'
+      left: `${bounds.left}px`, top: `${bounds.top}px`, width: `${bounds.width}px`, height: `${bounds.height}px`
     });
-    document.body.append(floating);
+    const preview = document.createElement('img');
+    Object.assign(preview, { className: 'photo-float-image', src: source.currentSrc || source.src, alt: '' });
+    preview.style.objectPosition = link.style.getPropertyValue('--photo-focus') || 'center';
     const scale = Math.min(2.1, (window.innerWidth - 32) / bounds.width, (window.innerHeight - 40) / bounds.height);
+    const shadow = photoShadow(bounds.width, bounds.height, scale);
+    if (shadow) { floating.append(shadow); floating.dataset.shadowReady = ''; }
+    floating.append(preview);
+    document.body.append(floating);
     const centerX = bounds.left + bounds.width / 2;
     const centerY = bounds.top + bounds.height / 2;
     const halfWidth = bounds.width * scale / 2;
@@ -150,7 +202,7 @@ export function initGallery(getLanguage) {
         { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
         { transform, opacity: 1 }
       ], { duration: 270, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'forwards' }) : null;
-    active = { link, floating, animation };
+    active = { link, floating, animation, shadowSize: [bounds.width, bounds.height, scale] };
     movePhoto();
   }
 
@@ -435,6 +487,11 @@ export function initGallery(getLanguage) {
       syncMotion();
     });
     document.addEventListener('adaptive-cursor-change', syncPhotoHover);
+    document.addEventListener('site-theme-change', () => {
+      if (active?.floating.dataset.shadowReady === undefined) return;
+      const shadow = photoShadow(...active.shadowSize);
+      if (shadow) active.floating.querySelector('canvas').replaceWith(shadow);
+    });
     document.addEventListener('site-input-mode-change', () => {
       const focused = document.activeElement;
       keyboardInside = document.documentElement.dataset.inputMode !== 'pointer'
