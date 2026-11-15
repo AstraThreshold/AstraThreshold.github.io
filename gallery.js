@@ -23,7 +23,7 @@ function photoShadow(width, height, scale) {
     const distance = (index + .5) / density - padding - offset;
     return Math.max(0, normal(distance / sigma) - normal((distance - edge) / sigma));
   });
-  const layers = [[12, 8, .14], [24, 14, .09]].map(([sigma, offset, opacity]) => ({
+  const layers = [[12, 8, .30], [24, 14, .20]].map(([sigma, offset, opacity]) => ({
     x: coverage(pixelWidth, width, sigma), y: coverage(pixelHeight, height, sigma, offset), opacity
   }));
   const paper = window.getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();

@@ -37,3 +37,15 @@ The owner supplied the following 14 photographs directly for publication. The sa
 | `photo-21.webp`, `photo-21-thumb.webp` | `68e6722b63705c98fe21a8fdf46043a9.png` | 3840 × 2160 | `02fbafaeddd4cc4bd6dffd07f89a63e23f01e3d8a5767739b15889e1565a0a6c` |
 | `photo-22.webp`, `photo-22-thumb.webp` | `a6b04a90a1e5b90661dc2c120572d95b.jpg` | 6000 × 3376 | `cd7df6e7bb807fdc71a5eb7d3569812dd3a9e18ddfc6211524e42c859570e79c` |
 | `photo-23.webp`, `photo-23-thumb.webp` | `1a2a9ecb7950c01f92936d3cca8a70f9.jpg` | 4032 × 3024 | `db73505830e4f91fbf92c37b44439116c8cb473e536ffb8aead21bc0f1449248` |
+
+## Banner editing additions
+
+The owner requested these banner images for publication. All five local PSDs, including hidden layers and nested glow PSBs, were checked. The two PSDs containing the Premiere Pro screenshot embed identical 1920 x 1080 JPEG bytes. No separate full-resolution back-view photograph is embedded, so its clean video preview is cropped from that original screenshot without enlarging or retouching. The quote uses its larger, uncomposited 733 x 333 pixel layer, rather than the small, rotated banner copy.
+
+New full views are lossless WebP, preserving the source pixels after color conversion; thumbnails retain the 720 px long-edge limit. Original PSDs and source metadata stay out of the public website.
+
+| Asset | PSD source | Source pixels | Export pixels | Crop |
+| --- | --- | --- | --- | --- |
+| `video-editing.webp`, `video-editing-thumb.webp` | banner-m.psd, layer 4; embedded original | (1920, 1080) | 1920 x 1080 | none |
+| `video-back-frame.webp`, `video-back-frame-thumb.webp` | banner-m.psd, layer 4; video preview from embedded original | (1920, 1080) | 940 x 529 | (560, 101, 1500, 630) |
+| `keep-making.webp`, `keep-making-thumb.webp` | banner-m1.psd, layer 3; uncomposited pixel layer | (733, 333) | 733 x 333 | none |
