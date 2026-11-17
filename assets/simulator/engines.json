@@ -1,0 +1,10 @@
+{
+  "modern": {
+    "sha256": "8ad34261cd238c290ee358f05cb484298df3e2b91bc35b6236bed562a1bd6f7d",
+    "bytes": 71763
+  },
+  "lite": {
+    "sha256": "46182196e9df7a3e9cdaba3024e11b8b6618549d390aaece7a3f278c783506d8",
+    "bytes": 43562
+  }
+}

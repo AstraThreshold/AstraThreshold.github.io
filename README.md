@@ -40,7 +40,9 @@ npm run preview
 - `adaptive-cursor.js`：鼠标使用 iPad 风格的灰色无描边圆点光标，靠近链接、按钮和照片时缓动贴合轮廓并吸附；吸附期间统一维持下划线、作品预览和照片浮起等悬浮状态，小幅偏移不会反复开关。照片吸附区跟随浮起后的实际大小，查看大图时光标进入弹窗层。吸附区支持直接点击，保留键盘、组合键和拖选操作；触屏及高对比度模式使用原生交互，减少动态效果时直接定位，静止后停止绘制。
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
-- `assets/gallery/`：banner PSD 照片与本人提供的照片，共 23 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。
+- `oled-playground.js` / `oled-playground.css`：作品区的 128×64 OLED 电路板演示。astra UI 与 Lite 分别运行仓库原生 C++ / C 编译的 WebAssembly，可切换现代和 Win98 风格；使用实体按钮或局部键盘操作，状态独立保留，支持重启。进入视口后才加载，静止、失焦、屏外及后台暂停。两套引擎各自固定 2 MiB 内存，点阵字体随引擎嵌入。
+- `simulator/`：固定上游版本的 UI 与 u8g2 源码、网页适配层及可复现编译脚本。参见其中的 README；`assets/simulator/source.zip` 提供完整对应源码与许可证。常规网页构建使用已编译的 WASM，无需本机 C/C++ 编译器。
+- `assets/gallery/`：banner PSD 照片与本人提供的照片，共 26 张；`SOURCES.md` 记录来源。每张包含网页大图和缩略图。
 - `assets/profile/`：Bilibili 个人头像与来源记录。
 - `assets/data/bilibili.json`：最近一次成功读取的粉丝数与读取时间。
 - `assets/data/github.json`：所有公开仓库的 stars 合计、各仓库数据及读取时间。

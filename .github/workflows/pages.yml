@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Verify gallery and native OLED engines
+        run: node --test scripts/gallery.test.mjs scripts/oled.test.mjs
       - name: Refresh public statistics
         run: npm run refresh:stats
         env:

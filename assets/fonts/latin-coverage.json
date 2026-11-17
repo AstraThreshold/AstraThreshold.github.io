@@ -1,5 +1,5 @@
 {
-  "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·–—“”↑↗−",
+  "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~©·×–—“”…″↑↓↗−□",
   "faces": [
     {
       "file": "serif-regular.44f750c99652.woff2",
@@ -122,12 +122,12 @@
       "source_sha256": "267a411525980d648f10a7222a6ff1ebe4d4feeefbf9b3100cae2b5cfab5594a"
     },
     {
-      "file": "symbols-regular.ae53feb5a71a.woff2",
+      "file": "symbols-regular.6ac96475121f.woff2",
       "family": "WoooLAB Symbols",
       "style": "regular",
-      "characters": "©·–—“”↑↗−",
-      "bytes": 5564,
-      "sha256": "ae53feb5a71a17549876d53d2de8cb9401215b8d0133e931972e30ec937f1ed0",
+      "characters": "©·×–—“”…″↑↓↗−□",
+      "bytes": 5884,
+      "sha256": "6ac96475121fc582aa4647243ede1c545751f75915c5629d761da49417d6382b",
       "source": "seguisym.ttf",
       "source_sha256": "a4a35dcc62cd30e1a6c97b695ecef83e59d2b149e3af834f6a49f11851d56b37"
     }

@@ -1,0 +1,93 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Real 128 x 64 pixels on a small development board. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.oled-playground { margin: 26px 0 42px; }
+.playground-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.playground-heading h3 { font: 600 18px/1.5 var(--project-title); }
+.playground-heading p { margin-top: 3px; font: 12px/1.7 var(--sans); color: var(--muted); }
+.engine-picker { display: inline-flex; flex-shrink: 0; gap: 3px; padding: 4px; border: 1px solid var(--line); background: var(--panel); border-radius: 11px; }
+.engine-picker button { background: transparent; border: 0; color: var(--muted); padding: 7px 12px; border-radius: 7px; font: 12px/1.4 var(--mono); white-space: nowrap; }
+.engine-picker button[aria-pressed="true"] { color: var(--ink); background: var(--paper); box-shadow: 0 1px 3px #00000012; }
+.pcb-board { --board-ink: #c9d2cc; --board-trace: #7c9484; position: relative; isolation: isolate; max-width: 666px; margin-inline: auto; padding: 23px 35px 20px; overflow: hidden; border: 1px solid #49524c; border-radius: 20px; background: #29332e; color: var(--board-ink); box-shadow: inset 0 1px #84938a40, 0 12px 24px -18px #0009, 0 3px 5px -3px #0004; font-family: var(--mono); transition: background-color .25s, border-radius .25s, box-shadow .25s; }
+.pcb-board::before { content: ""; position: absolute; z-index: -1; inset: 1px; border: 1px solid #58695b4a; border-radius: 18px; pointer-events: none; }
+.pcb-traces { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; color: var(--board-trace); opacity: .35; pointer-events: none; }
+.pcb-hole { position: absolute; width: 9px; height: 9px; border: 2px solid #a28b59; border-radius: 50%; background: #171e1a; box-shadow: 0 0 0 3px #7c916d20, inset 0 1px 2px #0009; }
+.pcb-hole--tl { left: 11px; top: 11px; }.pcb-hole--tr { right: 11px; top: 11px; }.pcb-hole--bl { left: 11px; bottom: 11px; }.pcb-hole--br { right: 11px; bottom: 11px; }
+.pcb-topline, .pcb-bottomline { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 10px/1.3 var(--mono); letter-spacing: .07em; }
+.pcb-wordmark { color: #e2e4d8; font-weight: 700; letter-spacing: .02em; }
+.pcb-board-name { color: #b0bcae; font-weight: 400; }
+.pcb-spec { display: flex; align-items: center; gap: 10px; }
+.board-led { width: 5px; height: 5px; border-radius: 50%; background: #e9ad7e; box-shadow: 0 0 5px #e9ad7e50; }
+.pcb-board[data-led="false"] .board-led { background: #5d5e4d; box-shadow: none; }
+.pcb-components { display: grid; grid-template-columns: minmax(0, 384px) 122px; gap: 36px; align-items: center; justify-content: center; padding: 22px 0 19px; }
+.oled-module { min-width: 0; position: relative; padding: 15px 9px 7px; background: #151e20; border: 1px solid #425456; border-radius: 6px; box-shadow: 0 3px 5px #0003; }
+.oled-header-pins { display: flex; justify-content: center; gap: 10px; position: absolute; top: -5px; left: 0; right: 0; height: 15px; }
+.oled-header-pins i { display: block; width: 4px; height: 8px; background: #c6b27e; box-shadow: inset -1px 0 #74674b; border-radius: 1px; }
+.oled-header-pins span { position: absolute; top: 8px; font: 5px/1 var(--mono); letter-spacing: 3px; color: #9caeac; }
+.oled-bezel { position: relative; background: #050d0b; border: 1px solid #07120e; padding: 5px; border-radius: 3px; box-shadow: 0 0 0 1px #6b777333, inset 0 1px 4px #000b; }
+.oled-screen { display: block; width: 100%; height: auto; aspect-ratio: 2; image-rendering: pixelated; border-radius: 1px; }
+.oled-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #c6d9c9; font: 12px/1.6 var(--mono); text-align: center; padding: 14px; background: #08120fe6; }
+.oled-loading[hidden] { display: none; }
+.oled-module-caption { display: flex; justify-content: space-between; margin: 5px 1px 0; color: #899c97; font: 6px/1.2 var(--mono); letter-spacing: .12em; }
+.pcb-controls { display: flex; flex-direction: column; gap: 18px; align-items: center; }
+.pcb-chip { position: relative; width: 47px; height: 41px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #171d1a; border: 1px solid #4a554e; border-radius: 2px; color: #839286; font: 7px/1.7 var(--mono); box-shadow: 0 2px 2px #0004; }
+.pcb-chip small { font-size: 5px; }
+.pcb-chip::before, .pcb-chip::after { content: ""; position: absolute; top: 4px; bottom: 4px; width: 5px; background: repeating-linear-gradient(to bottom,#b2b0a0 0 2px,transparent 2px 5px); }
+.pcb-chip::before { left: -6px; }.pcb-chip::after { right: -6px; }
+.pcb-key-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+.pcb-key { min-width: 0; height: 49px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; color: #d4ddd5; border: 1px solid #758576; border-bottom: 3px solid #1c241e; border-radius: 8px; background: linear-gradient(#4a584d,#3c493f); box-shadow: 0 2px 0 2px #17231c, inset 0 1px #a9b5a62e; transition: transform .08s, background-color .12s; touch-action: manipulation; }
+.pcb-key svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pcb-key span { font: 9px/1.2 var(--mono); white-space: nowrap; }
+.pcb-key--confirm { color: #271d16; border-color: #e6b287; border-bottom-color: #996338; background: linear-gradient(#e4ad7e,#cd9364); }
+.pcb-key:active, .pcb-key[data-key-pressed] { transform: translateY(2px); box-shadow: 0 0 0 2px #17231c, inset 0 1px #0003; }
+.pcb-key:disabled { opacity: .45; }
+.pcb-bottomline { color: #86998b; font-size: 7px; letter-spacing: .1em; }
+.pcb-edge-pins { position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%); width: 65px; height: 6px; border-radius: 2px 2px 0 0; background: repeating-linear-gradient(to right,#c9ae71 0 5px,transparent 5px 8px); }
+.retro-window-glyphs { display: none; }
+.playground-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.playground-footer p { color: var(--muted); font: 11px/1.7 var(--sans); }
+.oled-reset { display: inline-flex; gap: 5px; align-items: center; padding: 5px 0 5px 6px; background: none; border: none; color: var(--muted); font: 11px/1.5 var(--mono); white-space: nowrap; }
+.oled-reset svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.playground-source { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 4px; color: var(--soft); font: 10px/1.6 var(--sans); }
+.playground-source a { text-decoration: underline; text-decoration-color: var(--line); }
+html:not([data-input-mode="pointer"]) .pcb-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+/* Lite adopts squared, beveled window furniture around the same OLED. */
+[data-engine="lite"] .pcb-board { --board-ink: #30332f; --board-trace: #456d64; background: #c3c4ba; border-color: #edf0e5 #777b70 #777b70 #edf0e5; border-width: 2px; border-radius: 2px; box-shadow: inset 1px 1px #fff8, inset -1px -1px #565d5680, 0 12px 24px -18px #0008; }
+[data-engine="lite"] .pcb-board::before { border: 1px solid #e7e9df; border-radius: 0; }
+[data-engine="lite"] .pcb-topline { margin: -16px -28px 0; padding: 5px 7px; color: #fff; background: #1a315f; }
+[data-engine="lite"] .pcb-wordmark, [data-engine="lite"] .pcb-board-name { color: #fff; }
+[data-engine="lite"] .pcb-spec { margin-left: auto; font-size: 8px; }
+[data-engine="lite"] .retro-window-glyphs { display: inline-flex; gap: 2px; }
+.retro-window-glyphs i { width: 13px; height: 12px; font: 700 10px/10px var(--mono); color: #111; background: #c3c4ba; border: 1px solid; border-color: #fff #62675f #62675f #fff; text-align: center; font-style: normal; }
+[data-engine="lite"] .pcb-hole--tl, [data-engine="lite"] .pcb-hole--tr { top: 37px; }
+[data-engine="lite"] .pcb-components { padding-top: 30px; }
+[data-engine="lite"] .oled-module { background: #2e6760; border-color: #1c4944; border-radius: 1px; }
+[data-engine="lite"] .oled-module-caption { color: #bfd3c5; }
+[data-engine="lite"] .oled-bezel { border-radius: 0; border: 2px solid; border-color: #18342e #74a495 #74a495 #18342e; box-shadow: none; }
+[data-engine="lite"] .pcb-chip { border-radius: 0; background: #33382f; border-color: #6d7263; color: #b2b9a6; }
+[data-engine="lite"] .pcb-key { color: #242820; border-radius: 0; background: #d1d3c6; border: 2px solid; border-color: #faffee #777e70 #777e70 #faffee; box-shadow: 1px 1px #5e6858; }
+[data-engine="lite"] .pcb-key--confirm { color: #fff; background: #2f6259; border-color: #83a18b #1c3b32 #1c3b32 #83a18b; }
+[data-engine="lite"] .pcb-key:active, [data-engine="lite"] .pcb-key[data-key-pressed] { transform: translate(1px,1px); border-color: #777e70 #faffee #faffee #777e70; box-shadow: none; }
+[data-engine="lite"] .pcb-bottomline { color: #596653; }
+@media (max-width: 620px) {
+  .playground-heading { flex-wrap: wrap; gap: 12px; }
+  .playground-heading h3 { font-size: 17px; }
+  .pcb-board { padding: 25px 25px 20px; }
+  .pcb-components { gap: 24px; grid-template-columns: minmax(0,1fr) 108px; }
+  .pcb-topline { font-size: 9px; }
+  [data-engine="lite"] .pcb-topline { margin-inline: -18px; }
+}
+@media (max-width: 480px) {
+  .pcb-components { grid-template-columns: minmax(0,1fr); gap: 18px; padding-block: 23px 20px; }
+  .pcb-controls { gap: 0; }
+  .pcb-chip { display: none; }
+  .pcb-key-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; }
+  .pcb-key { height: 44px; }
+  .pcb-revision { font-size: 6px; }
+  .pcb-board-name { font-size: 8px; }
+  [data-engine="lite"] .pcb-spec { display: none; }
+  .playground-footer { align-items: flex-start; }
+  .playground-footer p { max-width: 235px; }
+}
+@media (prefers-reduced-motion: reduce) { .pcb-board, .pcb-key { transition: none; } }
+@media print { .oled-playground { display: none; } }

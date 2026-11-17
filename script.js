@@ -4,6 +4,7 @@ import { initGallery } from './gallery.js';
 import { initLogoGlow } from './logo-glow.js';
 import { initAdaptiveCursor } from './adaptive-cursor.js';
 import { initTheme } from './theme.js';
+import { initOledPlayground } from './oled-playground.js';
 
 // Native dialog focus can inherit a keyboard ring after touch activation.
 // Track actual input so pointer focus does not enable keyboard-only behavior.
@@ -42,6 +43,7 @@ let manualRefreshing = false;
 let language = 'zh';
 const theme = initTheme(() => language);
 const gallery = initGallery(() => language);
+const oledPlayground = initOledPlayground(() => language);
 let snapshot = null;
 let fetching = false;
 let refreshFailed = false;
@@ -174,6 +176,7 @@ function setLanguage(value) {
   // These fragments are trusted, repository-owned translations, never remote data.
   translations.forEach(item => { item.element.innerHTML = item[language]; });
   gallery.updateLanguage();
+  oledPlayground.updateLanguage();
   theme.updateLabel();
   document.querySelectorAll('[data-language]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.language === language));

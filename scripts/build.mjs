@@ -6,9 +6,9 @@ import { validGithubSnapshot } from '../github-stats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
-const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js', 'theme.js'];
+const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js', 'theme.js', 'oled-playground.js', 'oled-playground.css'];
 const optional = ['404.html', 'robots.txt', 'sitemap.xml', 'site.webmanifest', '.nojekyll'];
-const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2']);
+const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2', '.wasm']);
 let count = 0;
 
 // Keep every authored CJK character in the embedded fonts when content changes.
@@ -77,7 +77,7 @@ async function copyAssets(relative) {
     for (const item of await readdir(source)) {
       if (!item.startsWith('.')) await copyAssets(path.join(relative, item));
     }
-  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/latin.css', 'assets/fonts/CASCADIA-LICENSE.txt', 'assets/icons/LICENSE-octicons.txt', 'assets/icons/LICENSE-simple-icons.txt', 'assets/icons/LICENSE-heroicons.txt'].includes(relative.split(path.sep).join('/')))) {
+  } else if (info.isFile() && (assetExtensions.has(path.extname(relative).toLowerCase()) || ['assets/simulator/engines.json', 'assets/simulator/source.zip', 'assets/data/bilibili.json', 'assets/data/github.json', 'assets/fonts/pingfang.css', 'assets/fonts/latin.css', 'assets/fonts/CASCADIA-LICENSE.txt', 'assets/icons/LICENSE-octicons.txt', 'assets/icons/LICENSE-simple-icons.txt', 'assets/icons/LICENSE-heroicons.txt'].includes(relative.split(path.sep).join('/')))) {
     await copy(source, path.join(output, relative));
   }
 }
@@ -86,7 +86,15 @@ if (await exists(path.join(root, 'assets'))) await copyAssets('assets');
 // Keep the entry module and its imports on the same fresh source version.
 const modules = required.filter(file => file.endsWith('.js'));
 const moduleContents = await Promise.all(modules.map(file => readFile(path.join(output, file), 'utf8')));
-const moduleVersion = createHash('sha256').update(moduleContents.join('\0')).digest('hex').slice(0, 12);
+const engineManifestText = await readFile(path.join(output, 'assets/simulator/engines.json'), 'utf8');
+const engineManifest = JSON.parse(engineManifestText);
+for (const name of ['modern', 'lite']) {
+  const binary = await readFile(path.join(output, `assets/simulator/${name}.wasm`));
+  if (binary.length !== engineManifest[name]?.bytes || createHash('sha256').update(binary).digest('hex') !== engineManifest[name]?.sha256) {
+    throw new Error(`OLED engine ${name} does not match its checked-in manifest; rebuild with simulator/build.py.`);
+  }
+}
+const moduleVersion = createHash('sha256').update(moduleContents.join('\0')).update(engineManifestText).digest('hex').slice(0, 12);
 for (let i = 0; i < modules.length; i++) {
   const code = moduleContents[i].replace(/(\bfrom\s*)(['"])(\.\/[^'"?]+\.js)\2/g, (_match, before, quote, file) => `${before}${quote}${file}?v=${moduleVersion}${quote}`);
   await writeFile(path.join(output, modules[i]), code);
@@ -162,6 +170,7 @@ index = index.replace(/(<a class="project-stars" data-repo="([^"]+)"[^>]*aria-la
   return stars === undefined ? match : `${before}${stars.toLocaleString('en-US')} GitHub stars${middle}${stars.toLocaleString('en-US')}${after}`;
 });
 index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
+index = index.replace('href="assets/simulator/source.zip"', `href="${await versionAsset('assets/simulator/source.zip')}"`);
 await writeFile(indexPath, await versionStylesheets(await versionBrandAssets(preloadFonts(index))));
 const errorPage = path.join(output, '404.html');
 if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(await versionBrandAssets(preloadFonts(await readFile(errorPage, 'utf8'), true))));
