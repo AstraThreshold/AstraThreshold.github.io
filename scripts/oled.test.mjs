@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createOledEngine } from '../oled-playground.js';
 import { OledFrameClock } from '../oled-clock.js';
+import { fitOledGrid } from '../oled-grid.js';
+import { OledKeyGesture } from '../oled-keys.js';
 
 const root = new URL('../', import.meta.url);
 async function fresh(name) {
@@ -126,4 +128,66 @@ test('real Astra animation settles within 800 ms and matches across display refr
     assert.deepEqual(demo.frame(),expected, `${refresh} Hz must have the same settled UI`);
     assert.equal(demo.label(),'Controls');
   }
+});
+
+test('the OLED pixel pitch and origin remain physical integers at fractional DPI and zoom', () => {
+  const padding={left:8,right:8,top:8,bottom:8};
+  for (const dpr of [1,1.25,1.5,2,3]) for(const width of [224,407.625,409]) for(const zoom of [1,1.3,2]) {
+    const rect={left:512.375,top:313.71875,width,height:(width-16)/2+16};
+    const viewport={scale:zoom,offsetLeft:37.5,offsetTop:19.25};
+    const grid=fitOledGrid(rect,dpr,padding,viewport);
+    const ratio=dpr*zoom;
+    const left=(rect.left+grid.x-viewport.offsetLeft)*ratio;
+    const top=(rect.top+grid.y-viewport.offsetTop)*ratio;
+    assert.ok(Math.abs(left-Math.round(left))<1e-7);
+    assert.ok(Math.abs(top-Math.round(top))<1e-7);
+    assert.equal(grid.pitch,Math.round(grid.pitch));
+    assert.ok(Math.abs(grid.scale*ratio-grid.pitch)<1e-7);
+    assert.ok(128*grid.pitch<= (width-16)*ratio + 1e-7);
+    assert.ok(64*grid.pitch<= (rect.height-16)*ratio + 1e-7);
+  }
+});
+
+function fakeTimers() {
+  let now=0,id=0;const jobs=new Map();
+  return {
+    setTimeout(callback,delay) { const key=++id;jobs.set(key,{at:now+delay,callback});return key; },
+    clearTimeout(key) { jobs.delete(key); },
+    advance(milliseconds) {
+      const end=now+milliseconds;
+      for(;;) {
+        const next=[...jobs.entries()].filter(([,job])=>job.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];
+        if(!next)break;
+        now=next[1].at;jobs.delete(next[0]);next[1].callback();
+      }
+      now=end;
+    }
+  };
+}
+
+test('short presses move once and suppress the following compatibility click', () => {
+  const actions=[],timers=fakeTimers();const gesture=new OledKeyGesture(action=>actions.push(action),timers);
+  gesture.begin(0,2);timers.advance(599);assert.deepEqual(actions,[]);gesture.finish();gesture.click(0);
+  gesture.begin(1,3);timers.advance(100);gesture.finish();gesture.click(1);
+  assert.deepEqual(actions,[0,1]);
+});
+
+test('holding the near/far key invokes back/enter once, without a short action on release', () => {
+  for(const [short,held] of [[0,2],[1,3]]) {
+    const actions=[],timers=fakeTimers();const gesture=new OledKeyGesture(action=>actions.push(action),timers);
+    gesture.begin(short,held);timers.advance(600);timers.advance(3000);
+    gesture.finish();gesture.click(short);gesture.click(short);
+    assert.deepEqual(actions,[held]);
+    timers.advance(351);gesture.click(short);assert.deepEqual(actions,[held,short]);
+  }
+});
+
+test('canceling a drag or changing controls releases unfinished long presses', () => {
+  const actions=[],timers=fakeTimers();const gesture=new OledKeyGesture(action=>actions.push(action),timers);
+  gesture.begin(0,2);timers.advance(500);gesture.cancel();gesture.click(0);timers.advance(1000);
+  assert.deepEqual(actions,[]);
+  gesture.finish();gesture.click(0);assert.deepEqual(actions,[],'a delayed release after cancellation must not click');
+  gesture.begin(0,2);timers.advance(350);gesture.begin(1,3);timers.advance(300);
+  assert.deepEqual(actions,[]);timers.advance(300);gesture.finish();
+  assert.deepEqual(actions,[3]);
 });

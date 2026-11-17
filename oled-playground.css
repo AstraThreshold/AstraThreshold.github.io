@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Plain OLED glass, green solder mask and actual component-shaped controls. */
+ * Core board only. Layout follows the owner's two assembly photographs.
+ * SH side-entry shells use the 6:4.25 outline ratio in JST's SH drawing. */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .oled-playground { margin: 26px 0 38px; }
 .playground-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
@@ -8,38 +9,62 @@
 .engine-picker { display: inline-flex; gap: 2px; padding: 3px; flex-shrink: 0; border: 1px solid var(--line); border-radius: 5px; }
 .engine-picker button { background: transparent; border: 0; color: var(--muted); padding: 6px 10px; border-radius: 2px; font: 12px/1.5 var(--mono); white-space: nowrap; }
 .engine-picker button[aria-pressed="true"] { color: var(--ink); background: var(--panel); }
-.pcb-board { position: relative; max-width: 450px; margin-inline: auto; padding: 15px 24px 12px 15px; border: 1px solid #23483d; border-radius: 2px; background: #154b3e; color: #d9dfd0; font-family: var(--mono); box-shadow: 0 3px 6px #00000018; }
-.pcb-header { position: absolute; top: 19px; bottom: 84px; right: 7px; display: flex; flex-direction: column; justify-content: space-between; }
-.pcb-header i { display: block; width: 6px; height: 6px; border: 1px solid #c4b581; border-radius: 50%; background: #192c24; }
-.oled-module { min-width: 0; background: #000; }
-.oled-bezel { position: relative; padding: 8px; background: #000; }
-.oled-screen { display: block; width: 100%; height: auto; aspect-ratio: 2; image-rendering: pixelated; background: #000; }
+
+/* One trimmed core, with glass across its width and a compact component strip. */
+.pcb-board { position: relative; isolation: isolate; container-type: inline-size; width: 100%; max-width: 450px; aspect-ratio: 35 / 25; margin-inline: auto; border: 1px solid; border-color: #366353 #133e32 #092c23 #315d4e; border-radius: 1px; background: linear-gradient(116deg,#1b5145,#12463c 64%,#16473c); color: #d9dfd0; font-family: var(--mono); box-shadow: inset 0 0 0 1px #8caa7040, 0 1px 0 #192f20, 0 3px 5px #0003; }
+.pcb-copper { position: absolute; left: 0; bottom: 0; width: 100%; height: 29%; color: #4d8062; opacity: .4; pointer-events: none; }
+.oled-module { position: absolute; z-index: 1; top: .65%; left: .7%; right: .7%; height: 66.6%; background: #000; border: 1px solid; border-color: #333c31 #17271f #263f2e #4d5644; box-shadow: 0 1px 1px #031c16; }
+.oled-module::before { content: ""; position: absolute; top: 0; bottom: 0; left: 4.5%; width: 1px; background: #32352a; box-shadow: -1px 0 #111b16; }
+.oled-module::after { content: ""; position: absolute; left: -1px; top: 22%; width: 1px; height: 8%; background: #987553; box-shadow: 0 12cqw #987553; }
+.oled-bezel { position: absolute; inset: 4.2% 2.8% 4.2% 5.8%; padding: 0; background: #000; }
+.oled-screen { position: absolute; left: 0; top: 0; display: block; width: 128px; height: 64px; transform-origin: 0 0; image-rendering: pixelated; background: #000; visibility: hidden; }
+.oled-screen[data-grid-ready] { visibility: visible; }
 .oled-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px; color: #dedede; background: #000; font: 11px/1.6 var(--mono); text-align: center; }
 .oled-loading[hidden] { display: none; }
-.pcb-topline { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0 1px; font: 8px/1.5 var(--mono); letter-spacing: .01em; }
-.pcb-wordmark { color: #e1d5aa; font-weight: 700; }
-.pcb-board-name { font-size: 7px; font-weight: 400; color: #cbd6c3; }
-.pcb-spec { font-size: 7px; color: #bac9b7; }
-.pcb-components { display: flex; align-items: center; gap: 14px; padding-top: 3px; }
-.pcb-connectors { display: flex; align-items: center; gap: 8px; }
-.pcb-connector { position: relative; display: flex; align-items: center; justify-content: space-evenly; width: 31px; height: 23px; margin-top: 9px; background: #e0d9be; border: 1px solid; border-color: #eee9d5 #a59d85 #9d957e #e6dec6; border-radius: 1px; box-shadow: 0 1px 1px #0004; }
-.pcb-connector::after { content: ""; position: absolute; top: -3px; left: 3px; right: 3px; height: 3px; background: repeating-linear-gradient(to right,#bcab7d 0 1px,transparent 1px 4px); }
-.pcb-connector small { position: absolute; left: -1px; top: -10px; color: #dce1ce; font: 5px/1 var(--mono); letter-spacing: .02em; }
-.pcb-connector i { width: 3px; height: 11px; background: #aea68e; border: 1px solid; border-color: #958d75 #f0e9d3 #eee5cd #9e967d; }
-.pcb-chip { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 27px; margin-top: 7px; border: 1px solid #192c24; border-radius: 1px; background: #29352d; color: #7d897d; font: 7px/1 var(--mono); box-shadow: 0 1px 1px #0003; }
-.pcb-controls { min-width: 0; margin-left: auto; }
-.pcb-key-grid { display: grid; grid-template-columns: repeat(4,44px); gap: 3px; }
-.pcb-key { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 0; height: 48px; padding: 3px 0; border: 0; border-radius: 1px; background: transparent; color: #d6dfcf; touch-action: manipulation; }
-.tact-switch { position: relative; display: grid; place-items: center; width: 24px; height: 17px; border: 1px solid; border-color: #e0e3db #727b72 #687368 #bdc6bb; border-radius: 1px; background: #aab5ab; box-shadow: -3px 0 0 -1px #c1b894, 3px 0 0 -1px #c1b894, 0 1px 1px #0006; }
-.tact-switch i { display: block; width: 10px; height: 10px; border-radius: 50%; background: #20251f; border: 1px solid #111910; box-shadow: inset 0 1px #667062, 0 1px #6d7968; }
-.pcb-key-label { display: flex; align-items: center; gap: 2px; white-space: nowrap; font: 7px/1.2 var(--mono); }
-.pcb-key svg { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(1px); background: #0e150d; box-shadow: inset 0 1px 2px #000; }
+
+.pcb-topline { position: absolute; z-index: 1; top: 69%; left: 0; right: 0; height: 5.5%; pointer-events: none; }
+.pcb-debug-legend { position: absolute; left: 1.6%; top: 0; padding: .5px 2px; border-radius: 1px; background: #d9dfc4; color: #325143; font: 600 clamp(5px,1.96cqw,9px)/1.3 var(--mono); }
+.pcb-debug-legend:nth-child(2) { left: 19.9%; }
+.pcb-wordmark { position: absolute; top: -1%; left: 51.5%; color: #cfb07a; white-space: nowrap; font: italic 400 clamp(7px,3.15cqw,14px)/1.1 var(--serif); }
+.pcb-wordmark span { padding-inline: 1px; color: #304231; background: #cbb57f; }
+.pcb-wordmark small { margin-left: 3px; font: 400 clamp(4px,1.55cqw,7px)/1 var(--mono); }
+.pcb-components, .pcb-connectors { display: contents; }
+
+/* Three SH1.0 4P side-entry sockets: flat ivory roof, four leads and side tabs. */
+.pcb-connector { position: absolute; z-index: 1; left: .8%; bottom: 1.9%; width: 17.1429%; height: 17%; border: 1px solid; border-color: #f1ecda #b7ad91 #a29577 #f0ead5; border-radius: 1px; background: linear-gradient(#e0d6b8 0 3%,#f1ebd7 5% 11%,#e8e2cd 13% 81%,#ded5b7 84% 93%,#c6bb99 96%); box-shadow: inset 1px 0 #f9f4e1, inset -1px 0 #c7bda1, 0 1px 1px #041f17; }
+.pcb-connector:nth-child(2) { left: 19%; }.pcb-connector:nth-child(3) { left: 37.2%; }
+.pcb-connector::before { content: ""; position: absolute; left: 7%; right: 7%; bottom: 3%; height: 8%; background: linear-gradient(#847d63,#b4aa87 45%,#e7dbb9 75%); border-radius: 1px; }
+.pcb-connector::after { content: ""; position: absolute; left: -3%; right: -3%; top: 32%; height: 45%; border-inline: 2px solid #adb99f; box-shadow: -1px 0 #d6dac0, 1px 0 #d6dac0; }
+.pcb-connector i { position: absolute; top: -15%; left: 22%; width: 5.5%; height: 16.5%; border-radius: 1px 1px 0 0; background: linear-gradient(90deg,#748e77,#d4d6bc 40%,#8d9c80 75%,#c9cbb0); box-shadow: 0 -1px #dce0c6; }
+.pcb-connector i:nth-child(2) { left: 38.6667%; }.pcb-connector i:nth-child(3) { left: 55.3333%; }.pcb-connector i:nth-child(4) { left: 72%; }
+
+/* MLT-5020-style 5 mm square transducer, with its offset sound port. */
+.pcb-buzzer { position: absolute; z-index: 1; left: 57.7%; bottom: 2.5%; width: 14.2857%; aspect-ratio: 1; background: linear-gradient(#8ba18a,#c4c9ad,#8b9a80) left 18%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) right 18%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) left 82%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) right 82%/7% 13%; background-repeat: no-repeat; }
+.buzzer-case { position: absolute; inset: 1px 3%; clip-path: polygon(0 0,88% 0,100% 12%,100% 100%,0 100%); border: 1px solid #17251f; border-radius: 1px; background: linear-gradient(125deg,#3a4541,#2c3833 57%,#344139); box-shadow: inset 1px 1px #72837635; }
+.buzzer-case i { position: absolute; left: 43%; top: 17%; width: 15%; aspect-ratio: 1; border: 1px solid #566255; border-radius: 50%; background: radial-gradient(ellipse at 60% 65%,#0d1512,#080f0c 65%,#304033); }
+.buzzer-case b { position: absolute; top: 45%; left: 0; right: 0; color: #85958a; text-align: center; font: 600 clamp(5px,2.3cqw,10px)/1 var(--mono); text-shadow: 0 1px #18251d; }
+.buzzer-case small { position: absolute; left: 9%; bottom: 8%; color: #84917e; font: 6px/1 var(--mono); }
+
+.pcb-controls { position: absolute; z-index: 2; top: 75%; bottom: 1.2%; right: 9%; width: 13%; }
+.pcb-key-grid { display: grid; height: 100%; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 1px; }
+.pcb-key { position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 1px; background: transparent; color: #d6dfcf; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.tact-switch { position: relative; display: grid; place-items: center; width: 70%; aspect-ratio: 3 / 2.5; border: 1px solid; border-color: #e1e5d2 #8a957f #7b8a73 #ced7bf; border-radius: 1px; background: linear-gradient(135deg,#bac4ae,#cbd1ba 38%,#acb99e 43%,#9ba98e); box-shadow: inset 0 1px #eef0da50, 0 1px 1px #07291d; }
+.tact-switch::before { content: ""; position: absolute; inset: 15% -12%; border-inline: 3px solid #c3c9ac; box-shadow: -1px 0 #789171,1px 0 #789171; }
+.tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 2px; background: radial-gradient(circle at 1px 1px,#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at calc(100% - 1px) 1px,#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at 1px calc(100% - 1px),#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at calc(100% - 1px) calc(100% - 1px),#7e8a70 0 1px,transparent 1.5px); }
+.tact-switch i { width: 35%; aspect-ratio: 1; border-radius: 50%; border: 1px solid #26351e; background: radial-gradient(ellipse at 45% 20%,#535b43,#303b25 65%); box-shadow: inset 0 1px #97a48060,0 1px #8c9b79; }
+.pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(1px); background: #182310; box-shadow: inset 0 1px 2px #000; }
 .pcb-key:disabled { opacity: .45; }
-.pcb-status { display: flex; flex-direction: column; gap: 5px; margin: 0 -14px 0 -7px; }
-.pcb-status i { width: 4px; height: 4px; border-radius: 1px; background: #b79762; }
-.pcb-status .board-led { background: #a8bdcf; }
-.pcb-board[data-led="false"] .board-led { background: #526254; }
+.pcb-status { position: absolute; z-index: 1; left: 92%; top: 79.2%; bottom: 6%; width: 3%; display: flex; flex-direction: column; justify-content: space-between; }
+.pcb-status i { width: 100%; height: 16%; border-radius: 1px; background: linear-gradient(90deg,#c9d1b5 0 18%,#8ac6d6 22% 78%,#c9d1b5 82%); box-shadow: 0 0 4px #82d8ea60; }
+.pcb-status i:last-child { background: linear-gradient(90deg,#c9d1b5 0 18%,#d69c74 22% 78%,#c9d1b5 82%); box-shadow: 0 0 4px #efad7050; }
+.pcb-board[data-led="false"] .board-led { background: linear-gradient(90deg,#a9b99c 0 18%,#4f6654 22% 78%,#a9b99c 82%); box-shadow: none; }
+.pcb-smd { position: absolute; top: 69.7%; left: 44%; width: 1.6%; height: 3.1%; border-radius: 1px; border-block: 2px solid #bfc8ab; background: #718875; box-shadow: 0 1px #092b1e; }
+.pcb-smd--two { left: 46.8%; }
+.pcb-test-pad { position: absolute; left: 54.4%; bottom: 3%; width: 2.2%; height: 3.7%; border-radius: 1px; background: linear-gradient(110deg,#bcaa69,#d3c084 55%,#c3ad66); }
+.pcb-tooling { position: absolute; right: 11.1%; bottom: 2%; width: 1.5%; aspect-ratio: 1; border-radius: 50%; background: #0b291d; box-shadow: inset 0 1px #809570; }
+.pcb-pin-one { position: absolute; right: 2.1%; bottom: 1.3%; width: 3.1%; height: 3.8%; background: #c9bc83; clip-path: polygon(50% 0,100% 100%,0 100%); }
+[data-engine="lite"] .pcb-board { background: linear-gradient(116deg,#225647,#184d40 64%,#1d4b3d); }
+
 .playground-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; }
 .playground-footer p { color: var(--muted); font: 11px/1.7 var(--sans); }
 .oled-reset { display: inline-flex; gap: 5px; align-items: center; padding: 5px 0 5px 6px; background: none; border: none; color: var(--muted); font: 11px/1.5 var(--mono); white-space: nowrap; }
@@ -47,16 +72,5 @@
 .playground-source { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 4px; color: var(--soft); font: 10px/1.6 var(--sans); }
 .playground-source a { text-decoration: underline; text-decoration-color: var(--line); }
 html:not([data-input-mode="pointer"]) .pcb-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
-[data-engine="lite"] .pcb-board { background: #245447; border-color: #334f40; }
-[data-engine="lite"] .pcb-wordmark { font-weight: 400; }
 @media (max-width: 620px) { .playground-heading { flex-wrap: wrap; gap: 12px; } }
-@media (max-width: 380px) {
-  .pcb-chip { display: none; }
-  .pcb-components { gap: 8px; }
-  .pcb-connectors { gap: 6px; }
-  .pcb-connector { width: 23px; }
-  .pcb-key-grid { grid-template-columns: repeat(4,40px); gap: 1px; }
-  .pcb-key-label { font-size: 6px; }
-  .pcb-key-label svg { display: none; }
-}
 @media print { .oled-playground { display: none; } }

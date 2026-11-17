@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { OledFrameClock } from './oled-clock.js';
+import { mountOledGrid } from './oled-grid.js';
+import { bindOledKeys } from './oled-keys.js';
 const engineRepositories = {
   modern: 'https://github.com/AstraThreshold/oled-ui-astra',
   lite: 'https://github.com/AstraThreshold/astra-launcher'
@@ -41,6 +43,7 @@ export function initOledPlayground(getLanguage) {
   const board = root.querySelector('.pcb-board');
   const canvas = root.querySelector('canvas');
   const context = canvas.getContext('2d', { alpha: false });
+  const grid = mountOledGrid(canvas);
   const announcement = root.querySelector('.oled-announcement');
   const loading = root.querySelector('[data-oled-loading]');
   const actions = [...root.querySelectorAll('[data-oled-action]')];
@@ -159,11 +162,11 @@ export function initOledPlayground(getLanguage) {
   }
   async function select(name, reset = false) {
     const ticket = ++sequence;
+    keys.cancel();grid.sync();
     stop();failure = false;selected = name;current = null;
     resetButton.disabled = true;
     root.dataset.engine = name;root.dataset.state = 'loading';
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
-    root.querySelector('.pcb-board-name').textContent = name === 'modern' ? ' / astra UI' : ' / astra UI Lite';
     root.querySelector('[data-oled-source]').href = engineRepositories[name];
     actions.forEach(button => { button.disabled = true; });
     loading.hidden = false;loading.textContent = localText('正在通电…', 'Powering up…');
@@ -184,6 +187,7 @@ export function initOledPlayground(getLanguage) {
   function input(action) {
     if (!current?.engine || root.dataset.state !== 'ready') return;
     try {
+      grid.sync();
       current.engine.sim_input(action);
       if (reducedMotion.matches) {
         for (let i = 0; i < 220; i++) { current.time += 1000 / 60;current.engine.sim_step(Math.round(current.time)); }
@@ -192,7 +196,7 @@ export function initOledPlayground(getLanguage) {
       announce();wake();
     } catch { showFailure(); }
   }
-  actions.forEach(button => button.addEventListener('click', () => input(Number(button.dataset.oledAction))));
+  const keys = bindOledKeys(actions, input);
   picker.forEach(button => button.addEventListener('click', () => {
     if (selected !== button.dataset.uiEngine || root.dataset.state === 'waiting') select(button.dataset.uiEngine);
   }));
@@ -201,7 +205,7 @@ export function initOledPlayground(getLanguage) {
   board.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
     const action = keyActions[event.key];
-    // Native focused buttons keep their ordinary Enter/Space activation.
+    // Focused switches handle Enter/Space themselves, including long presses.
     if (action === undefined || (event.key === 'Enter' && event.target.closest('button'))) return;
     event.preventDefault();input(action);
   });
@@ -221,7 +225,9 @@ export function initOledPlayground(getLanguage) {
   context.putImageData(pixels, 0, 0);
   return { updateLanguage() {
     actions.forEach((button, index) => button.setAttribute('aria-label',
-      getLanguage() === 'en' ? ['Previous','Next','Back','Enter'][index] : ['上一个','下一个','返回','确认'][index]));
+      getLanguage() === 'en' ? ['Previous; hold to go back','Next; hold to enter'][index] : ['上一项，长按返回','下一项，长按确认'][index]));
+    actions.forEach(button => { button.title = button.getAttribute('aria-label'); });
+    grid.schedule();
     board.setAttribute('aria-label', localText('可操作的 OLED 开发板', 'Interactive OLED development board'));
     if (failure) loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
     else if (root.dataset.state !== 'ready') loading.textContent = localText('正在通电…', 'Powering up…');
