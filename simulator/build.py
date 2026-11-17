@@ -71,7 +71,7 @@ def main():
         for file in sorted(HERE.rglob('*')):
             if file.is_file() and '__pycache__' not in file.parts:
                 archive.write(file, file.relative_to(ROOT))
-        for name in ('oled-playground.js', 'oled-playground.css'):
+        for name in ('oled-playground.js', 'oled-clock.js', 'oled-playground.css'):
             archive.write(ROOT / name, name)
 
 

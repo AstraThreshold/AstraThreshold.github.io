@@ -142,34 +142,27 @@
     <section id="work" class="content-section" aria-labelledby="work-title"><div class="section-heading"><h2 data-en="Selected work" id="work-title">个人作品</h2><span class="section-rule"></span></div>
       <div class="oled-playground" data-oled-playground data-engine="modern" data-state="waiting">
         <div class="playground-heading">
-          <div><h3 data-en="A little board. Have a play.">一块小板，随便玩玩。</h3><p data-en="Two of my interfaces. One 128 × 64 OLED.">两套自己写的 UI，一块 128 × 64 OLED。</p></div>
+          <div><h3 data-en="OLED playground">UI 演示</h3><p>astra UI · astra UI Lite · 128 × 64</p></div>
           <div class="engine-picker" role="group" aria-label="UI version">
             <button type="button" data-ui-engine="modern" aria-pressed="true">astra UI</button>
             <button type="button" data-ui-engine="lite" aria-pressed="false">astra UI Lite</button>
           </div>
         </div>
         <div class="pcb-board" tabindex="0" role="group" aria-label="Interactive OLED development board" aria-describedby="oled-help">
-          <span class="pcb-hole pcb-hole--tl" aria-hidden="true"></span><span class="pcb-hole pcb-hole--tr" aria-hidden="true"></span><span class="pcb-hole pcb-hole--bl" aria-hidden="true"></span><span class="pcb-hole pcb-hole--br" aria-hidden="true"></span>
-          <svg class="pcb-traces" viewBox="0 0 680 288" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><path d="M34 54h48l28 28h70M34 62h44l28 28h74M36 232h68l26-26h55M36 240h72l26-26h51M407 58h49l22 22h65M407 66h45l22 22h69M405 223h44l25-25h68M405 231h48l25-25h64M605 53v38l17 17v97M613 53v34l17 17v101"/><circle cx="34" cy="54" r="3"/><circle cx="36" cy="240" r="3"/><circle cx="407" cy="58" r="3"/><circle cx="405" cy="231" r="3"/><circle cx="622" cy="208" r="3"/><circle cx="630" cy="208" r="3"/></g></svg>
-          <div class="pcb-topline"><span class="pcb-wordmark">WoooLAB<span class="pcb-board-name"> / astra UI</span></span><span class="pcb-spec">128 × 64 <span class="board-led" aria-hidden="true"></span></span><span class="retro-window-glyphs" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+          <span class="pcb-header" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <div class="oled-module"><div class="oled-bezel"><canvas class="oled-screen" width="128" height="64" role="img" aria-label="128 by 64 monochrome OLED display"></canvas><div class="oled-loading" data-oled-loading><span data-en="Powering up…">正在通电…</span></div></div></div>
+          <div class="pcb-topline"><span class="pcb-wordmark">///astraCore<span class="pcb-board-name"> / astra UI</span></span><span class="pcb-spec">128 × 64</span></div>
           <div class="pcb-components">
-            <div class="oled-module">
-              <div class="oled-header-pins" aria-hidden="true"><i></i><i></i><i></i><i></i><span>GND VCC SCL SDA</span></div>
-              <div class="oled-bezel"><canvas class="oled-screen" width="768" height="384" role="img" aria-label="128 by 64 monochrome OLED display"></canvas><div class="oled-loading" data-oled-loading><span data-en="Powering up…">正在通电…</span></div></div>
-              <div class="oled-module-caption" aria-hidden="true"><span>0.96″ OLED</span><span>SSD1306</span></div>
-            </div>
-            <div class="pcb-controls">
-              <div class="pcb-chip" aria-hidden="true"><span>ASTRA</span><small>C++ / C</small></div>
-              <div class="pcb-key-grid">
-                <button class="pcb-key" type="button" data-oled-action="0" aria-label="Previous" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span data-en="Prev">上一个</span></button>
-                <button class="pcb-key" type="button" data-oled-action="1" aria-label="Next" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg><span data-en="Next">下一个</span></button>
-                <button class="pcb-key" type="button" data-oled-action="2" aria-label="Back" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7-5 5 5 5M4 12h10a5 5 0 0 1 5 5"/></svg><span data-en="Back">返回</span></button>
-                <button class="pcb-key pcb-key--confirm" type="button" data-oled-action="3" aria-label="Enter" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg><span data-en="Enter">确认</span></button>
-              </div>
-            </div>
+            <div class="pcb-connectors" aria-hidden="true"><span class="pcb-connector"><small>DEBUG1</small><i></i><i></i><i></i></span><span class="pcb-connector"><small>DEBUG2</small><i></i><i></i><i></i></span></div>
+            <div class="pcb-chip" aria-hidden="true">4R7</div>
+            <div class="pcb-controls"><div class="pcb-key-grid">
+              <button class="pcb-key" type="button" data-oled-action="0" aria-label="Previous" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="pcb-key-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg><span data-en="Prev">上一个</span></span></button>
+              <button class="pcb-key" type="button" data-oled-action="1" aria-label="Next" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="pcb-key-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg><span data-en="Next">下一个</span></span></button>
+              <button class="pcb-key" type="button" data-oled-action="2" aria-label="Back" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="pcb-key-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7-5 5 5 5M4 12h10a5 5 0 0 1 5 5"/></svg><span data-en="Back">返回</span></span></button>
+              <button class="pcb-key pcb-key--confirm" type="button" data-oled-action="3" aria-label="Enter" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="pcb-key-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg><span data-en="Enter">确认</span></span></button>
+            </div></div>
+            <span class="pcb-status" aria-hidden="true"><i class="board-led"></i><i></i></span>
           </div>
-          <div class="pcb-bottomline" aria-hidden="true"><span>DESIGNED TO BE PLAYED.</span><span class="pcb-revision">ASTRA / REV. 01</span></div>
-          <span class="pcb-edge-pins" aria-hidden="true"></span>
         </div>
         <div class="playground-footer"><p id="oled-help" data-en="Use the buttons, or focus the board and use ↑ ↓ · Enter · Esc.">点击按键；也可选中电路板后使用 ↑ ↓ · Enter · Esc。</p><button class="oled-reset" data-oled-reset type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6 6 0 1 1-1 6M4 3v4h4"/></svg><span data-en="Reset">重启</span></button></div>
         <p class="oled-announcement sr-only" role="status" aria-live="polite"></p>

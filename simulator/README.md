@@ -26,6 +26,14 @@ at most one instance of each, and stops stepping at rest, out of view, on blur o
 in a hidden tab. Reset replaces an instance rather than allocating more menus
 inside it. Fonts are the bitmap arrays in the original source, embedded in WASM.
 
+`oled-clock.js` advances the original frame-based MCU easing at 240 bounded native
+steps per active second. Rendering follows every browser animation frame, with no
+15 ms frame gate, so 90/144 Hz displays do not lose alternating refreshes. At most
+50 ms is caught up after a stall; hidden/offscreen clocks reset instead of queuing
+work. The original easing constants are unchanged. The display uploads one 128 x 64
+RGBA image when pixels change, with contiguous white pixels and a true black
+background. No oversized backing canvas, per-dot grid or repeated cell drawing.
+
 The downloadable `assets/simulator/source.zip` contains the complete corresponding
 source, browser loader, board stylesheet and build script. Both Astra projects retain their GPL-3.0 licenses;
 u8g2's BSD notices remain in its source files. The browser adapter and demonstration

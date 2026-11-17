@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createOledEngine } from '../oled-playground.js';
+import { OledFrameClock } from '../oled-clock.js';
 
 const root = new URL('../', import.meta.url);
 async function fresh(name) {
@@ -87,5 +88,42 @@ test('upstream source and declared patches match pinned hashes; shipped WASM mat
     const wasm = await readFile(new URL(`assets/simulator/${name}.wasm`, root));
     assert.equal(hash(wasm), binaries[name].sha256);
     assert.equal(wasm.length, binaries[name].bytes);
+  }
+});
+
+test('UI time advances equally at 30, 60, 90, 120, 144 and 240 Hz without a display-frame gate', () => {
+  for (const refresh of [30,60,90,120,144,240]) {
+    const clock = new OledFrameClock();clock.reset(0);
+    let steps = 0, elapsed = 0;
+    for (let frame = 1; frame <= refresh; frame++) clock.advance(frame * 1000 / refresh, ms => { steps++;elapsed += ms; });
+    assert.equal(steps,240, `${refresh} Hz`);
+    assert.ok(Math.abs(elapsed - 1000) < .001, `${refresh} Hz must represent a real second`);
+  }
+});
+
+test('a paused or stalled clock cannot burst through a background backlog', () => {
+  const clock = new OledFrameClock();clock.reset(0);
+  let calls = 0;
+  assert.equal(clock.advance(5000,()=>calls++),12);
+  assert.equal(calls,12);
+  clock.reset();assert.equal(clock.advance(10000,()=>calls++),0);
+  assert.equal(calls,12);
+  clock.reset(12000);assert.equal(clock.advance(12000+1000/60,()=>calls++),4);
+});
+
+test('real Astra animation settles within 800 ms and matches across display refresh rates', async () => {
+  let expected;
+  for (const refresh of [60,90,120,144,240]) {
+    const demo = await fresh('modern');demo.engine.sim_input(1);
+    const clock = new OledFrameClock();clock.reset(0);
+    let simulated = 4000, before = demo.frame(), changedFrames = 0;
+    for (let frame = 1; frame <= refresh; frame++) {
+      clock.advance(frame * 1000 / refresh, ms => demo.engine.sim_step(Math.round(simulated += ms)));
+      const next = demo.frame();if (!before.equals(next)) changedFrames++;before = next;
+      if (frame === Math.ceil(refresh * .8)) expected ??= next;
+    }
+    assert.ok(changedFrames >= 12, `${refresh} Hz must present intermediate frames`);
+    assert.deepEqual(demo.frame(),expected, `${refresh} Hz must have the same settled UI`);
+    assert.equal(demo.label(),'Controls');
   }
 });

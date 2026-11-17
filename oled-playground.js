@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { OledFrameClock } from './oled-clock.js';
 const engineRepositories = {
   modern: 'https://github.com/AstraThreshold/oled-ui-astra',
   lite: 'https://github.com/AstraThreshold/astra-launcher'
@@ -50,15 +51,19 @@ export function initOledPlayground(getLanguage) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let selected = 'modern', current = null, manifestPromise;
   let visible = false, focused = document.hasFocus(), sequence = 0;
-  let request = 0, lastTime = 0, endTime = 0, stableFrames = 0;
+  let request = 0, endTime = 0, stableTime = 0;
+  const clock = new OledFrameClock();
   let failure = false;
   const displayed = new Uint8Array(1024).fill(255);
+  const pixels = context.createImageData(128, 64);
+  const pixelData = new Uint32Array(pixels.data.buffer);
+  pixelData.fill(0xff000000);
   let lastFlags = -1;
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
   const allowed = () => visible && focused && !document.hidden && !failure;
   function stop() {
-    cancelAnimationFrame(request);request = 0;lastTime = 0;
+    cancelAnimationFrame(request);request = 0;clock.reset();
     root.dataset.running = 'false';
   }
   function label() {
@@ -84,43 +89,42 @@ export function initOledPlayground(getLanguage) {
       force = true;lastFlags = flags;
       board.dataset.led = String(Boolean(flags & 1));
     }
-    const lit = `rgb(${Math.round(145 + brightness * .75)} ${Math.round(164 + brightness * .73)} ${Math.round(150 + brightness * .68)})`;
-    if (force) { context.fillStyle = '#08120f';context.fillRect(0, 0, canvas.width, canvas.height); }
+    const level = Math.round(135 + brightness * 1.2);
+    const lit = (0xff000000 | (level << 16) | (level << 8) | level) >>> 0;
     let changed = false;
     for (let i = 0; i < 1024; i++) {
       if (!force && frame[i] === displayed[i]) continue;
       changed = true;
-      const x = (i % 128) * 6, y = (i >> 7) * 48;
+      const x = i % 128, y = (i >> 7) * 8;
       for (let bit = 0; bit < 8; bit++) {
         if (!force && !((frame[i] ^ displayed[i]) & (1 << bit))) continue;
         const on = Boolean(frame[i] & (1 << bit)) !== inverted;
-        context.fillStyle = on ? lit : '#10201a';
-        context.fillRect(x, y + bit * 6, 5, 5);
+        pixelData[(y + bit) * 128 + x] = on ? lit : 0xff000000;
       }
       displayed[i] = frame[i];
     }
+    if (changed) context.putImageData(pixels, 0, 0);
     root.dataset.selected = String(engine.sim_selected());
     return changed;
   }
   function tick(now) {
     request = 0;
     if (!allowed() || !current?.engine) { stop();return; }
-    // Keep original frame-based easing at 60 Hz on high-refresh-rate displays too.
-    if (lastTime && now - lastTime < 15) { request = requestAnimationFrame(tick);return; }
-    lastTime = now;
-    current.time += 1000 / 60;
     try {
-      current.engine.sim_step(Math.round(current.time));
-      stableFrames = draw() ? 0 : stableFrames + 1;
+      clock.advance(now, milliseconds => {
+        current.time += milliseconds;
+        current.engine.sim_step(Math.round(current.time));
+      });
+      stableTime = draw() ? 0 : stableTime + clock.elapsed;
     } catch { showFailure();return; }
-    if (now < endTime && (stableFrames < 18 || (current.engine.sim_flags() & 4))) request = requestAnimationFrame(tick);
+    if (now < endTime && (stableTime < 300 || (current.engine.sim_flags() & 4))) request = requestAnimationFrame(tick);
     else stop();
   }
   function wake() {
     if (!allowed() || !current?.engine) return;
     if (reducedMotion.matches) { stop();return; }
-    stableFrames = 0;endTime = performance.now() + 6000;
-    if (!request) { root.dataset.running = 'true';request = requestAnimationFrame(tick); }
+    stableTime = 0;endTime = performance.now() + 6000;
+    if (!request) { clock.reset(performance.now());root.dataset.running = 'true';request = requestAnimationFrame(tick); }
   }
   function showFailure() {
     stop();failure = true;root.dataset.state = 'error';
@@ -214,10 +218,7 @@ export function initOledPlayground(getLanguage) {
       else wake();
     }, { threshold: .08 }).observe(board);
   } else { visible = true;select(selected); }
-  // Useful no-WASM / loading surface, still using the real 128 x 64 pixel grid.
-  context.fillStyle = '#08120f';context.fillRect(0,0,768,384);
-  context.fillStyle = '#10201a';
-  for (let y = 0; y < 64; y++) for (let x = 0; x < 128; x++) context.fillRect(x*6,y*6,5,5);
+  context.putImageData(pixels, 0, 0);
   return { updateLanguage() {
     actions.forEach((button, index) => button.setAttribute('aria-label',
       getLanguage() === 'en' ? ['Previous','Next','Back','Enter'][index] : ['上一个','下一个','返回','确认'][index]));
