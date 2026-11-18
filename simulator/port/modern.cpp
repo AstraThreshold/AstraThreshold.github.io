@@ -43,7 +43,18 @@ public:
         u8g2_DrawXBMP(&display, px(x), px(y), px(w), px(h), bitmap);
     }
     void _drawBox(float x, float y, float w, float h) override { u8g2_DrawBox(&display, px(x), px(y), px(w), px(h)); }
-    void _drawRBox(float x, float y, float w, float h, float r) override { u8g2_DrawRBox(&display, px(x), px(y), px(w), px(h), px(r)); }
+    void _drawRBox(float x, float y, float w, float h, float r) override {
+        const int16_t left = px(x), top = px(y), width = px(w), height = px(h), radius = px(r);
+        u8g2_DrawRBox(&display, left, top, width, height, radius);
+        // The radius-1 XOR list selector leaves a 2 x 2 notch at each corner.
+        // Fill its inner diagonal dot, sharing the exact rounded raster bounds.
+        if (u8g2_GetDrawColor(&display) == 2 && radius == 1 && width > 4 && height > 4) {
+            u8g2_DrawPixel(&display, left + 1, top + 1);
+            u8g2_DrawPixel(&display, left + width - 2, top + 1);
+            u8g2_DrawPixel(&display, left + 1, top + height - 2);
+            u8g2_DrawPixel(&display, left + width - 2, top + height - 2);
+        }
+    }
     void _drawFrame(float x, float y, float w, float h) override { u8g2_DrawFrame(&display, px(x), px(y), px(w), px(h)); }
     void _drawRFrame(float x, float y, float w, float h, float r) override { u8g2_DrawRFrame(&display, px(x), px(y), px(w), px(h), px(r)); }
     unsigned long _millis() override { return ticks; }

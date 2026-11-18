@@ -65,9 +65,13 @@ export function initOledPlayground(getLanguage) {
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
   const allowed = () => visible && focused && !document.hidden && !failure;
+  function syncHeartbeat() {
+    board.dataset.heartbeat = String(allowed() && root.dataset.state === 'ready' && !reducedMotion.matches);
+  }
   function stop() {
     cancelAnimationFrame(request);request = 0;clock.reset();
     root.dataset.running = 'false';
+    syncHeartbeat();
   }
   function label() {
     if (!current?.engine) return '';
@@ -124,6 +128,7 @@ export function initOledPlayground(getLanguage) {
     else stop();
   }
   function wake() {
+    syncHeartbeat();
     if (!allowed() || !current?.engine) return;
     if (reducedMotion.matches) { stop();return; }
     stableTime = 0;endTime = performance.now() + 6000;
@@ -131,6 +136,7 @@ export function initOledPlayground(getLanguage) {
   }
   function showFailure() {
     stop();failure = true;root.dataset.state = 'error';
+    syncHeartbeat();
     actions.forEach(button => { button.disabled = true; });
     loading.hidden = false;
     loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
@@ -167,6 +173,7 @@ export function initOledPlayground(getLanguage) {
     clock.setRate(name === 'lite' ? 60 : 240);
     resetButton.disabled = true;
     root.dataset.engine = name;root.dataset.state = 'loading';
+    syncHeartbeat();
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
     root.querySelector('[data-oled-source]').href = engineRepositories[name];
     actions.forEach(button => { button.disabled = true; });
@@ -214,8 +221,9 @@ export function initOledPlayground(getLanguage) {
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop();else wake(); });
   window.addEventListener('blur', () => { focused = false;stop(); });
   window.addEventListener('focus', () => { focused = true;wake(); });
-  window.addEventListener('pagehide', stop);
+  window.addEventListener('pagehide', () => { stop();board.dataset.heartbeat = 'false'; });
   window.addEventListener('pageshow', wake);
+  reducedMotion.addEventListener('change', syncHeartbeat);
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;

@@ -58,15 +58,27 @@ The supplied fabrication archive is read only and is not published by the site.
 
 The CH1115 glass is 35.8 x 17.1 mm; the 128 x 64 active area is nominally
 29.42 x 14.7 mm (14.71 mm is used to retain the exact 2:1 logical pixel ratio).
+Its placement and fine outer boundary follow the owner's product photograph:
+the left driver/bonding margin is wider than the right glass margin. The local
+4.6 mm left inset is a visual estimate from that photograph, not a drawing datum.
 Three SH1.0 4P side-entry shells follow the 6 x 4.25 mm shape in
 [JST's drawing](https://www.jst-mfg.com/product/pdf/eng/eSH.pdf), positioned at the
 Gerber's connector pad centers x=3.556, 10.160 and 16.764 mm. The 5 x 5 mm
 MLT-5020 case is centered at (23.622,22.9868) mm; the two switches are centered at
 (30.099,21.336) and (30.099,24.384) mm, measured from the top left. Their caps are
-3 x 2.5 mm with 2 mm black plungers, matching the two-terminal turtle-switch style.
+3 x 2.5 mm with 1.7 mm black plungers, matching the two-terminal turtle-switch style.
 Other pads, LEDs and tooling holes follow the same coordinate system. The carrier,
 protective film and peel tab are omitted. All artwork is static CSS/SVG with no
 bitmap textures or filters over the active screen.
+
+The upper LED gives a short double heartbeat every 1.6 seconds, controlled by the
+native Status LED switch. Only its luminous center changes opacity; solder ends
+stay fixed. This CSS animation is independent of the native screen clock, so the
+display still stops at rest. It stops out of view, on blur or in a hidden tab;
+reduced-motion mode uses a steady light.
+All three LEDs have brighter cores and soft local halos. A static screen surround
+and a faint foreground gradient spread a thin mist over the board without
+blurring the native pixels or adding another canvas, filter, or animation loop.
 
 `port/modern-boot.h` cooperatively renders the original star/title logo from
 `astra/astra_logo.cpp` and the `drawLogo(1000)` call in `astra_rocket.cpp`.
@@ -75,6 +87,8 @@ star shapes, positions/targets and exponential movement are retained, with elaps
 time replacing the blocking loop counter. Boot runs on first load and Reset;
 input may skip it, and reduced-motion mode settles it without displaying motion.
 All three demo home icons use dark cut-outs in the original white tile field.
+The browser HAL adds one inner diagonal pixel to each of the four small list
+selector notches, keeping XOR drawing and the integer raster bounds intact.
 
 `port/lite-about.h` re-enables the staged copyright callbacks commented out in
 astraLauncher's original `Core/Src/main.c`: title, credit, miniature board, screen
