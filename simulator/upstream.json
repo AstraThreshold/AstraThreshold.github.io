@@ -44,7 +44,10 @@
       "Core/Src/hal/hal_dreamCore/components/oled/graph_lib/u8g2/u8x8_setup.c": "3f50da0b74fea01a3386a3192d412aceadc09cac3e5cbb0b879c1a7e80a38886",
       "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
       "Core/Src/hal/hal_dreamCore/components/oled/graph_lib/u8g2/u8x8_string.c": "20cfe514ca42bfa22fb5a52aaf9bac3ab8b1e69c994df3fdeb73e3353e9687cc",
-      "Core/Src/hal/hal_dreamCore/components/oled/graph_lib/u8g2/u8x8_8x8.c": "dc188d78d8bbb6880da35347d2959ae75cb7975fa1562d3e0777f4a7517c2f1f"
+      "Core/Src/hal/hal_dreamCore/components/oled/graph_lib/u8g2/u8x8_8x8.c": "dc188d78d8bbb6880da35347d2959ae75cb7975fa1562d3e0777f4a7517c2f1f",
+      "Core/Src/astra/astra_logo.cpp": "38d8136acdde54d52f487989ab870a9f1f581217a73a41326ffd59715362eedc",
+      "Core/Src/astra/astra_logo.h": "e0e4ea8f9db7f5e84881d83a7c1c6245313d133171866449acbb94f5ca0b9a9e",
+      "Core/Src/astra/astra_rocket.cpp": "8a1fed4ee63111b51f4cdc946f946e08894bad2f335ccd5aea0a86df9fb9e36e"
     },
     "patches": {
       "Core/Src/astra/ui/item/selector/selector.cpp": {
@@ -90,7 +93,9 @@
       "Core/Src/u8g2/u8x8_setup.c": "3f50da0b74fea01a3386a3192d412aceadc09cac3e5cbb0b879c1a7e80a38886",
       "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
       "Core/Src/u8g2/u8x8_string.c": "20cfe514ca42bfa22fb5a52aaf9bac3ab8b1e69c994df3fdeb73e3353e9687cc",
-      "Core/Src/u8g2/u8x8_8x8.c": "da32dff05050e4b18ea9007fdefc49ef31bf24b85ba2200fa791755aa81b2884"
+      "Core/Src/u8g2/u8x8_8x8.c": "da32dff05050e4b18ea9007fdefc49ef31bf24b85ba2200fa791755aa81b2884",
+      "Core/Src/main.c": "74a0c501523a57036bf670c49e0ecf63b22ef22e450d9b36dae53becfaf9e5e1",
+      "Core/Src/astra-launcher/launcher_home_page.c": "ffe95d0e5cb7292686e023dd5615124fdab7421013b21229ae2d5ceea4e169c2"
     }
   }
 }

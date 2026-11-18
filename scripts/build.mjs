@@ -171,6 +171,7 @@ index = index.replace(/(<a class="project-stars" data-repo="([^"]+)"[^>]*aria-la
 });
 index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
 index = index.replace('href="assets/simulator/source.zip"', `href="${await versionAsset('assets/simulator/source.zip')}"`);
+index = index.replace('src="assets/simulator/astra-core-artwork.svg"', `src="${await versionAsset('assets/simulator/astra-core-artwork.svg')}"`);
 await writeFile(indexPath, await versionStylesheets(await versionBrandAssets(preloadFonts(index))));
 const errorPage = path.join(output, '404.html');
 if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(await versionBrandAssets(preloadFonts(await readFile(errorPage, 'utf8'), true))));

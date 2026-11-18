@@ -2,6 +2,9 @@
 // The MCU's easing runs per loop, independently of the browser's display refresh.
 export class OledFrameClock {
   constructor(rate = 240) {
+    this.setRate(rate);
+  }
+  setRate(rate) {
     this.quantum = 1000 / rate;
     this.reset();
   }

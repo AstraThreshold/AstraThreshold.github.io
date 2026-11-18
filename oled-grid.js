@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+export function fitCoreWidth(available, viewport, ratio) {
+  // Fit the whole assembly to the native display pitch, preserving every mm
+  // ratio. A narrow phone can use its gutters without overflowing the viewport.
+  const limit = Math.min(480, Math.max(available, Math.min(viewport - 2, 128 * 2 * 36.4 / 29.42)));
+  const pitch = Math.max(1, Math.floor(limit * ratio * 29.42 / (128 * 36.4) + 1e-5));
+  return pitch * 128 * 36.4 / (29.42 * ratio);
+}
+
 export function fitOledGrid(rect, ratio, padding, viewport = {}) {
   const zoom = viewport.scale || 1;
   const pixelsPerCss = ratio * zoom;
   const offsetX = viewport.offsetLeft || 0, offsetY = viewport.offsetTop || 0;
   const innerWidth = Math.max(0, rect.width - padding.left - padding.right);
   const innerHeight = Math.max(0, rect.height - padding.top - padding.bottom);
-  const pitch = Math.max(1, Math.floor(Math.min(innerWidth * pixelsPerCss / 128, innerHeight * pixelsPerCss / 64) + 1e-7));
+  const pitch = Math.max(1, Math.floor(Math.min(innerWidth * pixelsPerCss / 128, innerHeight * pixelsPerCss / 64) + .001));
   const centerX = rect.left + padding.left + innerWidth / 2;
   const centerY = rect.top + padding.top + innerHeight / 2;
   const left = Math.round((centerX - offsetX) * pixelsPerCss - 64 * pitch);
@@ -19,9 +27,16 @@ export function fitOledGrid(rect, ratio, padding, viewport = {}) {
 
 export function mountOledGrid(canvas) {
   const bezel = canvas.parentElement;
+  const board = canvas.closest('[data-board-width-mm]');
   let request = 0, resolution;
   function sync() {
     if (!canvas.isConnected) return;
+    if (board) {
+      const ratio = (devicePixelRatio || 1) * (window.visualViewport?.scale || 1);
+      const width = fitCoreWidth(board.parentElement.clientWidth, document.documentElement.clientWidth, ratio);
+      const value = `${width}px`;
+      if (board.style.getPropertyValue('--oled-board-width') !== value) board.style.setProperty('--oled-board-width', value);
+    }
     const rect = bezel.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const style = getComputedStyle(bezel);

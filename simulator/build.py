@@ -73,6 +73,7 @@ def main():
                 archive.write(file, file.relative_to(ROOT))
         for name in ('oled-playground.js', 'oled-clock.js', 'oled-grid.js', 'oled-keys.js', 'oled-playground.css'):
             archive.write(ROOT / name, name)
+        archive.write(PUBLIC / 'astra-core-artwork.svg', 'assets/simulator/astra-core-artwork.svg')
 
 
 if __name__ == '__main__':

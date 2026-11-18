@@ -148,20 +148,19 @@
             <button type="button" data-ui-engine="lite" aria-pressed="false">astra UI Lite</button>
           </div>
         </div>
-        <div class="pcb-board" tabindex="0" role="group" aria-label="Interactive OLED development board" aria-describedby="oled-help">
-          <svg class="pcb-copper" viewBox="0 0 350 72" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width=".6"><path d="M31 26v-5h33l6 6h16M41 26v-8h25l7 7h13M96 26v-9h30l7 7h12M106 26v-12h23l7 7h9M157 25v-9h21l9 9v24l-7 7v9M167 25v-7h10l7 7v22l-7 7v11M172 12h22l9 9v16M176 9h20l10 10v17M249 24h14l7-7h6M249 57h14l7-7h6M317 25h7v25h-7"/><circle cx="86" cy="25" r="1"/><circle cx="145" cy="21" r="1"/><circle cx="172" cy="12" r="1"/><circle cx="249" cy="24" r="1"/><circle cx="249" cy="57" r="1"/><circle cx="324" cy="50" r="1"/></g></svg>
+        <div class="pcb-board" data-board-width-mm="36.4" data-board-height-mm="26.3" data-board-thickness-mm="1.6" tabindex="0" role="group" aria-label="Interactive OLED development board" aria-describedby="oled-help">
+          <img class="pcb-artwork" src="assets/simulator/astra-core-artwork.svg" width="364" height="263" alt="" aria-hidden="true" loading="lazy" decoding="async">
           <div class="oled-module"><div class="oled-bezel"><canvas class="oled-screen" width="128" height="64" role="img" aria-label="128 by 64 monochrome OLED display"></canvas><div class="oled-loading" data-oled-loading><span data-en="Powering up…">正在通电…</span></div></div></div>
-          <div class="pcb-topline" aria-hidden="true"><span class="pcb-debug-legend">DEBUG1</span><span class="pcb-debug-legend">DEBUG2</span><span class="pcb-wordmark">///astra<span>Core</span> <small>Rev 1.0</small></span></div>
           <div class="pcb-components">
-            <div class="pcb-connectors" aria-hidden="true"><span class="pcb-connector"><i></i><i></i><i></i><i></i></span><span class="pcb-connector"><i></i><i></i><i></i><i></i></span><span class="pcb-connector"><i></i><i></i><i></i><i></i></span></div>
-            <span class="pcb-buzzer" aria-hidden="true"><span class="buzzer-case"><i></i><b>HN</b><small>+</small></span></span>
+            <div class="pcb-connectors" aria-hidden="true"><span class="pcb-connector"><i></i><i></i><i></i><i></i><span class="socket-inlet"><b></b><b></b><b></b><b></b></span></span><span class="pcb-connector"><i></i><i></i><i></i><i></i><span class="socket-inlet"><b></b><b></b><b></b><b></b></span></span><span class="pcb-connector"><i></i><i></i><i></i><i></i><span class="socket-inlet"><b></b><b></b><b></b><b></b></span></span></div>
+            <span class="pcb-buzzer" aria-hidden="true"><span class="buzzer-lead"></span><span class="buzzer-lead"></span><span class="buzzer-lead"></span><span class="buzzer-case"><i></i><small></small></span></span>
             <div class="pcb-controls"><div class="pcb-key-grid">
               <button class="pcb-key" type="button" data-oled-action="0" data-oled-hold="2" aria-label="Previous; hold to go back" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="sr-only" data-en="Prev">上一个</span></button>
               <button class="pcb-key" type="button" data-oled-action="1" data-oled-hold="3" aria-label="Next; hold to enter" disabled><span class="tact-switch" aria-hidden="true"><i></i></span><span class="sr-only" data-en="Next">下一个</span></button>
             </div></div>
             <span class="pcb-status" aria-hidden="true"><i class="board-led"></i><i></i><i></i></span>
           </div>
-          <span class="pcb-smd pcb-smd--one" aria-hidden="true"></span><span class="pcb-smd pcb-smd--two" aria-hidden="true"></span><span class="pcb-test-pad" aria-hidden="true"></span><span class="pcb-tooling" aria-hidden="true"></span><span class="pcb-pin-one" aria-hidden="true"></span>
+          <span class="pcb-smd pcb-smd--one" aria-hidden="true"></span><span class="pcb-smd pcb-smd--two" aria-hidden="true"></span><span class="pcb-tooling pcb-tooling--upper" aria-hidden="true"></span><span class="pcb-tooling pcb-tooling--lower" aria-hidden="true"></span>
         </div>
         <div class="playground-footer"><p id="oled-help" data-en="Tap to move; hold the upper key to go back, the lower key to enter. Keyboard: ↑ ↓ · Enter · Esc.">点击切换上/下一项，长按上键返回、长按下键确认；键盘 ↑ ↓ · Enter · Esc。</p><button class="oled-reset" data-oled-reset type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6 6 0 1 1-1 6M4 3v4h4"/></svg><span data-en="Reset">重启</span></button></div>
         <p class="oled-announcement sr-only" role="status" aria-live="polite"></p>

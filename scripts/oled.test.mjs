@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createOledEngine } from '../oled-playground.js';
 import { OledFrameClock } from '../oled-clock.js';
-import { fitOledGrid } from '../oled-grid.js';
+import { fitOledGrid, fitCoreWidth } from '../oled-grid.js';
 import { OledKeyGesture } from '../oled-keys.js';
 
 const root = new URL('../', import.meta.url);
@@ -18,7 +18,7 @@ async function fresh(name) {
     const view = new Uint8Array(engine.memory.buffer, engine.sim_label(), 100);
     return new TextDecoder().decode(view.subarray(0, view.indexOf(0)));
   };
-  step();
+  step(440);
   return { engine, step, input, frame, label };
 }
 
@@ -93,13 +93,77 @@ test('upstream source and declared patches match pinned hashes; shipped WASM mat
   }
 });
 
-test('UI time advances equally at 30, 60, 90, 120, 144 and 240 Hz without a display-frame gate', () => {
-  for (const refresh of [30,60,90,120,144,240]) {
-    const clock = new OledFrameClock();clock.reset(0);
+test('the 240 Hz Astra and 60 Hz Lite clocks keep their cadence across display refresh rates', () => {
+  for (const rate of [60,240]) for (const refresh of [30,60,90,120,144,240]) {
+    const clock = new OledFrameClock(rate);clock.reset(0);
     let steps = 0, elapsed = 0;
     for (let frame = 1; frame <= refresh; frame++) clock.advance(frame * 1000 / refresh, ms => { steps++;elapsed += ms; });
-    assert.equal(steps,240, `${refresh} Hz`);
+    assert.equal(steps,rate, `${rate} Hz UI on ${refresh} Hz display`);
     assert.ok(Math.abs(elapsed - 1000) < .001, `${refresh} Hz must represent a real second`);
+  }
+});
+
+test('changing engine cadence clears fractional work and cannot inherit a paused backlog', () => {
+  const clock=new OledFrameClock(240);clock.reset(0);clock.advance(6,()=>{});
+  clock.setRate(60);let steps=0;
+  assert.equal(clock.advance(4000,()=>steps++),0);
+  assert.equal(clock.advance(4000+1000/60,()=>steps++),1);
+  assert.equal(steps,1);
+});
+
+test('the original star/title boot is visible, finite, replayable on reset and skippable by input', async () => {
+  const binary=await readFile(new URL('assets/simulator/modern.wasm',root));
+  for(let attempt=0;attempt<2;attempt++) {
+    const engine=await createOledEngine(binary);let time=0;const frames=new Set();
+    assert.equal(engine.sim_flags()&8,8);
+    while((engine.sim_flags()&8)&&time<4000) {
+      engine.sim_step(Math.round(time+=1000/240));
+      if(time>400&&time<1300)frames.add(Buffer.from(new Uint8Array(engine.memory.buffer,engine.sim_buffer(),1024)).toString('hex'));
+    }
+    assert.ok(time>1800&&time<2700,`boot took ${time} ms`);
+    assert.ok(frames.size>25,'boot must present intermediate original star/text frames');
+    assert.equal(engine.sim_flags()&12,0);
+  }
+  const quick=await createOledEngine(binary);quick.sim_input(1);quick.sim_step(17);
+  assert.equal(quick.sim_flags()&8,0,'a control may skip the boot without losing its action');
+  assert.equal(quick.sim_selected(),1);
+});
+
+test('every home tile has a white field with a dark cut-out motif', async () => {
+  const demo=await fresh('modern');
+  for(let tile=0;tile<3;tile++) {
+    const frame=demo.frame();let white=0;
+    for(let y=8;y<38;y++)for(let x=49;x<79;x++)white+=!!(frame[x+(y>>3)*128]&(1<<(y%8)));
+    assert.ok(white>600&&white<870,`tile ${tile} white pixels: ${white}`);
+    demo.input(1);
+  }
+});
+
+test('Lite retains its slower hourglass transition and the complete staged copyright page, then rests', async () => {
+  const engine=await createOledEngine(await readFile(new URL('assets/simulator/lite.wasm',root)));
+  let time=0;const step=()=>engine.sim_step(Math.round(time+=1000/60));
+  const advance=ms=>{const end=time+ms;while(time<end)step();};
+  const frame=()=>Buffer.from(new Uint8Array(engine.memory.buffer,engine.sim_buffer(),1024));
+  advance(3000);engine.sim_input(0);advance(800);engine.sim_input(3);
+  const entered=time;assert.equal(engine.sim_flags()&16,16);
+  while((engine.sim_flags()&16)&&time-entered<2000)step();
+  assert.ok(time-entered>650&&time-entered<1200,`hourglass took ${time-entered} ms`);
+  assert.equal(engine.sim_flags()&4,4,'copyright stages must continue after the mask exits');
+  const arriving=frame();advance(1200);const middle=frame();
+  assert.notDeepEqual(arriving,middle);
+  advance(3000);const settled=frame();assert.equal(engine.sim_flags()&4,0);
+  advance(1000);assert.deepEqual(frame(),settled,'the final copyright card must stop changing');
+  engine.sim_input(2);advance(1800);assert.equal(engine.sim_flags()&20,0);
+  engine.sim_input(3);advance(4800);assert.deepEqual(frame(),settled,'reentry resets and replays the same final card');
+});
+
+test('the measured assembly scales with its OLED grid without distorting the board or overflowing a phone', () => {
+  for(const [available,viewport] of [[280,320],[350,390],[737,1440]]) for(const ratio of [1,1.25,1.5,2,3]) {
+    const width=fitCoreWidth(available,viewport,ratio);
+    const pixelPitch=width/36.4*29.42*ratio/128;
+    assert.ok(Math.abs(pixelPitch-Math.round(pixelPitch))<1e-8);
+    assert.ok(width<viewport);
+    assert.ok(width>=150&&width<=480.01);
   }
 });
 

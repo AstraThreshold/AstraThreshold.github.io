@@ -10,59 +10,57 @@
 .engine-picker button { background: transparent; border: 0; color: var(--muted); padding: 6px 10px; border-radius: 2px; font: 12px/1.5 var(--mono); white-space: nowrap; }
 .engine-picker button[aria-pressed="true"] { color: var(--ink); background: var(--panel); }
 
-/* One trimmed core, with glass across its width and a compact component strip. */
-.pcb-board { position: relative; isolation: isolate; container-type: inline-size; width: 100%; max-width: 450px; aspect-ratio: 35 / 25; margin-inline: auto; border: 1px solid; border-color: #366353 #133e32 #092c23 #315d4e; border-radius: 1px; background: linear-gradient(116deg,#1b5145,#12463c 64%,#16473c); color: #d9dfd0; font-family: var(--mono); box-shadow: inset 0 0 0 1px #8caa7040, 0 1px 0 #192f20, 0 3px 5px #0003; }
-.pcb-copper { position: absolute; left: 0; bottom: 0; width: 100%; height: 29%; color: #4d8062; opacity: .4; pointer-events: none; }
-.oled-module { position: absolute; z-index: 1; top: .65%; left: .7%; right: .7%; height: 66.6%; background: #000; border: 1px solid; border-color: #333c31 #17271f #263f2e #4d5644; box-shadow: 0 1px 1px #031c16; }
-.oled-module::before { content: ""; position: absolute; top: 0; bottom: 0; left: 4.5%; width: 1px; background: #32352a; box-shadow: -1px 0 #111b16; }
+/* Geometry is in mm, based on PCB2.GTP/GM1 and the owner's CH1115 panel data. */
+.pcb-board { --mm: calc(100cqw / 36.4); position: relative; isolation: isolate; container-type: inline-size; width: var(--oled-board-width,100%); aspect-ratio: 36.4 / 26.3; margin-inline: calc((100% - var(--oled-board-width,100%)) / 2); border: 0; border-radius: 1px; background: linear-gradient(116deg,#1b5145,#12463c 64%,#16473c); color: #d9dfd0; font-family: var(--mono); box-shadow: inset 0 0 0 1px #8caa7050,0 3px 6px #0002; }
+.pcb-board::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: calc(1.6 * var(--mm)); transform: scaleY(.14); transform-origin: top; background: linear-gradient(#263e2a 0 18%,#9b955e 22% 32%,#344529 38% 62%,#8b8452 66% 75%,#1c3022 80%); border-radius: 0 0 1px 1px; pointer-events: none; }
+.pcb-artwork { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+.oled-module { position: absolute; z-index: 1; left: calc(.3 * var(--mm)); top: calc(.3 * var(--mm)); width: calc(35.8 * var(--mm)); height: calc(17.1 * var(--mm)); background: #000; border-radius: 1px; box-shadow: inset 0 0 0 .6px #424b39,0 1px 1px #031c16; }
+.oled-module::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(1.4 * var(--mm)); width: 1px; background: #30362b; box-shadow: -1px 0 #111b16; }
 .oled-module::after { content: ""; position: absolute; left: -1px; top: 22%; width: 1px; height: 8%; background: #987553; box-shadow: 0 12cqw #987553; }
-.oled-bezel { position: absolute; inset: 4.2% 2.8% 4.2% 5.8%; padding: 0; background: #000; }
+.oled-bezel { position: absolute; left: calc(3.19 * var(--mm)); top: calc(1.195 * var(--mm)); width: calc(29.42 * var(--mm)); height: calc(14.71 * var(--mm)); padding: 0; background: #000; }
 .oled-screen { position: absolute; left: 0; top: 0; display: block; width: 128px; height: 64px; transform-origin: 0 0; image-rendering: pixelated; background: #000; visibility: hidden; }
 .oled-screen[data-grid-ready] { visibility: visible; }
 .oled-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px; color: #dedede; background: #000; font: 11px/1.6 var(--mono); text-align: center; }
 .oled-loading[hidden] { display: none; }
-
-.pcb-topline { position: absolute; z-index: 1; top: 69%; left: 0; right: 0; height: 5.5%; pointer-events: none; }
-.pcb-debug-legend { position: absolute; left: 1.6%; top: 0; padding: .5px 2px; border-radius: 1px; background: #d9dfc4; color: #325143; font: 600 clamp(5px,1.96cqw,9px)/1.3 var(--mono); }
-.pcb-debug-legend:nth-child(2) { left: 19.9%; }
-.pcb-wordmark { position: absolute; top: -1%; left: 51.5%; color: #cfb07a; white-space: nowrap; font: italic 400 clamp(7px,3.15cqw,14px)/1.1 var(--serif); }
-.pcb-wordmark span { padding-inline: 1px; color: #304231; background: #cbb57f; }
-.pcb-wordmark small { margin-left: 3px; font: 400 clamp(4px,1.55cqw,7px)/1 var(--mono); }
 .pcb-components, .pcb-connectors { display: contents; }
 
-/* Three SH1.0 4P side-entry sockets: flat ivory roof, four leads and side tabs. */
-.pcb-connector { position: absolute; z-index: 1; left: .8%; bottom: 1.9%; width: 17.1429%; height: 17%; border: 1px solid; border-color: #f1ecda #b7ad91 #a29577 #f0ead5; border-radius: 1px; background: linear-gradient(#e0d6b8 0 3%,#f1ebd7 5% 11%,#e8e2cd 13% 81%,#ded5b7 84% 93%,#c6bb99 96%); box-shadow: inset 1px 0 #f9f4e1, inset -1px 0 #c7bda1, 0 1px 1px #041f17; }
-.pcb-connector:nth-child(2) { left: 19%; }.pcb-connector:nth-child(3) { left: 37.2%; }
-.pcb-connector::before { content: ""; position: absolute; left: 7%; right: 7%; bottom: 3%; height: 8%; background: linear-gradient(#847d63,#b4aa87 45%,#e7dbb9 75%); border-radius: 1px; }
-.pcb-connector::after { content: ""; position: absolute; left: -3%; right: -3%; top: 32%; height: 45%; border-inline: 2px solid #adb99f; box-shadow: -1px 0 #d6dac0, 1px 0 #d6dac0; }
-.pcb-connector i { position: absolute; top: -15%; left: 22%; width: 5.5%; height: 16.5%; border-radius: 1px 1px 0 0; background: linear-gradient(90deg,#748e77,#d4d6bc 40%,#8d9c80 75%,#c9cbb0); box-shadow: 0 -1px #dce0c6; }
-.pcb-connector i:nth-child(2) { left: 38.6667%; }.pcb-connector i:nth-child(3) { left: 55.3333%; }.pcb-connector i:nth-child(4) { left: 72%; }
+/* SH1.0 4P side-entry housing: roof chamfers, retaining ears, four tin tails. */
+.pcb-connector { position: absolute; z-index: 1; left: calc(.556 * var(--mm)); top: calc(21.54 * var(--mm)); width: calc(6 * var(--mm)); height: calc(4.25 * var(--mm)); border: 0; border-radius: 1px; background: linear-gradient(#a99e7e 0 1%,#f7f2dd 2% 5%,#d8cfb1 6% 8%,#f0ead6 9% 14%,#e8e2cb 16% 82%,#f0e8ce 84% 88%,#c3b68f 90% 100%); box-shadow: inset 1px 0 #f9f5e4,inset -1px 0 #a69b7d,0 1px 1px #041f17; }
+.pcb-connector:nth-child(2) { left: calc(7.16 * var(--mm)); }.pcb-connector:nth-child(3) { left: calc(13.764 * var(--mm)); }
+.pcb-connector::before { content: ""; position: absolute; inset: 12% 5% 18%; border: .6px solid; border-color: #fffbea60 #bbb29340 #b9b08e60 #fffbea80; border-radius: 1px; background: linear-gradient(110deg,#f2eddb50,transparent 55%); }
+.pcb-connector::after { content: ""; position: absolute; left: 0; right: 0; top: 45%; height: 33%; border-inline: calc(.15 * var(--mm)) solid #a9b29b; box-shadow: inset 1px 0 #c4c7af,inset -1px 0 #c4c7af; }
+.pcb-connector i { position: absolute; top: calc(-.78 * var(--mm)); left: calc(1.316 * var(--mm)); width: calc(.32 * var(--mm)); height: calc(.94 * var(--mm)); border-radius: 1px 1px 0 0; background: linear-gradient(90deg,#718c73,#e4e5ce 32%,#a0ad91 60%,#d0d3b7); box-shadow: 0 -.5px #e7e8d1,inset 0 1px #a4b39a; }
+.pcb-connector i:nth-child(2) { left: calc(2.332 * var(--mm)); }.pcb-connector i:nth-child(3) { left: calc(3.348 * var(--mm)); }.pcb-connector i:nth-child(4) { left: calc(4.364 * var(--mm)); }
+.socket-inlet { position: absolute; left: 8%; right: 8%; bottom: 2.5%; height: 9%; display: flex; justify-content: center; gap: 12%; border-radius: 1px; background: linear-gradient(#776f54,#9f9371 38%,#d8cba5 70%,#f3e6c4); box-shadow: 0 -1px #f7f1d9; }
+.socket-inlet b { display: block; width: 5%; height: 65%; background: linear-gradient(#686e5b,#c2b98f); }
 
-/* MLT-5020-style 5 mm square transducer, with its offset sound port. */
-.pcb-buzzer { position: absolute; z-index: 1; left: 57.7%; bottom: 2.5%; width: 14.2857%; aspect-ratio: 1; background: linear-gradient(#8ba18a,#c4c9ad,#8b9a80) left 18%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) right 18%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) left 82%/7% 13%,linear-gradient(#8ba18a,#c4c9ad,#8b9a80) right 82%/7% 13%; background-repeat: no-repeat; }
-.buzzer-case { position: absolute; inset: 1px 3%; clip-path: polygon(0 0,88% 0,100% 12%,100% 100%,0 100%); border: 1px solid #17251f; border-radius: 1px; background: linear-gradient(125deg,#3a4541,#2c3833 57%,#344139); box-shadow: inset 1px 1px #72837635; }
-.buzzer-case i { position: absolute; left: 43%; top: 17%; width: 15%; aspect-ratio: 1; border: 1px solid #566255; border-radius: 50%; background: radial-gradient(ellipse at 60% 65%,#0d1512,#080f0c 65%,#304033); }
-.buzzer-case b { position: absolute; top: 45%; left: 0; right: 0; color: #85958a; text-align: center; font: 600 clamp(5px,2.3cqw,10px)/1 var(--mono); text-shadow: 0 1px #18251d; }
-.buzzer-case small { position: absolute; left: 9%; bottom: 8%; color: #84917e; font: 6px/1 var(--mono); }
+/* The MLT-5020 outline and all three pads follow the supplied drawing/Gerber. */
+.pcb-buzzer { position: absolute; z-index: 1; left: calc(21.122 * var(--mm)); top: calc(20.4868 * var(--mm)); width: calc(5 * var(--mm)); height: calc(5 * var(--mm)); }
+.buzzer-lead { position: absolute; left: calc(-.65 * var(--mm)); top: calc(.4 * var(--mm)); width: calc(1.7 * var(--mm)); height: calc(.7 * var(--mm)); border-radius: 1px; background: linear-gradient(#8b9d81,#d6d7bb 35%,#a4af94 65%,#697d64); box-shadow: 0 .5px #d9dbc1; }
+.buzzer-lead:nth-child(2) { top: calc(3.9 * var(--mm)); }.buzzer-lead:nth-child(3) { left: calc(3.95 * var(--mm)); top: calc(3.9 * var(--mm)); }
+.buzzer-case { position: absolute; inset: 0; clip-path: polygon(0 0,86% 0,100% 14%,100% 100%,0 100%); border: .7px solid #17251f; border-radius: 1px; background: linear-gradient(125deg,#3c4640,#29352e 57%,#354136); box-shadow: inset 1px 1px #72837635; }
+.buzzer-case i { position: absolute; left: 42%; top: 12%; width: 16%; height: 16%; border: .7px solid #53604f; border-radius: 50%; background: radial-gradient(ellipse at 60% 65%,#111a12,#080f0a 68%,#30402c); }
+.buzzer-case small { position: absolute; left: 11%; bottom: 9%; width: 14%; height: 14%; border-radius: 50%; background: #172219; box-shadow: inset 0 1px #0b130b80; }
 
-.pcb-controls { position: absolute; z-index: 2; top: 75%; bottom: 1.2%; right: 9%; width: 13%; }
-.pcb-key-grid { display: grid; height: 100%; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 1px; }
+/* Two two-terminal turtle switches; generous hit areas do not enlarge the cap. */
+.pcb-controls { position: absolute; z-index: 2; left: calc(27.699 * var(--mm)); top: calc(19.812 * var(--mm)); width: calc(4.8 * var(--mm)); height: calc(6.096 * var(--mm)); }
+.pcb-key-grid { display: grid; height: 100%; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
 .pcb-key { position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 1px; background: transparent; color: #d6dfcf; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.tact-switch { position: relative; display: grid; place-items: center; width: 70%; aspect-ratio: 3 / 2.5; border: 1px solid; border-color: #e1e5d2 #8a957f #7b8a73 #ced7bf; border-radius: 1px; background: linear-gradient(135deg,#bac4ae,#cbd1ba 38%,#acb99e 43%,#9ba98e); box-shadow: inset 0 1px #eef0da50, 0 1px 1px #07291d; }
-.tact-switch::before { content: ""; position: absolute; inset: 15% -12%; border-inline: 3px solid #c3c9ac; box-shadow: -1px 0 #789171,1px 0 #789171; }
-.tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 2px; background: radial-gradient(circle at 1px 1px,#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at calc(100% - 1px) 1px,#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at 1px calc(100% - 1px),#7e8a70 0 1px,transparent 1.5px),radial-gradient(circle at calc(100% - 1px) calc(100% - 1px),#7e8a70 0 1px,transparent 1.5px); }
-.tact-switch i { width: 35%; aspect-ratio: 1; border-radius: 50%; border: 1px solid #26351e; background: radial-gradient(ellipse at 45% 20%,#535b43,#303b25 65%); box-shadow: inset 0 1px #97a48060,0 1px #8c9b79; }
-.pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(1px); background: #182310; box-shadow: inset 0 1px 2px #000; }
+.tact-switch { position: relative; display: grid; place-items: center; width: calc(3 * var(--mm)); height: calc(2.5 * var(--mm)); border: .7px solid; border-color: #d6deca #7f8d75 #75816b #c1cfb5; border-radius: 2px; background: linear-gradient(135deg,#c8d1ba,#b7c3a7 43%,#a1b08e 46%,#bac3a5); box-shadow: inset 0 .5px #f0f2dc90,0 .6px 1px #0b2017; }
+.tact-switch::before { content: ""; position: absolute; left: calc(-.5 * var(--mm)); right: calc(-.5 * var(--mm)); height: 65%; border-inline: calc(.3 * var(--mm)) solid #bfc9ac; box-shadow: -1px 0 #7c9470,1px 0 #7c9470; }
+.tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 1px; border-inline: .6px solid #8e9d7b; border-radius: 1px; }
+.tact-switch i { z-index: 1; width: calc(2 * var(--mm)); height: calc(2 * var(--mm)); border-radius: 50%; border: .7px solid #1d2b16; background: radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; }
+.pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(.7px); background: #182310; box-shadow: inset 0 1px 2px #000; }
 .pcb-key:disabled { opacity: .45; }
-.pcb-status { position: absolute; z-index: 1; left: 92%; top: 79.2%; bottom: 6%; width: 3%; display: flex; flex-direction: column; justify-content: space-between; }
-.pcb-status i { width: 100%; height: 16%; border-radius: 1px; background: linear-gradient(90deg,#c9d1b5 0 18%,#8ac6d6 22% 78%,#c9d1b5 82%); box-shadow: 0 0 4px #82d8ea60; }
-.pcb-status i:last-child { background: linear-gradient(90deg,#c9d1b5 0 18%,#d69c74 22% 78%,#c9d1b5 82%); box-shadow: 0 0 4px #efad7050; }
-.pcb-board[data-led="false"] .board-led { background: linear-gradient(90deg,#a9b99c 0 18%,#4f6654 22% 78%,#a9b99c 82%); box-shadow: none; }
-.pcb-smd { position: absolute; top: 69.7%; left: 44%; width: 1.6%; height: 3.1%; border-radius: 1px; border-block: 2px solid #bfc8ab; background: #718875; box-shadow: 0 1px #092b1e; }
-.pcb-smd--two { left: 46.8%; }
-.pcb-test-pad { position: absolute; left: 54.4%; bottom: 3%; width: 2.2%; height: 3.7%; border-radius: 1px; background: linear-gradient(110deg,#bcaa69,#d3c084 55%,#c3ad66); }
-.pcb-tooling { position: absolute; right: 11.1%; bottom: 2%; width: 1.5%; aspect-ratio: 1; border-radius: 50%; background: #0b291d; box-shadow: inset 0 1px #809570; }
-.pcb-pin-one { position: absolute; right: 2.1%; bottom: 1.3%; width: 3.1%; height: 3.8%; background: #c9bc83; clip-path: polygon(50% 0,100% 100%,0 100%); }
+.pcb-status { display: contents; }
+.pcb-status i { position: absolute; z-index: 1; left: calc(33.7095 * var(--mm)); top: calc(19.8565 * var(--mm)); width: calc(2.05 * var(--mm)); height: calc(.8 * var(--mm)); border-radius: 1px; background: linear-gradient(90deg,#d0d7bd 0 15%,#b1d5d8 19% 81%,#d0d7bd 85%); box-shadow: 0 0 4px #82d8ea60; }
+.pcb-status i:nth-child(2) { top: calc(21.2535 * var(--mm)); background: linear-gradient(90deg,#c9d1b5 0 15%,#70b6d2 19% 81%,#c9d1b5 85%); }
+.pcb-status i:last-child { top: calc(22.9045 * var(--mm)); background: linear-gradient(90deg,#c9d1b5 0 15%,#d69c74 19% 81%,#c9d1b5 85%); box-shadow: 0 0 4px #efad7050; }
+.pcb-board[data-led="false"] .board-led { background: linear-gradient(90deg,#a9b99c 0 15%,#4f6654 19% 81%,#a9b99c 85%); box-shadow: none; }
+.pcb-smd { position: absolute; z-index: 1; top: calc(18.2245 * var(--mm)); left: calc(15.9175 * var(--mm)); width: calc(.55 * var(--mm)); height: calc(1.524 * var(--mm)); border-radius: 1px; border-block: calc(.25 * var(--mm)) solid #bfc8ab; background: #8c9e85; box-shadow: 0 1px #092b1e; }
+.pcb-smd--two { left: calc(16.9335 * var(--mm)); }
+.pcb-tooling { position: absolute; left: calc(33.6493 * var(--mm)); width: calc(.65 * var(--mm)); height: calc(.65 * var(--mm)); border: calc(.08 * var(--mm)) solid #c0b574; border-radius: 50%; background: #09261c; box-shadow: 0 0 0 .5px #204c34; }
+.pcb-tooling--upper { top: calc(18.619 * var(--mm)); }.pcb-tooling--lower { top: calc(24.4197 * var(--mm)); }
 [data-engine="lite"] .pcb-board { background: linear-gradient(116deg,#225647,#184d40 64%,#1d4b3d); }
 
 .playground-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; }

@@ -1,10 +1,10 @@
 {
   "modern": {
-    "sha256": "8ad34261cd238c290ee358f05cb484298df3e2b91bc35b6236bed562a1bd6f7d",
-    "bytes": 71763
+    "sha256": "3a03f009cfb63ab519536c449a482442b2586b31eae830d2c701962ff65068da",
+    "bytes": 74550
   },
   "lite": {
-    "sha256": "46182196e9df7a3e9cdaba3024e11b8b6618549d390aaece7a3f278c783506d8",
-    "bytes": 43562
+    "sha256": "7ee693666cebc4d26e552e2a2d5a361cd51f3c65d97306add7ff082d17f2937c",
+    "bytes": 46154
   }
 }

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include "modern-boot.h"
 
 static u8g2_t display;
 static uint32_t ticks;
@@ -55,11 +56,15 @@ static astra::Launcher *launcher;
 static astra::Menu *current;
 static astra::CheckBox *status_led;
 static astra::CheckBox *invert_oled;
+static OriginalBoot boot;
+static bool booting = true;
 
 // 30 x 30 XBM icons are demo content, drawn by the upstream Tile renderer.
 static std::vector<unsigned char> icon(int type) {
-    std::vector<unsigned char> bitmap(120, 0);
-    auto point = [&](int x, int y) { if (x >= 0 && x < 30 && y >= 0 && y < 30) bitmap[y * 4 + x / 8] |= 1 << (x % 8); };
+    // Upstream default pictures are solid white. Cut each motif out of that
+    // white field instead of drawing a white outline on black.
+    std::vector<unsigned char> bitmap(120, 255);
+    auto point = [&](int x, int y) { if (x >= 0 && x < 30 && y >= 0 && y < 30) bitmap[y * 4 + x / 8] &= ~(1 << (x % 8)); };
     auto line = [&](int x1, int y1, int x2, int y2) {
         int count = std::max(std::abs(x2 - x1), std::abs(y2 - y1));
         for (int i = 0; i <= count; ++i) point(x1 + (x2 - x1) * i / std::max(count, 1), y1 + (y2 - y1) * i / std::max(count, 1));
@@ -100,8 +105,16 @@ void sim_init() {
         about->addItem(new astra::List(title));
     current = root;launcher = new astra::Launcher();launcher->init(root);
 }
-void sim_step(uint32_t ms) { ticks = ms;launcher->update(); }
+void sim_step(uint32_t ms) {
+    ticks = ms;
+    if (booting) {
+        if (boot.draw(ms)) return;
+        booting = false;HAL::setFont(astra::getUIConfig().mainFont);
+    }
+    launcher->update();
+}
 void sim_input(int action) {
+    if (booting) { booting = false;HAL::setFont(astra::getUIConfig().mainFont); }
     if (action == 0) launcher->getSelector()->goPreview();
     else if (action == 1) launcher->getSelector()->goNext();
     else if (action == 2) {
@@ -114,6 +127,6 @@ void sim_input(int action) {
 }
 uint8_t *sim_buffer() { return u8g2_GetBufferPtr(&display); }
 int sim_selected() { return current->selectIndex; }
-int sim_flags() { return (status_led->value ? 1 : 0) | (invert_oled->value ? 2 : 0); }
+int sim_flags() { return (status_led->value ? 1 : 0) | (invert_oled->value ? 2 : 0) | (booting ? 12 : 0); }
 const char *sim_label() { return current->childMenu[current->selectIndex]->title.c_str(); }
 }

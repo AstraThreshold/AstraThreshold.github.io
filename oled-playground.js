@@ -164,6 +164,7 @@ export function initOledPlayground(getLanguage) {
     const ticket = ++sequence;
     keys.cancel();grid.sync();
     stop();failure = false;selected = name;current = null;
+    clock.setRate(name === 'lite' ? 60 : 240);
     resetButton.disabled = true;
     root.dataset.engine = name;root.dataset.state = 'loading';
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
@@ -175,7 +176,8 @@ export function initOledPlayground(getLanguage) {
       if (ticket !== sequence) return;
       current = state;lastFlags = -1;
       // Original engines animate their own selectors; reduced motion settles offscreen.
-      const frames = reducedMotion.matches ? 220 : 1;
+      // Settle both the new boot and its following camera entry without motion.
+      const frames = reducedMotion.matches ? 480 : 1;
       for (let i = 0; i < frames; i++) { state.time += 1000 / 60;state.engine.sim_step(Math.round(state.time)); }
       draw(true);announce();
       root.dataset.state = 'ready';loading.hidden = true;
@@ -190,7 +192,7 @@ export function initOledPlayground(getLanguage) {
       grid.sync();
       current.engine.sim_input(action);
       if (reducedMotion.matches) {
-        for (let i = 0; i < 220; i++) { current.time += 1000 / 60;current.engine.sim_step(Math.round(current.time)); }
+        for (let i = 0; i < 480; i++) { current.time += 1000 / 60;current.engine.sim_step(Math.round(current.time)); }
         draw();
       }
       announce();wake();
