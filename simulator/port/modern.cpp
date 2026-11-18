@@ -35,7 +35,8 @@ public:
         for (int i = 0; i < px(h); ++i) if (i % 8 >= 3) u8g2_DrawPixel(&display, px(x), px(y) + i);
     }
     void _drawHDottedLine(float x, float y, float w) override {
-        for (int i = 0; i < px(w); ++i) if (i % 8 >= 3) u8g2_DrawPixel(&display, px(x) + i, px(y));
+        // Split a dash across the edges so the 128-pixel home rule reaches both.
+        for (int i = 0; i < px(w); ++i) if ((i + 5) % 8 >= 3) u8g2_DrawPixel(&display, px(x) + i, px(y));
     }
     void _drawVLine(float x, float y, float h) override { u8g2_DrawVLine(&display, px(x), px(y), px(h)); }
     void _drawHLine(float x, float y, float w) override { u8g2_DrawHLine(&display, px(x), px(y), px(w)); }

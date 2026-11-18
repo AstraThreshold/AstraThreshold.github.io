@@ -16,6 +16,8 @@ fires once at 600 ms and never sends a short action on release. Dragging away,
 touch scrolling, focus loss and engine changes cancel an unfinished hold.
 The focused switches also accept short/held Enter or Space. Board keyboard
 shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
+The board and its decorative image are non-selectable and non-draggable, avoiding
+the browser's dark image-selection overlay during pointer/keyboard operation.
 Demonstration content is supplied by these adapters. Hardware-only effects and
 serial/ADC peripherals are not simulated. No UI engine is rewritten in JavaScript.
 
@@ -89,6 +91,8 @@ input may skip it, and reduced-motion mode settles it without displaying motion.
 All three demo home icons use dark cut-outs in the original white tile field.
 The browser HAL adds one inner diagonal pixel to each of the four small list
 selector notches, keeping XOR drawing and the integer raster bounds intact.
+The home screen's dotted divider starts and ends within a dash, reaching both
+edges of the native 128-pixel display while retaining five-on/three-off spacing.
 
 `port/lite-about.h` re-enables the staged copyright callbacks commented out in
 astraLauncher's original `Core/Src/main.c`: title, credit, miniature board, screen
