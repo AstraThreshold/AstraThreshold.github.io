@@ -2,7 +2,7 @@
 export function fitCoreWidth(available, viewport, ratio) {
   // Fit the whole assembly to the native display pitch, preserving every mm
   // ratio. A narrow phone can use its gutters without overflowing the viewport.
-  const limit = Math.min(480, Math.max(available, Math.min(viewport - 2, 128 * 2 * 36.4 / 29.42)));
+  const limit = Math.min(360, Math.max(available, Math.min(viewport - 2, 128 * 2 * 36.4 / 29.42)));
   const pitch = Math.max(1, Math.floor(limit * ratio * 29.42 / (128 * 36.4) + 1e-5));
   return pitch * 128 * 36.4 / (29.42 * ratio);
 }
@@ -28,18 +28,25 @@ export function fitOledGrid(rect, ratio, padding, viewport = {}) {
 export function mountOledGrid(canvas) {
   const bezel = canvas.parentElement;
   const board = canvas.closest('[data-board-width-mm]');
+  const stage = board?.closest('.pcb-scene');
+  const playground = board?.closest('[data-oled-playground]');
   let request = 0, resolution;
   function sync() {
     if (!canvas.isConnected) return;
     if (board) {
       const ratio = (devicePixelRatio || 1) * (window.visualViewport?.scale || 1);
-      const width = fitCoreWidth(board.parentElement.clientWidth, document.documentElement.clientWidth, ratio);
+      const width = fitCoreWidth((stage || board.parentElement).clientWidth, document.documentElement.clientWidth, ratio);
       const value = `${width}px`;
-      if (board.style.getPropertyValue('--oled-board-width') !== value) board.style.setProperty('--oled-board-width', value);
+      const host = stage || board;
+      if (host.style.getPropertyValue('--oled-board-width') !== value) host.style.setProperty('--oled-board-width', value);
     }
-    const rect = bezel.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
     const style = getComputedStyle(bezel);
+    // A tilted world bounding box is not the OLED's local drawing surface.
+    // Only the settled front view is snapped to the physical screen origin.
+    const rect = stage && playground.dataset.pose !== 'active'
+      ? {left:0,top:0,width:parseFloat(style.width),height:parseFloat(style.height)}
+      : bezel.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const padding = { left: parseFloat(style.paddingLeft), right: parseFloat(style.paddingRight),
       top: parseFloat(style.paddingTop), bottom: parseFloat(style.paddingBottom) };
     const grid = fitOledGrid(rect, devicePixelRatio || 1, padding, window.visualViewport || {});

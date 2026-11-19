@@ -93,20 +93,26 @@ def layer(source):
 def main():
     source = Path(sys.argv[1])
     with zipfile.ZipFile(source) as archive:
-        rendered = {name: layer(archive.read('PCB2.'+name).decode('ascii')) for name in ('GTL','GTS','GTO')}
-    flip = f'translate(0 {HEIGHT}) scale(1 -1)'
-    masks = ''.join(f'<mask id="{name}" maskUnits="userSpaceOnUse" x="0" y="0" width="{WIDTH}" height="{HEIGHT}" style="mask-type:luminance"><g transform="{flip}">{content}</g></mask>' for name, content in rendered.items())
+        rendered = {name: layer(archive.read('PCB2.'+name).decode('ascii')) for name in ('GTL','GTS','GTO','GBL','GBS','GBO')}
+    write_face(source, rendered, ('GTL','GTS','GTO'), False)
+    write_face(source, rendered, ('GBL','GBS','GBO'), True)
+
+
+def write_face(source, rendered, names, back):
+    copper, mask, silk = names
+    flip = f'translate({WIDTH if back else 0} {HEIGHT}) scale({-1 if back else 1} -1)'
+    masks = ''.join(f'<mask id="{name}" maskUnits="userSpaceOnUse" x="0" y="0" width="{WIDTH}" height="{HEIGHT}" style="mask-type:luminance"><g transform="{flip}">{rendered[name]}</g></mask>' for name in names)
     # A face-on illustration, at nominal 36.4 x 26.3 mm; keep the Gerber artwork
     # in its native coordinate system and scale the complete board uniformly.
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}">
-<title>astraCore original top copper, exposed pads and silkscreen</title>
+<title>astraCore original {'bottom' if back else 'top'} copper, exposed pads and silkscreen</title>
 <desc>Derived from PCB2.zip SHA-256 {hashlib.sha256(source.read_bytes()).hexdigest()}. Original manufacturing files are not embedded.</desc>
 <defs>{masks}</defs>
-<rect width="{WIDTH}" height="{HEIGHT}" fill="#265843" mask="url(#GTL)" opacity=".5"/>
-<g mask="url(#GTS)"><rect width="{WIDTH}" height="{HEIGHT}" fill="#d3be83" mask="url(#GTL)"/></g>
-<rect width="{WIDTH}" height="{HEIGHT}" fill="#e8ebd7" mask="url(#GTO)"/>
+<rect width="{WIDTH}" height="{HEIGHT}" fill="#265843" mask="url(#{copper})" opacity=".5"/>
+<g mask="url(#{mask})"><rect width="{WIDTH}" height="{HEIGHT}" fill="#d3be83" mask="url(#{copper})"/></g>
+<rect width="{WIDTH}" height="{HEIGHT}" fill="#e8ebd7" mask="url(#{silk})"/>
 </svg>'''
-    output = ROOT / 'assets/simulator/astra-core-artwork.svg'
+    output = ROOT / ('assets/simulator/astra-core-back.svg' if back else 'assets/simulator/astra-core-artwork.svg')
     output.write_text(svg, encoding='utf-8')
     # Separate review render keeps the geometry visible without the screen/parts.
     print(f'{output.name}: {len(svg.encode())} bytes; Gerber outline {WIDTH} x {HEIGHT} mm')

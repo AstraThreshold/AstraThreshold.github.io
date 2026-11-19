@@ -18,6 +18,20 @@ The focused switches also accept short/held Enter or Space. Board keyboard
 shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
+The smaller 3D presentation can be dragged to inspect either Gerber face and the
+1.6 mm substrate edges. A soft overhead light and raised glass/components give
+the assembly depth. The orthographic projection retains exact pixel alignment
+when the board faces forward.
+
+Click the board or Power on to turn it to the front over 980 ms. Power starts
+230 ms into that turn; the physical controls remain inert until the turn and
+engine load finish. The first activation runs the original boot. Rotate board
+or 18 seconds without pointer activity returns it to an unpowered presentation,
+preserving the native menu state for the next activation. Keyboard focus and
+held keys keep the front view available. Reduced-motion mode settles immediately.
+The 22-second idle orbit uses a single compositor animation, without a JavaScript
+frame loop. It pauses offscreen, in hidden tabs or on blur; the UI engine also
+stops. No engine is loaded merely to show the unpowered board.
 Demonstration content is supplied by these adapters. Hardware-only effects and
 serial/ADC peripherals are not simulated. No UI engine is rewritten in JavaScript.
 
@@ -53,8 +67,9 @@ on layout/viewport events or input; it does not add a permanent animation loop.
 Core geometry now follows the owner's 36.4 x 26.3 x 1.6 mm dimensions and PCB2.zip
 Gerbers (SHA-256 `8f2e136c6b2273ba45af0111d49039294fb7601aeac861d96c80da7f13c113bc`).
 The native Gerber outline is 36.449 x 26.289 mm, scaled to those nominal dimensions.
-`tools/gerber_artwork.py ZIP_PATH` exports the original top copper, mask and
-silkscreen as `assets/simulator/astra-core-artwork.svg`. Logo/DEBUG text are paths,
+`tools/gerber_artwork.py ZIP_PATH` exports the original top and bottom copper,
+mask and silkscreen as `assets/simulator/astra-core-artwork.svg` and
+`astra-core-back.svg`. Logo/DEBUG text are paths,
 so their contours and alignment are preserved without a substituted web font.
 The supplied fabrication archive is read only and is not published by the site.
 

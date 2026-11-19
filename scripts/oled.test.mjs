@@ -163,7 +163,7 @@ test('the measured assembly scales with its OLED grid without distorting the boa
     const pixelPitch=width/36.4*29.42*ratio/128;
     assert.ok(Math.abs(pixelPitch-Math.round(pixelPitch))<1e-8);
     assert.ok(width<viewport);
-    assert.ok(width>=150&&width<=480.01);
+    assert.ok(width>=150&&width<=360.01);
   }
 });
 

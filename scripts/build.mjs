@@ -6,7 +6,7 @@ import { validGithubSnapshot } from '../github-stats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
-const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js', 'theme.js', 'oled-playground.js', 'oled-clock.js', 'oled-grid.js', 'oled-keys.js', 'oled-playground.css'];
+const required = ['index.html', 'styles.css', 'script.js', 'github-stats.js', 'rolling-counter.js', 'gallery.js', 'logo-glow.js', 'adaptive-cursor.js', 'theme.js', 'oled-playground.js', 'oled-clock.js', 'oled-grid.js', 'oled-keys.js', 'oled-stage.js', 'oled-playground.css'];
 const optional = ['404.html', 'robots.txt', 'sitemap.xml', 'site.webmanifest', '.nojekyll'];
 const assetExtensions = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.woff', '.woff2', '.wasm']);
 let count = 0;
@@ -172,6 +172,7 @@ index = index.replace(/(<a class="project-stars" data-repo="([^"]+)"[^>]*aria-la
 index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
 index = index.replace('href="assets/simulator/source.zip"', `href="${await versionAsset('assets/simulator/source.zip')}"`);
 index = index.replace('src="assets/simulator/astra-core-artwork.svg"', `src="${await versionAsset('assets/simulator/astra-core-artwork.svg')}"`);
+index = index.replace('src="assets/simulator/astra-core-back.svg"', `src="${await versionAsset('assets/simulator/astra-core-back.svg')}"`);
 await writeFile(indexPath, await versionStylesheets(await versionBrandAssets(preloadFonts(index))));
 const errorPage = path.join(output, '404.html');
 if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(await versionBrandAssets(preloadFonts(await readFile(errorPage, 'utf8'), true))));

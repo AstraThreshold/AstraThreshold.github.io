@@ -2,6 +2,7 @@
 import { OledFrameClock } from './oled-clock.js';
 import { mountOledGrid } from './oled-grid.js';
 import { bindOledKeys } from './oled-keys.js';
+import { mountOledStage } from './oled-stage.js';
 const engineRepositories = {
   modern: 'https://github.com/AstraThreshold/oled-ui-astra',
   lite: 'https://github.com/AstraThreshold/astra-launcher'
@@ -52,6 +53,10 @@ export function initOledPlayground(getLanguage) {
   const pending = new Map();
   const resetButton = root.querySelector('[data-oled-reset]');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const controls = root.querySelector('.pcb-controls');
+  const sceneHint = root.querySelector('.pcb-scene-hint');
+  const powerToggle = root.querySelector('.pcb-power-toggle');
+  let stage;
   let selected = 'modern', current = null, manifestPromise;
   let visible = false, focused = document.hasFocus(), sequence = 0;
   let request = 0, endTime = 0, stableTime = 0;
@@ -64,7 +69,19 @@ export function initOledPlayground(getLanguage) {
   let lastFlags = -1;
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
-  const allowed = () => visible && focused && !document.hidden && !failure;
+  const allowed = () => visible && focused && !document.hidden && !failure && stage?.powered;
+  function updateControls() {
+    const ready = root.dataset.state === 'ready' && stage?.interactive;
+    controls.inert = !ready;
+    actions.forEach(button => { button.disabled = !ready; });
+    const active = stage?.mode === 'active', aligning = stage?.mode === 'aligning';
+    sceneHint.textContent = active ? localText('已通电 · 可使用板上按键', 'Powered on · Use the board keys')
+      : aligning ? localText('正在转正通电…', 'Turning to the front…')
+      : localText('拖动旋转 · 点击板子通电', 'Drag to rotate · Click the board to power on');
+    powerToggle.querySelector('span').textContent = active || aligning
+      ? localText('旋转查看', 'Rotate board') : localText('通电体验', 'Power on');
+    powerToggle.setAttribute('aria-pressed', String(active || aligning));
+  }
   function syncHeartbeat() {
     board.dataset.heartbeat = String(allowed() && root.dataset.state === 'ready' && !reducedMotion.matches);
   }
@@ -140,6 +157,7 @@ export function initOledPlayground(getLanguage) {
     actions.forEach(button => { button.disabled = true; });
     loading.hidden = false;
     loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
+    updateControls();
   }
   async function getState(name, replace = false) {
     if (pending.has(name)) return pending.get(name);
@@ -189,13 +207,14 @@ export function initOledPlayground(getLanguage) {
       draw(true);announce();
       root.dataset.state = 'ready';loading.hidden = true;
       resetButton.disabled = false;
-      actions.forEach(button => { button.disabled = false; });
+      updateControls();
       wake();
     } catch { if (ticket === sequence) { resetButton.disabled = false;showFailure(); } }
   }
   function input(action) {
-    if (!current?.engine || root.dataset.state !== 'ready') return;
+    if (!current?.engine || root.dataset.state !== 'ready' || !stage.interactive) return;
     try {
+      stage.activity();
       grid.sync();
       current.engine.sim_input(action);
       if (reducedMotion.matches) {
@@ -206,10 +225,20 @@ export function initOledPlayground(getLanguage) {
     } catch { showFailure(); }
   }
   const keys = bindOledKeys(actions, input);
+  stage = mountOledStage(root, board, {
+    onPower(on) {
+      if (!on) stop();
+      else if (root.dataset.state === 'waiting') select(selected);
+      else wake();
+      updateControls();
+    },
+    onMode() { keys.cancel();grid.sync();updateControls(); }
+  });
   picker.forEach(button => button.addEventListener('click', () => {
+    stage.activate();
     if (selected !== button.dataset.uiEngine || root.dataset.state === 'waiting') select(button.dataset.uiEngine);
   }));
-  resetButton.addEventListener('click', () => select(selected, true));
+  resetButton.addEventListener('click', () => {stage.activate();select(selected, true);});
   const keyActions = { ArrowUp: 0, ArrowDown: 1, ArrowLeft: 2, ArrowRight: 3, Enter: 3, Escape: 2 };
   board.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
@@ -218,22 +247,26 @@ export function initOledPlayground(getLanguage) {
     if (action === undefined || (event.key === 'Enter' && event.target.closest('button'))) return;
     event.preventDefault();input(action);
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop();else wake(); });
-  window.addEventListener('blur', () => { focused = false;stop(); });
-  window.addEventListener('focus', () => { focused = true;wake(); });
-  window.addEventListener('pagehide', () => { stop();board.dataset.heartbeat = 'false'; });
-  window.addEventListener('pageshow', wake);
+  function syncAvailability() {
+    const available = visible && focused && !document.hidden;
+    stage.setAvailable(available);
+    if (!available) stop();else if (stage.powered) wake();
+  }
+  document.addEventListener('visibilitychange', syncAvailability);
+  window.addEventListener('blur', () => { focused = false;syncAvailability(); });
+  window.addEventListener('focus', () => { focused = true;syncAvailability(); });
+  window.addEventListener('pagehide', () => { stage.setAvailable(false);stop();board.dataset.heartbeat = 'false'; });
+  window.addEventListener('pageshow', syncAvailability);
   reducedMotion.addEventListener('change', syncHeartbeat);
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
-      if (!visible) stop();
-      else if (root.dataset.state === 'waiting') select(selected);
-      else wake();
-    }, { threshold: .08 }).observe(board);
-  } else { visible = true;select(selected); }
+      syncAvailability();
+    }, { threshold: .08 }).observe(root.querySelector('.pcb-scene'));
+  } else { visible = true;syncAvailability(); }
   context.putImageData(pixels, 0, 0);
   return { updateLanguage() {
+    updateControls();
     actions.forEach((button, index) => button.setAttribute('aria-label',
       getLanguage() === 'en' ? ['Previous; hold to go back','Next; hold to enter'][index] : ['上一项，长按返回','下一项，长按确认'][index]));
     actions.forEach(button => { button.title = button.getAttribute('aria-label'); });
