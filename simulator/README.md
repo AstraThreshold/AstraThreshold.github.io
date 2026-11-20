@@ -19,20 +19,22 @@ shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
 The 3D presentation uses a perspective camera and a depth-tested assembly mesh.
-Both halves of the assembly have component bodies, leads and contacts on a
-1.6 mm substrate. An overhead light shades the parts and the live OLED returns
+Both faces have component bodies, leads and solder joints on a 1.6 mm substrate.
+An overhead light shades the parts. The front LEDs emit from their package
+lenses and cast colored light on nearby surfaces. The live OLED returns
 to its exact physical pixel grid once the board faces forward. See
 [board model sources](models/README.md) for placement and package details.
 
 Click the board or Power on to turn it to the front over 980 ms. Power starts
-230 ms into that turn. Every astra UI activation starts a fresh instance and
-replays the original boot before unlocking the keys. Rotate board or 18 seconds
-without interaction returns it to its unpowered orbit. Lite retains its menu
-when returning from the orbit. Keyboard focus and held keys keep the front view
-available. Reduced-motion mode settles immediately.
-The 32-second orbit pauses offscreen, in hidden tabs and on blur. The geometry
-only redraws during motion, resizing or a key press. The UI engine is loaded on
-power-up, and subsequent fresh instances reuse the compiled module.
+230 ms into that turn. Each power-up starts a fresh instance of the selected
+engine. Astra UI replays its original boot before unlocking the keys. Lite
+animates its selector into the first row once the board faces forward. Rotate
+board or 18 seconds without interaction returns it to its unpowered orbit.
+Keyboard focus and held keys keep the front view available. Reduced-motion
+mode settles immediately.
+The orbit and LED animation pause offscreen, in hidden tabs and on blur.
+The mesh redraws during motion, power fading, heartbeat pulses, resizing
+or key presses. Subsequent power-ups reuse the compiled WebAssembly module.
 Demonstration content is supplied by these adapters. Hardware-only effects and
 serial/ADC peripherals are not simulated. No UI engine is rewritten in JavaScript.
 
@@ -43,8 +45,8 @@ python simulator/build.py --sdk /path/to/wasi-sdk-27.0
 ```
 
 Each engine has a fixed 2 MiB linear-memory ceiling, with no threads or filesystem.
-The website retains the active engine and Lite's standby state, and stops
-stepping at rest, out of view, on blur or in a hidden tab. Fonts are the bitmap
+The website retains the active instance while powered and stops stepping at
+rest, out of view, on blur or in a hidden tab. Fonts are the bitmap
 arrays in the original source, embedded in WASM.
 
 `oled-clock.js` advances Astra at 240 bounded native steps per active second and

@@ -17,6 +17,7 @@ from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakePolygon
 from OCP.BRepLib import BRepLib_ToolTriangulatedShape
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
 from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakePrism
 from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Vec
 from OCP.IFSelect import IFSelect_RetDone
@@ -35,6 +36,14 @@ ROOT = Path(__file__).resolve().parents[2]
 MODELS = ROOT / 'simulator/models'
 WIDTH, HEIGHT, THICKNESS, GLASS = 36.4, 26.3, 1.6, 1.22
 TIN, GOLD, BLACK, CREAM = (194, 197, 189), (189, 142, 66), (41, 42, 42), (229, 224, 204)
+OLED_POLARIZER, LED_RESIN, LED_DIE = 3, 7, 11
+EMITTERS = {'D6': 4, 'D1': 5, 'D5': 6}
+# Length, width, height, carrier thickness, optical width, termination length.
+CHIP_LEDS = {
+    'led0402': (1.00, .50, .40, .18, .80, .20),
+    'led0603': (1.60, .80, .60, .28, 1.00, .41),
+    'led0805': (2.00, 1.20, .80, .28, 1.20, .45),
+}
 
 
 def box(x, y, width, height, z, thickness):
@@ -45,14 +54,37 @@ def disk(x, y, z, diameter, height):
     return BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(x, y, z), gp_Dir(0, 0, 1)), diameter / 2, height).Shape()
 
 
-def chamfered(width, height, z, thickness, bevel):
-    x, y = width / 2, height / 2
+def outline(width, height, z, bevel, x=0, y=0):
+    w, h = width / 2, height / 2
     polygon = BRepBuilderAPI_MakePolygon()
-    for px, py in [(-x+bevel,-y),(x-bevel,-y),(x,-y+bevel),(x,y-bevel),
-                   (x-bevel,y),(-x+bevel,y),(-x,y-bevel),(-x,-y+bevel)]:
-        polygon.Add(gp_Pnt(px, py, z))
+    for px, py in [(-w+bevel,-h),(w-bevel,-h),(w,-h+bevel),(w,h-bevel),
+                   (w-bevel,h),(-w+bevel,h),(-w,h-bevel),(-w,-h+bevel)]:
+        polygon.Add(gp_Pnt(x + px, y + py, z))
     polygon.Close()
-    return BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(polygon.Wire()).Face(), gp_Vec(0, 0, thickness)).Shape()
+    return polygon.Wire()
+
+
+def chamfered(width, height, z, thickness, bevel, *, x=0, y=0):
+    face = BRepBuilderAPI_MakeFace(outline(width, height, z, bevel, x, y)).Face()
+    return BRepPrimAPI_MakePrism(face, gp_Vec(0, 0, thickness)).Shape()
+
+
+def resin_lens(width, height, base, top):
+    # A shallow mold draft and a small edge radius around the flat optical face.
+    bevel = min(width, height) * .055
+    loft = BRepOffsetAPI_ThruSections(True, True)
+    loft.AddWire(outline(width, height, base, bevel))
+    loft.AddWire(outline(width * .95, height * .96, top - bevel, bevel))
+    loft.AddWire(outline(width * .87, height * .89, top, bevel))
+    loft.Build()
+    return loft.Shape()
+
+
+def bond_wire(points):
+    for start, end in zip(points, points[1:]):
+        direction = tuple(b - a for a, b in zip(start, end))
+        axis = gp_Ax2(gp_Pnt(*start), gp_Dir(*direction))
+        yield BRepPrimAPI_MakeCylinder(axis, .014, math.hypot(*direction)).Shape()
 
 
 def clip_hole(shape, x, y, z, diameter, height):
@@ -131,42 +163,35 @@ def load_step(kind, path):
         extent[0], extent[1] = extent[1], extent[0]
     target = {
         'qfn': (7, 7, .55), 'soic': (8, 5.3, 1.9),
-        'sh4': (6, 5.15, 2.9), 'side': (4.9, 4.0, 1.8), 'ind': (3, 3, 1.1),
-        'led0603': (1.6, .8, .64), 'led0805': (2.0, 1.25, .7),
+        'sh4': (6, 5.15, 2.9), 'ind': (3, 3, 1.1),
     }.get(kind, extent)
     scales = [a/b for a,b in zip(target,extent)]
     mesh = []
     for nodes, tris, (rgb, polish) in geometry:
         # Adapt the SOIC body to the wide Winbond package and keep the 1.27 mm lead pitch.
         face_scale = (scales[0], 1, scales[2]) if kind == 'soic' and polish == 180 else scales
-        mesh.append((list(normalize(nodes, turn, center, face_scale)), tris, rgb, polish, 0))
-    if kind == 'side':
-        # The installed part has an amber insert visible through the metal cover.
-        rim = BRepAlgoAPI_Cut(box(0, .12, 2.42, 2.13, 1.76, .12), box(0, .12, 1.65, 1.38, 1.74, .2)).Shape()
-        insert = box(0, .12, 1.65, 1.38, 1.77, .06)
-        for shape, tint in [(rim, (195, 167, 53)), (insert, (140, 111, 27))]:
-            mesh.extend((nodes, tris, tint, 100, 0) for _, nodes, tris in faces_of(shape))
+        mesh.append((list(normalize(nodes, turn, center, face_scale)), tris, rgb, polish, 0, 0))
     return mesh, target[:2]
 
 
 def custom(kind):
     pieces = []
 
-    def put(shape, rgb, polish=38, plunger=0):
-        pieces.append((shape, rgb, polish, plunger))
+    def put(shape, rgb, polish=38, plunger=0, *, surface=0):
+        pieces.append((shape, rgb, polish, plunger, surface))
 
     if kind == 'oled':
-        put(chamfered(35.8, 17.1, 0, .58, .13), (23, 28, 26), 100)
-        put(chamfered(35.78, 17.08, .58, .61, .13), (28, 34, 33), 180)
-        put(box(1, 0, 33.68, 16.7, 1.19, .025), (17, 22, 23), 140)
-        put(box(-16.85, 0, 1.96, 16.96, 1.19, .03), (15, 19, 18), 58)
-        # The display's active surface lines up with the live HTML pixel plane.
-        put(box(1.41, 0, 29.42, 14.71, 1.215, .005), (4, 8, 10), 58)
-        for sign in (-1, 1):
-            put(box(1.41, sign * 7.433, 29.64, .09, 1.217, .009), (83, 101, 101), 136)
-            put(box(1.41 + sign * 14.788, 0, .09, 14.82, 1.217, .009), (83, 101, 101), 136)
+        # The 15.8 mm solder tail folds beneath the COG glass and terminates on U3.
+        put(chamfered(15.80, 11.65, .045, .10, .34, x=-10.07, y=.033), (97, 58, 28), 86)
+        put(chamfered(35.8, 17.1, .16, .51, .13), (12, 16, 15), 58)
+        put(chamfered(35.76, 17.06, .67, .51, .13), (8, 11, 11), 47)
+        # The driver masking at the left and the offset polarizer meet the cover glass.
+        put(chamfered(3.12, 16.61, 1.18, .038, .12, x=-16.22), (5, 6, 6), 24, surface=OLED_POLARIZER)
+        put(chamfered(32.25, 16.60, 1.18, .04, .12, x=1.53), (3, 4, 5), 24, surface=OLED_POLARIZER)
         for y in (-4.25, 3.75):
-            put(box(-17.94, y, .22, .9, .45, .33), (151, 102, 46), 100)
+            put(chamfered(.25, .90, .10, .58, .08, x=-17.91, y=y), (121, 78, 41), 94)
+        for pin in range(16):
+            put(box(-2.14, .033 + (pin - 7.5) * .70, 3.18, .36, .014, .05), GOLD, 186)
         size = (35.8, 17.1)
     elif kind == 'tact':
         put(chamfered(3.08, 2.55, .06, .80, .14), (52, 55, 46))
@@ -187,20 +212,39 @@ def custom(kind):
             put(box(x, y, 1.68, .68, .04, .15), TIN, 178)
         size = (5, 5)
     elif kind == 'btb':
-        # X0812WVS 12-contact male connector. Two keyed contact channels and formed feet.
-        put(chamfered(4.0, 6.65, .10, .55, .2), (43, 39, 37), 52)
+        # X0812WVS plug: two exposed mating rails on a 6.70 x 4.00 mm base.
+        put(chamfered(4.0, 6.70, .06, .42, .19), (40, 36, 34), 45)
         for side in (-1, 1):
-            put(box(side * 1.74, 0, .52, 6.55, .65, 1.12), (43, 38, 36), 50)
-            put(box(0, side * 3.01, 3.0, .58, .65, 1.14), (50, 43, 40), 50)
-        put(chamfered(1.64, 5.47, .65, 1.0, .14), (38, 34, 31), 55)
+            put(chamfered(.66, 5.20, .48, 1.26, .12, x=side), (49, 42, 38), 51)
+            put(chamfered(.72, 6.58, .48, .29, .14, x=side * 1.61), (34, 30, 28), 47)
+            put(chamfered(2.4, .68, .48, .38, .14, y=side * 2.98), (36, 31, 29), 49)
         for index in range(6):
             y = (index - 2.5) * .8
             for side in (-1, 1):
-                put(box(side * 2.05, y, .76, .30, .035, .11), TIN, 200)
-                put(box(side * 1.93, y, .18, .27, .105, .53), TIN, 200)
-                put(box(side * .84, y, .16, .28, 1.13, .50), GOLD, 216)
-                put(box(side * .95, y, .36, .28, .65, .15), GOLD, 191)
-        size = (4, 6.65)
+                put(box(side * 2.03, y, 1.14, .25, .035, .13), TIN, 200)
+                put(box(side * 1.91, y, .26, .25, .15, .28), TIN, 190)
+                put(box(side * 1.34, y, .10, .25, .64, 1.14), GOLD, 204)
+                put(chamfered(.56, .26, 1.73, .17, .045, x=side * 1.07, y=y), (202, 156, 86), 190)
+        size = (4, 6.70)
+    elif kind == 'side':
+        # KHON TSE05410: a lateral stem, stamped steel cover, and amber seal.
+        put(chamfered(4.7, 3.6, .04, 1.45, .17), (51, 47, 41), 44)
+        cover = chamfered(4.70, 3.60, 1.49, .16, .16)
+        cover = BRepAlgoAPI_Cut(cover, chamfered(2.82, 2.40, 1.48, .22, .15)).Shape()
+        put(cover, (155, 151, 134), 183)
+        put(chamfered(2.81, 2.39, 1.44, .115, .14), (171, 135, 37), 114)
+        put(box(0, -.09, .76, .32, 1.55, .008), (120, 93, 29), 82)
+        for side in (-1, 1):
+            put(box(side * .51, -.09, .21, 1.13, 1.55, .009), (140, 107, 28), 82)
+            for y in (-.8125, .8125):
+                put(box(side * 2.37, y, .88, .57, .035, .16), TIN, 189)
+                put(box(side * 2.30, y, .18, .56, .18, .79), (152, 148, 135), 144)
+            put(box(side * 2.27, 0, .16, .74, .62, .95), (151, 147, 133), 171)
+        put(box(0, -1.97, 2.14, .64, .37, 1.01), (55, 47, 38), 49)
+        put(chamfered(2.60, .46, .16, 1.40, .07, y=-2.48), (66, 56, 43), 55)
+        for x in (-.63, .63):
+            put(box(x, -2.03, .23, .65, 1.32, .20), (73, 61, 47), 55)
+        size = (4.70, 3.60)
     elif kind == 'sh4':
         put(box(0, 0, 6.0, 4.25, .08, .53), CREAM, 76)
         roof = chamfered(6.0, 4.25, 2.18, .71, .16)
@@ -218,14 +262,46 @@ def custom(kind):
             put(box(x, -2.23, .28, .19, .10, .80), TIN, 185)
             put(box(x, -.40, .27, 3.14, .64, .13), GOLD, 225)
         size = (6, 4.25)
+    elif kind in CHIP_LEDS:
+        length, width, height, carrier, window, terminal = CHIP_LEDS[kind]
+        board = chamfered(length, width, .015, carrier - .015, .034)
+        for sign in (-1, 1):
+            side = sign * length / 2
+            center = sign * (length - terminal) / 2
+            lead = box(center, 0, terminal, width, .013, carrier - .009)
+            board = BRepAlgoAPI_Cut(board, box(center, 0, terminal, width+.04, 0, carrier+.04)).Shape()
+            if kind != 'led0402':
+                # Exposed semicircular castellations in the carrier and lead plating.
+                lead = clip_hole(lead, side, 0, 0, width * .34, carrier + .04)
+            put(lead, TIN, 198)
+        put(board, (206, 202, 171), 54)
+        cathode = (.46 if kind == 'led0402' else -.39) * length
+        put(box(cathode, width * .34, length * .11, width * .23, carrier + .006, .012),
+            (74, 113, 63), 52)
+        put(box(-window * .22, 0, window * .34, width * .64, carrier + .008, .022), GOLD, 188)
+        put(box(window * .22, 0, window * .34, width * .64, carrier + .008, .022), (177, 151, 105), 170)
+        put(chamfered(window * .24, width * .26, carrier + .028, .045, .026, x=window * .13),
+            (118, 119, 78), 153, surface=LED_DIE)
+        for segment in bond_wire(((window * .13, 0, carrier + .08),
+                                  (-window * .04, 0, carrier + .13),
+                                  (-window * .23, 0, carrier + .03))):
+            put(segment, GOLD, 182)
+        put(resin_lens(window, width, carrier, height), (206, 220, 209), 164, surface=LED_RESIN)
+        size = (length, width)
     elif kind == 'ws2812':
-        put(chamfered(2.0, 2.0, .0, .48, .07), (219, 213, 198), 55)
-        put(disk(0, 0, .48, 1.52, .31), (231, 224, 209), 110)
-        put(box(.06, .12, .35, .34, .79, .035), (202, 195, 178), 104)
-        for x in (-.74, .74):
-            for y in (-.56, .56):
-                put(box(x, y, .85, .58, .03, .12), TIN, 195)
-        size = (2, 2)
+        board = chamfered(2.20, 2.00, .02, .26, .065)
+        for x in (-1.10, 1.10):
+            for y in (-.55, .55):
+                board = clip_hole(board, x, y, 0, .35, .30)
+                lead = box(x * .80, y, .53, .70, .015, .27)
+                put(clip_hole(lead, x, y, 0, .35, .30), TIN, 189)
+        put(board, (221, 213, 190), 48)
+        put(chamfered(.57, .42, .30, .09, .035, y=-.36), (83, 78, 60), 112)
+        for x, tint in [(-.34, (92, 121, 76)), (0, (165, 122, 74)), (.34, (100, 112, 128))]:
+            put(box(x, .22, .22, .28, .285, .04), GOLD, 153)
+            put(box(x, .22, .15, .15, .325, .06), tint, 111)
+        put(resin_lens(1.48, 1.84, .28, .84), (226, 225, 207), 124, surface=LED_RESIN)
+        size = (2.20, 2.00)
     elif kind == 'ind':
         put(chamfered(3.0, 3.0, .06, 1.02, .40), (89, 86, 82), 56)
         put(chamfered(2.65, 2.65, 1.08, .08, .61), (105, 102, 99), 66)
@@ -234,7 +310,7 @@ def custom(kind):
         size = (3, 3)
     else:
         raise ValueError(f'Missing model for {kind}')
-    return ([(nodes, tris, rgb, polish, press) for shape, rgb, polish, press in pieces
+    return ([(nodes, tris, rgb, polish, press, surface) for shape, rgb, polish, press, surface in pieces
              for _, nodes, tris in faces_of(shape)], size)
 
 
@@ -242,23 +318,28 @@ class Mesh:
     def __init__(self):
         self.vertices = bytearray()
         self.indices = []
+        self.clear_indices = []
+        self.palette = {}
         self.unique = {}
         self.shadows = []
 
     def add_face(self, nodes, triangles, rgb, polish, surface=0, pressed=0):
+        material = (*rgb, surface, polish, pressed)
+        color_index = self.palette.setdefault(material, len(self.palette))
         mapped = []
         for p, n in nodes:
             length = math.sqrt(sum(v*v for v in n)) or 1
             pos = [round(v * 100) for v in p]
             norm = [round(v * 127 / length) for v in n]
-            key = struct.pack('<3h3b3B3Bx', *pos, *norm, *rgb, surface, polish, pressed)
+            key = struct.pack('<3h3bB', *pos, *norm, color_index)
             index = self.unique.get(key)
             if index is None:
                 index = len(self.unique)
                 self.unique[key] = index
                 self.vertices.extend(key)
             mapped.append(index)
-        self.indices.extend(mapped[i] for t in triangles for i in t)
+        indices = self.clear_indices if 4 <= surface <= LED_RESIN else self.indices
+        indices.extend(mapped[i] for t in triangles for i in t)
 
     def board(self):
         sheet = chamfered(WIDTH, HEIGHT, -GLASS - THICKNESS, THICKNESS, .105)
@@ -278,7 +359,7 @@ class Mesh:
         sign = 1 if front else -1
         surface_z = -GLASS if front else -GLASS - THICKNESS
         self.shadows.extend((1 if front else 2, x, y, *size, angle))
-        for nodes, triangles, color, polish, press in geometry:
+        for nodes, triangles, color, polish, press, surface in geometry:
             def world(point, normal):
                 px, py, pz = point
                 nx, ny, nz = normal
@@ -287,17 +368,51 @@ class Mesh:
                         ((nx * co - ny * si) * sign, nx * si + ny * co, nz * sign))
 
             button = 2 if press and ref == 'K4' else press
-            self.add_face([world(p, n) for p,n in nodes], triangles, color, polish, pressed=button)
+            emitter = EMITTERS.get(ref, 0)
+            if surface == LED_RESIN and emitter:
+                surface = emitter
+            elif surface == LED_DIE:
+                surface = emitter + 4 if emitter else 0
+            self.add_face([world(p, n) for p,n in nodes], triangles, color, polish,
+                          surface=surface, pressed=button)
+
+    def solder_joint(self, side, x, y, width, height, lead_direction):
+        # A low wetting fillet tapers into the termination while staying inside the paste aperture.
+        sign = 1 if side == 'front' else -1
+        surface_z = -GLASS if sign == 1 else -GLASS - THICKNESS
+        along_x = abs(lead_direction) == 1
+        toward = 1 if lead_direction > 0 else -1
+        dx = toward * width if along_x else 0
+        dy = toward * height if not along_x else 0
+        rise = min(.24, max(.085, min(width, height) * .27))
+        profile = [(-.32, -.49), (.32, -.49), (.49, -.32), (.49, .32),
+                   (.32, .49), (-.32, .49), (-.49, .32), (-.49, -.32)]
+        nodes = []
+        for scale, shift, z, edge in [(1, 0, .01, .72), (.94, .028, .027, 1.10), (.56, .15, rise, .32)]:
+            for px, py in profile:
+                point = ((x + px * width * scale + dx * shift - WIDTH / 2) * sign,
+                         y + py * height * scale + dy * shift - HEIGHT / 2, surface_z + z * sign)
+                nodes.append((point, (px * edge * sign, py * edge, .42 * sign)))
+        triangles = []
+        for start in (0, 8):
+            for i in range(8):
+                a, b = start + i, start + (i + 1) % 8
+                triangles.extend(((a, b, a + 8), (b, b + 8, a + 8)))
+        triangles.extend((16, i, i + 1) for i in range(17, 23))
+        self.add_face(nodes, triangles, (161, 163, 153), 198)
 
     def save(self, path):
         count = len(self.unique)
         index_type = 'H' if count <= 65535 else 'I'
-        indices = struct.pack(f'<{len(self.indices)}{index_type}', *self.indices)
-        geometry = struct.pack('<4I', 0x31424350, count, len(self.indices), len(self.shadows) // 6)
-        geometry += self.vertices + indices
+        ordered = self.indices + self.clear_indices
+        indices = struct.pack(f'<{len(ordered)}{index_type}', *ordered)
+        palette = bytes(channel for material in self.palette for channel in material)
+        geometry = struct.pack('<6I', 0x33424350, count, len(ordered), len(self.shadows) // 6,
+                               len(self.palette), len(self.indices))
+        geometry += self.vertices + indices + palette
         geometry += bytes(-len(geometry) % 4) + struct.pack(f'<{len(self.shadows)}f', *self.shadows)
         path.write_bytes(geometry)
-        print(f'{count:,} vertices, {len(self.indices)//3:,} triangles, {len(geometry):,} bytes')
+        print(f'{count:,} vertices, {len(ordered)//3:,} triangles, {len(geometry):,} bytes')
 
 
 def main():
@@ -306,6 +421,7 @@ def main():
     args = parser.parse_args()
     sources = json.loads((MODELS / 'sources.json').read_text())
     placements = json.loads((MODELS / 'placements.json').read_text())
+    joints = json.loads((MODELS / 'solder.json').read_text())
     imported = 0
 
     @cache
@@ -323,6 +439,8 @@ def main():
         for ref, (kind, x, y, angle) in components.items():
             mesh.place(ref, side, x, y, angle, package(kind))
             imported += kind in sources
+        for pad in joints[side]:
+            mesh.solder_joint(side, *pad)
     mesh.save(ROOT / 'assets/simulator/astra-core-mesh.bin')
     print(f'{imported} placed components reuse STEP geometry from {len(sources)} KiCad packages.')
 

@@ -54,21 +54,5 @@
   "xtal": {
     "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/9.0.5/Crystal.3dshapes/Crystal_SMD_2520-4Pin_2.5x2.0mm.step",
     "sha256": "cd0c53e8a35a3cb36fc18e5248a2acf382b94b62d156b7bb9cc398eef3e21c4a"
-  },
-  "led0402": {
-    "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/9.0.5/LED_SMD.3dshapes/LED_0402_1005Metric.step",
-    "sha256": "401a17c0a337a26edbde24f58dabfc1560d6cb1bfb8c8fc5c31b8692e321eb12"
-  },
-  "led0603": {
-    "url": "https://raw.githubusercontent.com/KiCad/kicad-packages3D/master/LED_SMD.3dshapes/LED_0603_1608Metric.step",
-    "sha256": "98343205ec260ec165026ba2d44329a23096779ac36c553ea84aa7b370242e6d"
-  },
-  "led0805": {
-    "url": "https://raw.githubusercontent.com/KiCad/kicad-packages3D/master/LED_SMD.3dshapes/LED_0805_2012Metric.step",
-    "sha256": "0aa8b791804f5d72a2fc7d1bf231dd9959207d83df8ad801176fbc459f575b98"
-  },
-  "side": {
-    "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/9.0.5/Button_Switch_SMD.3dshapes/SW_SPST_EVQPE1.step",
-    "sha256": "2a22c786425b098777e6c0efca94de8ab7f521e5e16a17edcc980df423c4d31a"
   }
 }

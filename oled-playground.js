@@ -55,7 +55,7 @@ export function initOledPlayground(getLanguage) {
   const controls = root.querySelector('.pcb-controls');
   const sceneHint = root.querySelector('.pcb-scene-hint');
   const powerToggle = root.querySelector('.pcb-power-toggle');
-  let stage, liteState, resetOnPower = false, booting = false;
+  let stage, booting = false;
   let selected = 'modern', current = null, manifestPromise;
   let visible = false, focused = document.hasFocus(), sequence = 0;
   let request = 0, endTime = 0, stableTime = 0;
@@ -153,6 +153,7 @@ export function initOledPlayground(getLanguage) {
   function wake() {
     syncHeartbeat();
     if (!allowed() || !current?.engine) return;
+    if (selected === 'lite' && !stage.interactive) return;
     if (reducedMotion.matches) {
       if (booting) { advanceWithoutMotion();draw(); }
       stop();return;
@@ -193,7 +194,7 @@ export function initOledPlayground(getLanguage) {
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
     root.querySelector('[data-oled-source]').href = engineRepositories[name];
   }
-  async function powerUp(reset = false) {
+  async function powerUp() {
     const name = selected;
     const ticket = ++sequence;
     keys.cancel();grid.sync();
@@ -206,19 +207,14 @@ export function initOledPlayground(getLanguage) {
     updateControls();
     loading.hidden = false;loading.textContent = localText('正在通电…', 'Powering up…');
     try {
-      let state = name === 'lite' && !reset ? liteState : null;
-      if (!state) {
-        const module = await loadModule(name);
-        if (ticket !== sequence || !stage.powered) return;
-        state = { engine: await createOledEngine(module), time: 0 };
-      }
+      const module = await loadModule(name);
       if (ticket !== sequence || !stage.powered) return;
-      if (name === 'lite') liteState = state;
-      current = state;lastFlags = -1;
-      // Original engines animate their own selectors; reduced motion settles offscreen.
-      // Settle both the new boot and its following camera entry without motion.
+      const engine = await createOledEngine(module);
+      if (ticket !== sequence || !stage.powered) return;
+      current = { engine, time: 0 };lastFlags = -1;
+      // Lite starts on its opening frame so the selector can animate once the board faces forward.
       if (reducedMotion.matches) advanceWithoutMotion();
-      else state.engine.sim_step(Math.round(state.time += 1000 / 60));
+      else engine.sim_step(Math.round(current.time += 1000 / 60));
       draw(true);announce();
       root.dataset.state = 'ready';loading.hidden = true;
       resetButton.disabled = false;
@@ -243,9 +239,7 @@ export function initOledPlayground(getLanguage) {
   stage = mountOledStage(root, board, {
     onPower(on) {
       if (on) {
-        const reset = resetOnPower;
-        resetOnPower = false;
-        powerUp(reset);
+        powerUp();
         return;
       }
       sequence++;
@@ -255,7 +249,10 @@ export function initOledPlayground(getLanguage) {
       resetButton.disabled = false;
       stop();updateControls();
     },
-    onMode() { keys.cancel();grid.sync();updateControls(); }
+    onMode(mode) {
+      keys.cancel();grid.sync();updateControls();
+      if (mode === 'active' && selected === 'lite') wake();
+    }
   });
   picker.forEach(button => button.addEventListener('click', () => {
     const changed = selected !== button.dataset.uiEngine;
@@ -264,8 +261,8 @@ export function initOledPlayground(getLanguage) {
     if (changed && stage.powered) powerUp();
   }));
   resetButton.addEventListener('click', () => {
-    if (stage.powered) { stage.activity();powerUp(true); }
-    else { resetOnPower = true;stage.activate(); }
+    if (stage.powered) { stage.activity();powerUp(); }
+    else stage.activate();
   });
   const keyActions = { ArrowUp: 0, ArrowDown: 1, ArrowLeft: 2, ArrowRight: 3, Enter: 3, Escape: 2 };
   board.addEventListener('keydown', event => {

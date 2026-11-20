@@ -28,12 +28,24 @@ const fragmentSource = `
 precision highp float;
 uniform sampler2D frontFace, backFace;
 uniform float camera;
+uniform vec3 ledLevels;
 varying vec3 world, local, direction, color, finish;
 varying vec2 uv;
+const vec3 heartbeatColor = vec3(0.69, 0.90, 1.0);
+const vec3 blueColor = vec3(0.36, 0.79, 1.0);
+const vec3 amberColor = vec3(1.0, 0.65, 0.38);
+
+float spill(float y, float z) {
+  float d = length(local - vec3(16.49, y, z));
+  float falloff = 1.0 - smoothstep(0.25, 3.5, d);
+  return 0.28 * falloff * falloff;
+}
+
 void main() {
   vec3 base = color;
-  if (finish.x > 1.5) base = texture2D(backFace, uv).rgb;
-  else if (finish.x > 0.5) base = texture2D(frontFace, uv).rgb;
+  float surface = floor(finish.x + 0.5);
+  if (surface == 2.0) base = texture2D(backFace, uv).rgb;
+  else if (surface == 1.0) base = texture2D(frontFace, uv).rgb;
   vec3 n = normalize(direction);
   vec3 light = normalize(vec3(-26.0, -48.0, 64.0) - world);
   vec3 view = normalize(vec3(0.0, 0.0, camera) - world);
@@ -44,7 +56,34 @@ void main() {
   float grain = fract(sin(dot(floor(local * 80.0), vec3(12.9898, 78.233, 37.719))) * 437.58);
   vec3 lit = base * (0.43 + 0.62 * diffuse + bounce + (grain - 0.5) * 0.024);
   lit += vec3(0.97, 0.99, 1.0) * sheen * polish * (0.36 * diffuse + 0.07);
-  gl_FragColor = vec4(lit, 1.0);
+  if (surface == 3.0) {
+    // The glass remains almost black around the black pixels, with a faint grazing reflection.
+    lit = base + vec3(0.006, 0.008, 0.010) * pow(1.0 - max(dot(n, view), 0.0), 3.0);
+  }
+  if (local.z >= -1.221 && local.x > 12.8 && local.y > 3.6) {
+    lit += heartbeatColor * ledLevels.x * spill(7.115, -0.65);
+    lit += blueColor * ledLevels.y * spill(8.513, -0.65);
+    lit += amberColor * ledLevels.z * spill(10.164, -0.64);
+  }
+  float opacity = 1.0;
+  if (surface >= 4.0) {
+    bool resin = surface <= 7.0;
+    float lamp = resin ? surface : surface - 4.0;
+    vec3 hue = lamp == 4.0 ? heartbeatColor : lamp == 5.0 ? blueColor : amberColor;
+    float power = lamp == 4.0 ? ledLevels.x : lamp == 5.0 ? ledLevels.y : lamp == 6.0 ? ledLevels.z : 0.0;
+    if (resin) {
+      float face = dot(n, view);
+      if (face <= 0.0) discard;
+      float edge = pow(1.0 - face, 2.0);
+      float center = lamp == 4.0 ? 7.115 : lamp == 5.0 ? 8.513 : 10.164;
+      vec2 radius = lamp == 6.0 ? vec2(0.63, 0.59) : vec2(0.50, 0.39);
+      vec2 offset = (local.xy - vec2(16.49, center)) / radius;
+      float scatter = power * exp(-1.85 * dot(offset, offset));
+      lit = mix(lit, mix(hue, vec3(1.0), 0.35), power * 0.32 + scatter * 0.52);
+      opacity = 0.22 + 0.34 * edge + 0.54 * scatter;
+    } else lit = mix(lit, mix(hue, vec3(1.0), 0.62), power);
+  }
+  gl_FragColor = vec4(lit, opacity);
 }`;
 
 function makeProgram(gl) {
@@ -101,29 +140,42 @@ function boardTexture(gl, image, side, shadows) {
 
 function makePainter(gl, bytes, images) {
   const header = new DataView(bytes);
-  if (header.getUint32(0, true) !== 0x31424350) throw new Error('Unrecognized PCB mesh');
+  if (header.getUint32(0, true) !== 0x33424350) throw new Error('Unrecognized PCB mesh');
   const vertices = header.getUint32(4, true), indices = header.getUint32(8, true);
-  const indicesOffset = 16 + vertices * 16;
+  const opaqueIndices = header.getUint32(20, true);
+  const headerSize = 24, vertexSize = 10, materialSize = 6;
+  const indicesOffset = headerSize + vertices * vertexSize;
   const wide = vertices > 65535;
-  const indexBytes = indices * (wide ? 4 : 2);
-  const shadowOffset = Math.ceil((indicesOffset + indexBytes) / 4) * 4;
+  const indexSize = wide ? 4 : 2, indexBytes = indices * indexSize;
+  const paletteOffset = indicesOffset + indexBytes, paletteBytes = header.getUint32(16, true) * materialSize;
+  const shadowOffset = Math.ceil((paletteOffset + paletteBytes) / 4) * 4;
   const shadows = new Float32Array(bytes, shadowOffset, header.getUint32(12, true) * 6);
   if (!vertices || !indices || (wide && !gl.getExtension('OES_element_index_uint'))) {
     throw new Error('PCB mesh exceeds this graphics context');
   }
   const program = makeProgram(gl);
-  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'frontFace', 'backFace']
+  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'frontFace', 'backFace', 'ledLevels']
     .map(name => [name, gl.getUniformLocation(program, name)]));
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(bytes, 16, vertices * 16), gl.STATIC_DRAW);
-  for (const [name, size, type, offset, normalized] of [
-    ['position', 3, gl.SHORT, 0, false], ['normal', 3, gl.BYTE, 6, true],
-    ['tint', 3, gl.UNSIGNED_BYTE, 9, true], ['material', 3, gl.UNSIGNED_BYTE, 12, false]
-  ]) {
-    const location = gl.getAttribLocation(program, name);
-    gl.vertexAttribPointer(location, size, type, normalized, 16, offset);
-    gl.enableVertexAttribArray(location);
+  const packed = new Uint8Array(bytes, headerSize, vertices * vertexSize);
+  const palette = new Uint8Array(bytes, paletteOffset, paletteBytes);
+  const materials = new Uint8Array(vertices * materialSize);
+  for (let i = 0; i < vertices; i++) {
+    const material = packed[i * vertexSize + 9] * materialSize;
+    for (let channel = 0; channel < materialSize; channel++) {
+      materials[i * materialSize + channel] = palette[material + channel];
+    }
   }
+  const attributes = (data, stride, list) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    for (const [name, type, offset, normalized] of list) {
+      const location = gl.getAttribLocation(program, name);
+      gl.vertexAttribPointer(location, 3, type, normalized, stride, offset);
+      gl.enableVertexAttribArray(location);
+    }
+  };
+  attributes(packed, vertexSize, [['position', gl.SHORT, 0, false], ['normal', gl.BYTE, 6, true]]);
+  attributes(materials, materialSize, [['tint', gl.UNSIGNED_BYTE, 0, true], ['material', gl.UNSIGNED_BYTE, 3, false]]);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(bytes, indicesOffset, indexBytes), gl.STATIC_DRAW);
   gl.uniform1f(uniform.camera, cameraDistanceMm);
@@ -134,24 +186,36 @@ function makePainter(gl, bytes, images) {
   boardTexture(gl, images[1], 2, shadows);
   gl.uniform1i(uniform.backFace, 1);
   gl.enable(gl.DEPTH_TEST);
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
-  return (matrix, width, height, scale, shift, upper, lower) => {
+  return (matrix, width, height, scale, shift, upper, lower, heartbeat, power) => {
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(uniform.pose, false, matrix);
     gl.uniform2f(uniform.projection, 2 * cameraDistanceMm * scale / width, 2 * cameraDistanceMm * scale / height);
     gl.uniform1f(uniform.centerY, -2 * shift / height);
     gl.uniform2f(uniform.pressed, upper, lower);
-    gl.drawElements(gl.TRIANGLES, indices, wide ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
+    gl.uniform3f(uniform.ledLevels, heartbeat, power, power);
+    const indexType = wide ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+    gl.drawElements(gl.TRIANGLES, opaqueIndices, indexType, 0);
+    // Clear resin is the only transparent pass. Internal dies and the board remain depth-tested.
+    gl.enable(gl.BLEND);
+    gl.depthMask(false);
+    gl.drawElements(gl.TRIANGLES, indices - opaqueIndices, indexType, opaqueIndices * indexSize);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
   };
 }
 
 export function mountPcbModel(scene, object) {
   const canvas = scene.querySelector('.pcb-model');
+  const board = object.querySelector('.pcb-board');
   const images = [object.querySelector('.pcb-artwork'), object.querySelector('.pcb-back img')];
   const buttons = [...object.querySelectorAll('.pcb-key')];
-  let paint, attempted = false, available = false, moving = false, request = 0;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let paint, attempted = false, available = false, moving = false, request = 0, heartbeatTimer = 0;
+  let power = 0, powerFrom = 0, powerTarget = 0, powerAt = 0, pulseAt = null;
 
   async function load() {
     attempted = true;
@@ -166,9 +230,15 @@ export function mountPcbModel(scene, object) {
     } catch { /* The lightweight DOM board is still usable if 3D assets fail. */ }
   }
   function schedule() {
-    if (paint && available && !request) request = requestAnimationFrame(draw);
+    if (!paint || !available || request) return;
+    clearTimeout(heartbeatTimer);heartbeatTimer = 0;
+    request = requestAnimationFrame(draw);
   }
-  function draw() {
+  function cancelDraw() {
+    cancelAnimationFrame(request);request = 0;
+    clearTimeout(heartbeatTimer);heartbeatTimer = 0;
+  }
+  function draw(now) {
     request = 0;
     if (!available || !paint) return;
     const width = scene.clientWidth, height = scene.clientHeight;
@@ -185,30 +255,53 @@ export function mountPcbModel(scene, object) {
     pose.m43 /= scale;
     const face = pose.m33 > 0 ? 'front' : 'back';
     if (scene.dataset.facing !== face) scene.dataset.facing = face;
+    const nextPower = board.dataset.power === 'on' ? 1 : 0;
+    if (powerTarget !== nextPower) {
+      powerFrom = power;powerTarget = nextPower;powerAt = now;
+    }
+    const t = reduced.matches ? 1 : Math.min(1, (now - powerAt) / 360);
+    power = powerFrom + (powerTarget - powerFrom) * t * t * (3 - 2 * t);
+    const statusOn = board.dataset.led === 'true';
+    const pulsing = statusOn && board.dataset.heartbeat === 'true' && face === 'front';
+    let heartbeat = statusOn ? power : 0, pulseDelay = 0;
+    if (pulsing) {
+      pulseAt ??= now;
+      const phase = ((now - pulseAt) % 1600) / 1600;
+      const pulse = (center, width) => {
+        const p = Math.max(0, 1 - Math.abs(phase - center) / width);
+        return p * p * (3 - 2 * p);
+      };
+      heartbeat *= pulse(.10, .10) + .8 * pulse(.32, .13);
+      pulseDelay = phase > .46 ? (1 - phase) * 1600 : 42;
+    } else pulseAt = null;
     paint(pose.toFloat32Array(), width, height, scale, parseFloat(style.top),
-      Number(buttons[0].hasAttribute('data-key-pressed')), Number(buttons[1].hasAttribute('data-key-pressed')));
+      Number(buttons[0].hasAttribute('data-key-pressed')), Number(buttons[1].hasAttribute('data-key-pressed')),
+      heartbeat, power);
     if (scene.dataset.model !== 'ready') scene.dataset.model = 'ready';
-    if (moving) schedule();
+    if (moving || (powerFrom !== powerTarget && t < 1)) schedule();
+    else if (pulseDelay) heartbeatTimer = setTimeout(schedule, pulseDelay);
   }
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
     paint = null;
     delete scene.dataset.model;
     delete scene.dataset.facing;
-    cancelAnimationFrame(request);request = 0;
+    cancelDraw();
   });
   canvas.addEventListener('webglcontextrestored', () => {
     attempted = false;
     if (available) load();
   });
   new ResizeObserver(schedule).observe(object);
-  const buttonObserver = new MutationObserver(schedule);
-  for (const button of buttons) buttonObserver.observe(button, { attributes: true, attributeFilter: ['data-key-pressed'] });
+  const stateObserver = new MutationObserver(schedule);
+  for (const button of buttons) stateObserver.observe(button, { attributes: true, attributeFilter: ['data-key-pressed'] });
+  stateObserver.observe(board, { attributes: true, attributeFilter: ['data-power', 'data-led', 'data-heartbeat'] });
+  reduced.addEventListener('change', schedule);
 
   return (visible, animated) => {
     available = visible;
     moving = animated;
-    if (!available) { cancelAnimationFrame(request);request = 0;return; }
+    if (!available) { cancelDraw();return; }
     if (!attempted) load();
     schedule();
   };
