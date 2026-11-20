@@ -18,20 +18,21 @@ The focused switches also accept short/held Enter or Space. Board keyboard
 shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
-The smaller 3D presentation can be dragged to inspect either Gerber face and the
-1.6 mm substrate edges. A soft overhead light and raised glass/components give
-the assembly depth. The orthographic projection retains exact pixel alignment
-when the board faces forward.
+The 3D presentation uses a perspective camera and a depth-tested assembly mesh.
+Both halves of the assembly have component bodies, leads and contacts on a
+1.6 mm substrate. An overhead light shades the parts and the live OLED returns
+to its exact physical pixel grid once the board faces forward. See
+[board model sources](models/README.md) for placement and package details.
 
 Click the board or Power on to turn it to the front over 980 ms. Power starts
-230 ms into that turn; the physical controls remain inert until the turn and
-engine load finish. The first activation runs the original boot. Rotate board
-or 18 seconds without pointer activity returns it to an unpowered presentation,
-preserving the native menu state for the next activation. Keyboard focus and
-held keys keep the front view available. Reduced-motion mode settles immediately.
-The 22-second idle orbit uses a single compositor animation, without a JavaScript
-frame loop. It pauses offscreen, in hidden tabs or on blur; the UI engine also
-stops. No engine is loaded merely to show the unpowered board.
+230 ms into that turn. Every astra UI activation starts a fresh instance and
+replays the original boot before unlocking the keys. Rotate board or 18 seconds
+without interaction returns it to its unpowered orbit. Lite retains its menu
+when returning from the orbit. Keyboard focus and held keys keep the front view
+available. Reduced-motion mode settles immediately.
+The 32-second orbit pauses offscreen, in hidden tabs and on blur. The geometry
+only redraws during motion, resizing or a key press. The UI engine is loaded on
+power-up, and subsequent fresh instances reuse the compiled module.
 Demonstration content is supplied by these adapters. Hardware-only effects and
 serial/ADC peripherals are not simulated. No UI engine is rewritten in JavaScript.
 
@@ -42,10 +43,9 @@ python simulator/build.py --sdk /path/to/wasi-sdk-27.0
 ```
 
 Each engine has a fixed 2 MiB linear-memory ceiling, with no threads or filesystem.
-The website lazily fetches an engine only when the playground enters view, creates
-at most one instance of each, and stops stepping at rest, out of view, on blur or
-in a hidden tab. Reset replaces an instance rather than allocating more menus
-inside it. Fonts are the bitmap arrays in the original source, embedded in WASM.
+The website retains the active engine and Lite's standby state, and stops
+stepping at rest, out of view, on blur or in a hidden tab. Fonts are the bitmap
+arrays in the original source, embedded in WASM.
 
 `oled-clock.js` advances Astra at 240 bounded native steps per active second and
 Lite at its own slower 60-step cadence. Rendering follows every browser animation frame, with no
@@ -84,9 +84,9 @@ Gerber's connector pad centers x=3.556, 10.160 and 16.764 mm. The 5 x 5 mm
 MLT-5020 case is centered at (23.622,22.9868) mm; the two switches are centered at
 (30.099,21.336) and (30.099,24.384) mm, measured from the top left. Their caps are
 3 x 2.5 mm with 1.7 mm black plungers, matching the two-terminal turtle-switch style.
-Other pads, LEDs and tooling holes follow the same coordinate system. The carrier,
-protective film and peel tab are omitted. All artwork is static CSS/SVG with no
-bitmap textures or filters over the active screen.
+Other pads, LEDs and tooling holes follow the same coordinate system. The
+Gerber-derived texture is applied to the substrate. The native pixel surface
+has its own plane at the glass height.
 
 The upper LED gives a short double heartbeat every 1.6 seconds, controlled by the
 native Status LED switch. Only its luminous center changes opacity; solder ends
@@ -101,8 +101,8 @@ blurring the native pixels or adding another canvas, filter, or animation loop.
 `astra/astra_logo.cpp` and the `drawLogo(1000)` call in `astra_rocket.cpp`.
 The MCU's blocking loop is split across browser steps; its Cascadia bitmap font,
 star shapes, positions/targets and exponential movement are retained, with elapsed
-time replacing the blocking loop counter. Boot runs on first load and Reset;
-input may skip it, and reduced-motion mode settles it without displaying motion.
+time replacing the blocking loop counter. Boot runs for every power-on and Reset.
+Reduced-motion mode settles to its final frame.
 All three demo home icons use dark cut-outs in the original white tile field.
 The browser HAL adds one inner diagonal pixel to each of the four small list
 selector notches, keeping XOR drawing and the integer raster bounds intact.

@@ -10,8 +10,9 @@
 .engine-picker button { background: transparent; border: 0; color: var(--muted); padding: 6px 10px; border-radius: 2px; font: 12px/1.5 var(--mono); white-space: nowrap; }
 .engine-picker button[aria-pressed="true"] { color: var(--ink); background: var(--panel); }
 
-/* Orthographic 3D keeps the front-facing OLED's physical pixel grid exact. */
-.pcb-scene { --oled-board-width: 340px; position: relative; display: grid; place-items: center; height: 338px; overflow: clip; touch-action: pan-y; }
+/* Use the mesh camera's projection for the live display and physical hit areas. */
+.pcb-scene { --oled-board-width: 340px; position: relative; display: grid; place-items: center; height: 338px; overflow: clip; touch-action: pan-y; perspective: var(--pcb-camera,1028px); perspective-origin: 50% calc(50% - 12px); }
+.pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .pcb-object { --pcb-mm: calc(var(--oled-board-width) / 36.4); --pcb-depth: calc(1.6 * var(--pcb-mm)); position: relative; top: -12px; width: var(--oled-board-width); aspect-ratio: 36.4 / 26.3; transform-style: preserve-3d; transform: rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg); }
 .pcb-spotlight { position: absolute; inset: 0 8% 12%; pointer-events: none; background: radial-gradient(ellipse 35% 62% at 50% 0%,#e4f3ff30,#deecf40d 50%,transparent 84%); mask-image: linear-gradient(transparent,#000 18%,#000 75%,transparent); }
 .pcb-ground { position: absolute; left: 14%; right: 14%; bottom: 38px; height: 45px; pointer-events: none; background: radial-gradient(ellipse,#0b181535,transparent 68%); }
@@ -30,6 +31,16 @@
 .pcb-scene .pcb-controls { transform: translateZ(calc(.6 * var(--mm))); }
 .pcb-scene .pcb-buzzer { transform: translateZ(calc(.7 * var(--mm))); }
 .pcb-scene .pcb-smd { transform: translateZ(calc(.3 * var(--mm))); }
+.pcb-scene[data-model="ready"] :is(.pcb-board, .pcb-back, .oled-module, .oled-bezel) { background: transparent; border-color: transparent; box-shadow: none; }
+.pcb-scene[data-model="ready"] .oled-module { transform: none; }
+.pcb-scene[data-model="ready"] .pcb-back { transform: translateZ(calc(-2.82 * var(--pcb-mm))) rotateY(180deg); }
+.pcb-scene[data-model="ready"] :is(.pcb-artwork, .pcb-back img, .pcb-edge, .pcb-connector, .pcb-buzzer, .pcb-smd, .pcb-tooling, .tact-switch) { visibility: hidden; }
+.pcb-scene[data-model="ready"] .oled-module::before, .pcb-scene[data-model="ready"] .oled-module::after { display: none; }
+.pcb-scene[data-model="ready"] .oled-bezel::before { display: none; }
+.pcb-scene[data-facing="back"] .oled-module, .pcb-scene[data-facing="back"] .pcb-status i, .pcb-scene[data-facing="back"] .pcb-board::before { opacity: 0; }
+.pcb-scene[data-model="ready"] .pcb-status i { background: none; box-shadow: none; }
+.pcb-scene[data-model="ready"] .pcb-board[data-power="on"] .oled-bezel { box-shadow: 0 0 calc(.58 * var(--mm)) #d7efff22,0 0 calc(2.1 * var(--mm)) #c0e6ff16; }
+.oled-playground[data-pose="active"] .pcb-scene { perspective: none; }
 .pcb-scene-footer { position: absolute; bottom: 3px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 18px; min-height: 32px; }
 .pcb-scene-hint { color: var(--soft); font: 12px/1.6 var(--sans); }
 .pcb-power-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border: 0; border-radius: 3px; color: var(--muted); background: transparent; font: 14px/1.5 var(--sans); }

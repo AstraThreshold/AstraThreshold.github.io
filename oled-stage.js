@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Compositor-only idle motion; native UI work is managed by oled-playground.js.
-export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
+import { mountPcbModel } from './oled-model.js';
+
+export function mountOledStage(root, board, { onPower, onMode }) {
   const scene = root.querySelector('.pcb-scene');
   const object = root.querySelector('.pcb-object');
   const toggle = root.querySelector('.pcb-power-toggle');
+  const updateModel = mountPcbModel(scene, object);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const front = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)';
   const display = 'rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg)';
@@ -12,6 +14,10 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
   root.dataset.pose = mode;
   board.dataset.power = 'off';
   object.style.transform = display;
+
+  function syncModel() {
+    updateModel(available, Boolean(motion && motion.playState !== 'paused'));
+  }
 
   function setMode(value) {
     mode = value;root.dataset.pose = value;onMode(value);
@@ -31,21 +37,24 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
   }
   function orbit(base = display) {
     snapshot();object.style.transform = base;
-    if (reduced.matches) return;
-    const matrix = new DOMMatrix(base);
-    const tilt = (x,y,z,lift) => new DOMMatrix().translate(0,lift,0).rotate(x,y,z).multiply(matrix).toString();
-    motion = object.animate([
-      {transform:matrix.toString()},
-      {transform:tilt(9,30,6,-5)},
-      {transform:tilt(24,46,9,0)},
-      {transform:tilt(5,12,2,-3)},
-      {transform:matrix.toString()}
-    ], {duration:22000,iterations:Infinity,easing:'ease-in-out'});
-    if (!available) motion.pause();
+    if (!reduced.matches) {
+      const matrix = new DOMMatrix(base);
+      const tilt = (x, y, z, lift) => new DOMMatrix().translate(0, lift, 0).rotate(x, y, z).multiply(matrix).toString();
+      motion = object.animate([
+        { transform: matrix.toString() },
+        { transform: tilt(8, 60, 4, -3) },
+        { transform: tilt(4, 120, 6, -5) },
+        { transform: tilt(-8, 180, 1, -2) },
+        { transform: tilt(4, 240, -4, 2) },
+        { transform: tilt(6, 300, -2, 0) },
+        { transform: matrix.toString() }
+      ], { duration: 32000, iterations: Infinity, easing: 'linear' });
+      if (!available) motion.pause();
+    }
+    syncModel();
   }
   function activity() {
     clearTimeout(idleTimer);idleTimer = 0;
-    onActivity?.();
     if (mode !== 'active' || !available) return;
     idleTimer = setTimeout(() => {
       idleTimer = 0;
@@ -75,12 +84,14 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
       duration:reduced.matches ? 0 : 980,easing:'cubic-bezier(.3,0,.16,1)',fill:'forwards'
     });
     if (!available) animation.pause();
+    syncModel();
     schedulePower(ticket);
     returning = animation.finished.then(() => {
       if (ticket !== epoch) return;
       object.style.transform = 'none';animation.cancel();motion = null;
       clearTimeout(powerTimer);powerTimer = 0;
       setPower(true);setMode('active');activity();
+      syncModel();
     }).catch(() => {});
     return returning;
   }
@@ -93,6 +104,7 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
       duration:reduced.matches ? 0 : 850,easing:'cubic-bezier(.3,0,.2,1)',fill:'forwards'
     });
     if (!available) animation.pause();
+    syncModel();
     animation.finished.then(() => {
       if (ticket !== epoch) return;
       object.style.transform = display;animation.cancel();motion = null;
@@ -103,16 +115,19 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
     available = value;
     if (!value) {
       clearTimers();motion?.pause();endDrag(true);
+      syncModel();
       return;
     }
     if (motion?.playState === 'paused') motion.play();
     if (mode === 'display' && !motion && !drag) orbit(object.style.transform);
     if (mode === 'aligning') schedulePower(epoch);
     if (mode === 'active') activity();
+    syncModel();
   }
   function paintDrag() {
     frame = 0;
     if (drag?.next) object.style.transform = drag.next;
+    syncModel();
   }
   function endDrag(canceled = false) {
     if (!drag) return;
@@ -126,6 +141,7 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
     if (mode !== 'display' || !event.isPrimary || event.button !== 0
         || event.ctrlKey || event.metaKey || !event.target.closest('.pcb-object')) return;
     const base = snapshot();
+    syncModel();
     drag = {id:event.pointerId,x:event.clientX,y:event.clientY,base:new DOMMatrix(base),moved:false,next:base};
     scene.setPointerCapture(event.pointerId);
   }, true);
@@ -152,8 +168,8 @@ export function mountOledStage(root, board, { onPower, onMode, onActivity }) {
   });
   toggle.addEventListener('click', () => mode === 'active' || mode === 'aligning' ? showDisplay() : activate());
   reduced.addEventListener('change', () => {
-    if (mode === 'display') orbit();
-    else if (mode === 'aligning') {motion?.finish();}
+    if (mode === 'display') orbit(snapshot());
+    else if (reduced.matches) motion?.finish();
   });
   return {
     activate, showDisplay, activity, setAvailable,

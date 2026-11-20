@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+export const boardWidthMm = 36.4;
+export const cameraDistanceMm = 110;
+
 export function fitCoreWidth(available, viewport, ratio) {
   // Fit the whole assembly to the native display pitch, preserving every mm
   // ratio. A narrow phone can use its gutters without overflowing the viewport.
-  const limit = Math.min(360, Math.max(available, Math.min(viewport - 2, 128 * 2 * 36.4 / 29.42)));
-  const pitch = Math.max(1, Math.floor(limit * ratio * 29.42 / (128 * 36.4) + 1e-5));
-  return pitch * 128 * 36.4 / (29.42 * ratio);
+  const limit = Math.min(360, Math.max(available, Math.min(viewport - 2, 128 * 2 * boardWidthMm / 29.42)));
+  const pitch = Math.max(1, Math.floor(limit * ratio * 29.42 / (128 * boardWidthMm) + 1e-5));
+  return pitch * 128 * boardWidthMm / (29.42 * ratio);
 }
 
 export function fitOledGrid(rect, ratio, padding, viewport = {}) {
@@ -38,7 +41,10 @@ export function mountOledGrid(canvas) {
       const width = fitCoreWidth((stage || board.parentElement).clientWidth, document.documentElement.clientWidth, ratio);
       const value = `${width}px`;
       const host = stage || board;
-      if (host.style.getPropertyValue('--oled-board-width') !== value) host.style.setProperty('--oled-board-width', value);
+      if (host.style.getPropertyValue('--oled-board-width') !== value) {
+        host.style.setProperty('--oled-board-width', value);
+        host.style.setProperty('--pcb-camera', `${width * cameraDistanceMm / boardWidthMm}px`);
+      }
     }
     const style = getComputedStyle(bezel);
     // A tilted world bounding box is not the OLED's local drawing surface.

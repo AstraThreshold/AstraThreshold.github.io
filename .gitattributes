@@ -2,3 +2,4 @@
 simulator/vendor/** -text -whitespace
 *.wasm binary
 *.zip binary
+assets/simulator/astra-core-mesh.bin binary

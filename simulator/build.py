@@ -71,7 +71,7 @@ def main():
         for file in sorted(HERE.rglob('*')):
             if file.is_file() and '__pycache__' not in file.parts:
                 archive.write(file, file.relative_to(ROOT))
-        for name in ('oled-playground.js', 'oled-clock.js', 'oled-grid.js', 'oled-keys.js', 'oled-stage.js', 'oled-playground.css'):
+        for name in ('oled-playground.js', 'oled-clock.js', 'oled-grid.js', 'oled-keys.js', 'oled-stage.js', 'oled-model.js', 'oled-playground.css'):
             archive.write(ROOT / name, name)
         archive.write(PUBLIC / 'astra-core-artwork.svg', 'assets/simulator/astra-core-artwork.svg')
         archive.write(PUBLIC / 'astra-core-back.svg', 'assets/simulator/astra-core-back.svg')

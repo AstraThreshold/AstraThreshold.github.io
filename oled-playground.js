@@ -9,8 +9,8 @@ const engineRepositories = {
 };
 
 // WASI is restricted to libc's abort/write hooks. Neither engine gets a filesystem.
-export async function createOledEngine(bytes) {
-  const module = await WebAssembly.compile(bytes);
+export async function createOledEngine(source) {
+  const module = source instanceof WebAssembly.Module ? source : await WebAssembly.compile(source);
   let instance;
   const wasi = {
     proc_exit(code) { throw new Error(`OLED engine stopped (${code}).`); },
@@ -42,21 +42,20 @@ export function initOledPlayground(getLanguage) {
   const root = document.querySelector('[data-oled-playground]');
   if (!root) return { updateLanguage() {} };
   const board = root.querySelector('.pcb-board');
-  const canvas = root.querySelector('canvas');
+  const canvas = root.querySelector('.oled-screen');
   const context = canvas.getContext('2d', { alpha: false });
   const grid = mountOledGrid(canvas);
   const announcement = root.querySelector('.oled-announcement');
   const loading = root.querySelector('[data-oled-loading]');
   const actions = [...root.querySelectorAll('[data-oled-action]')];
   const picker = [...root.querySelectorAll('[data-ui-engine]')];
-  const states = new Map();
-  const pending = new Map();
+  const modules = new Map();
   const resetButton = root.querySelector('[data-oled-reset]');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const controls = root.querySelector('.pcb-controls');
   const sceneHint = root.querySelector('.pcb-scene-hint');
   const powerToggle = root.querySelector('.pcb-power-toggle');
-  let stage;
+  let stage, liteState, resetOnPower = false, booting = false;
   let selected = 'modern', current = null, manifestPromise;
   let visible = false, focused = document.hasFocus(), sequence = 0;
   let request = 0, endTime = 0, stableTime = 0;
@@ -71,11 +70,13 @@ export function initOledPlayground(getLanguage) {
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
   const allowed = () => visible && focused && !document.hidden && !failure && stage?.powered;
   function updateControls() {
-    const ready = root.dataset.state === 'ready' && stage?.interactive;
+    const ready = root.dataset.state === 'ready' && stage?.interactive && !booting;
     controls.inert = !ready;
-    actions.forEach(button => { button.disabled = !ready; });
+    actions.forEach(button => { if (button.disabled === ready) button.disabled = !ready; });
     const active = stage?.mode === 'active', aligning = stage?.mode === 'aligning';
-    sceneHint.textContent = active ? localText('已通电 · 可使用板上按键', 'Powered on · Use the board keys')
+    sceneHint.textContent = active && ready ? localText('已通电 · 可使用板上按键', 'Powered on · Use the board keys')
+      : active ? (failure ? localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.')
+        : localText('正在通电…', 'Powering up…'))
       : aligning ? localText('正在转正通电…', 'Turning to the front…')
       : localText('拖动旋转 · 点击板子通电', 'Drag to rotate · Click the board to power on');
     powerToggle.querySelector('span').textContent = active || aligning
@@ -112,6 +113,11 @@ export function initOledPlayground(getLanguage) {
     if (flags !== lastFlags) {
       force = true;lastFlags = flags;
       board.dataset.led = String(Boolean(flags & 1));
+      if (booting !== Boolean(flags & 8)) {
+        booting = Boolean(flags & 8);
+        root.dataset.booting = String(booting);
+        updateControls();
+      }
     }
     const level = Math.round(135 + brightness * 1.2);
     const lit = (0xff000000 | (level << 16) | (level << 8) | level) >>> 0;
@@ -147,9 +153,16 @@ export function initOledPlayground(getLanguage) {
   function wake() {
     syncHeartbeat();
     if (!allowed() || !current?.engine) return;
-    if (reducedMotion.matches) { stop();return; }
+    if (reducedMotion.matches) {
+      if (booting) { advanceWithoutMotion();draw(); }
+      stop();return;
+    }
     stableTime = 0;endTime = performance.now() + 6000;
     if (!request) { clock.reset(performance.now());root.dataset.running = 'true';request = requestAnimationFrame(tick); }
+  }
+  function advanceWithoutMotion() {
+    // Settle the native boot, camera and menu before showing the final frame.
+    for (let i = 0; i < 480; i++) current.engine.sim_step(Math.round(current.time += 1000 / 60));
   }
   function showFailure() {
     stop();failure = true;root.dataset.state = 'error';
@@ -159,51 +172,53 @@ export function initOledPlayground(getLanguage) {
     loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
     updateControls();
   }
-  async function getState(name, replace = false) {
-    if (pending.has(name)) return pending.get(name);
-    let state = states.get(name);
-    if (state && !replace) return state;
-    const operation = load();
-    pending.set(name, operation);
-    try { return await operation; }
-    finally { if (pending.get(name) === operation) pending.delete(name); }
-    async function load() {
-      if (!state?.bytes) {
+  async function loadModule(name) {
+    if (!modules.has(name)) {
+      const load = async () => {
         manifestPromise ??= fetch(new URL(`assets/simulator/engines.json${new URL(import.meta.url).search}`, import.meta.url), { signal: AbortSignal.timeout(12000) })
           .then(response => { if (!response.ok) throw new Error('Engine list unavailable');return response.json(); })
           .catch(error => { manifestPromise = null;throw error; });
         const manifest = await manifestPromise;
         const response = await fetch(new URL(`assets/simulator/${name}.wasm?v=${manifest[name].sha256.slice(0, 12)}`, import.meta.url), { signal: AbortSignal.timeout(15000) });
         if (!response.ok) throw new Error('OLED engine unavailable');
-        const bytes = await response.arrayBuffer();
-        state = { bytes, engine: null, time: 0 };
-      }
-      const engine = await createOledEngine(state.bytes);
-      state = { bytes: state.bytes, engine, time: 0 };
-      states.set(name, state);
-      return state;
+        return WebAssembly.compile(await response.arrayBuffer());
+      };
+      modules.set(name, load().catch(error => { modules.delete(name);throw error; }));
     }
+    return modules.get(name);
   }
-  async function select(name, reset = false) {
-    const ticket = ++sequence;
-    keys.cancel();grid.sync();
-    stop();failure = false;selected = name;current = null;
-    clock.setRate(name === 'lite' ? 60 : 240);
-    resetButton.disabled = true;
-    root.dataset.engine = name;root.dataset.state = 'loading';
-    syncHeartbeat();
+  function choose(name) {
+    selected = name;
+    root.dataset.engine = name;
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
     root.querySelector('[data-oled-source]').href = engineRepositories[name];
-    actions.forEach(button => { button.disabled = true; });
+  }
+  async function powerUp(reset = false) {
+    const name = selected;
+    const ticket = ++sequence;
+    keys.cancel();grid.sync();
+    stop();failure = false;current = null;
+    clock.setRate(name === 'lite' ? 60 : 240);
+    resetButton.disabled = true;
+    root.dataset.state = 'loading';
+    booting = false;root.dataset.booting = 'false';
+    syncHeartbeat();
+    updateControls();
     loading.hidden = false;loading.textContent = localText('正在通电…', 'Powering up…');
     try {
-      const state = await getState(name, reset);
-      if (ticket !== sequence) return;
+      let state = name === 'lite' && !reset ? liteState : null;
+      if (!state) {
+        const module = await loadModule(name);
+        if (ticket !== sequence || !stage.powered) return;
+        state = { engine: await createOledEngine(module), time: 0 };
+      }
+      if (ticket !== sequence || !stage.powered) return;
+      if (name === 'lite') liteState = state;
       current = state;lastFlags = -1;
       // Original engines animate their own selectors; reduced motion settles offscreen.
       // Settle both the new boot and its following camera entry without motion.
-      const frames = reducedMotion.matches ? 480 : 1;
-      for (let i = 0; i < frames; i++) { state.time += 1000 / 60;state.engine.sim_step(Math.round(state.time)); }
+      if (reducedMotion.matches) advanceWithoutMotion();
+      else state.engine.sim_step(Math.round(state.time += 1000 / 60));
       draw(true);announce();
       root.dataset.state = 'ready';loading.hidden = true;
       resetButton.disabled = false;
@@ -212,13 +227,13 @@ export function initOledPlayground(getLanguage) {
     } catch { if (ticket === sequence) { resetButton.disabled = false;showFailure(); } }
   }
   function input(action) {
-    if (!current?.engine || root.dataset.state !== 'ready' || !stage.interactive) return;
+    if (!current?.engine || root.dataset.state !== 'ready' || !stage.interactive || booting) return;
     try {
       stage.activity();
       grid.sync();
       current.engine.sim_input(action);
       if (reducedMotion.matches) {
-        for (let i = 0; i < 480; i++) { current.time += 1000 / 60;current.engine.sim_step(Math.round(current.time)); }
+        advanceWithoutMotion();
         draw();
       }
       announce();wake();
@@ -227,18 +242,31 @@ export function initOledPlayground(getLanguage) {
   const keys = bindOledKeys(actions, input);
   stage = mountOledStage(root, board, {
     onPower(on) {
-      if (!on) stop();
-      else if (root.dataset.state === 'waiting') select(selected);
-      else wake();
-      updateControls();
+      if (on) {
+        const reset = resetOnPower;
+        resetOnPower = false;
+        powerUp(reset);
+        return;
+      }
+      sequence++;
+      current = null;booting = false;
+      root.dataset.state = 'waiting';root.dataset.booting = 'false';
+      board.dataset.led = 'false';
+      resetButton.disabled = false;
+      stop();updateControls();
     },
     onMode() { keys.cancel();grid.sync();updateControls(); }
   });
   picker.forEach(button => button.addEventListener('click', () => {
+    const changed = selected !== button.dataset.uiEngine;
+    choose(button.dataset.uiEngine);
     stage.activate();
-    if (selected !== button.dataset.uiEngine || root.dataset.state === 'waiting') select(button.dataset.uiEngine);
+    if (changed && stage.powered) powerUp();
   }));
-  resetButton.addEventListener('click', () => {stage.activate();select(selected, true);});
+  resetButton.addEventListener('click', () => {
+    if (stage.powered) { stage.activity();powerUp(true); }
+    else { resetOnPower = true;stage.activate(); }
+  });
   const keyActions = { ArrowUp: 0, ArrowDown: 1, ArrowLeft: 2, ArrowRight: 3, Enter: 3, Escape: 2 };
   board.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
@@ -257,7 +285,7 @@ export function initOledPlayground(getLanguage) {
   window.addEventListener('focus', () => { focused = true;syncAvailability(); });
   window.addEventListener('pagehide', () => { stage.setAvailable(false);stop();board.dataset.heartbeat = 'false'; });
   window.addEventListener('pageshow', syncAvailability);
-  reducedMotion.addEventListener('change', syncHeartbeat);
+  reducedMotion.addEventListener('change', wake);
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
