@@ -1,4 +1,4 @@
-const controls = 'a[href], button, summary, [role="button"]';
+const controls = 'a[href], button, summary, [role="button"], label[data-cursor-control]';
 const nativeControls = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const distance = (x, y, rect) => Math.hypot(Math.max(rect.left - x, 0, x - rect.right), Math.max(rect.top - y, 0, y - rect.bottom));
