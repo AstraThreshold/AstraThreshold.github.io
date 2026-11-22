@@ -2,10 +2,10 @@
 
 This runs the actual C++ astra UI and C astra UI Lite engines from the owner's
 repositories in two separate WebAssembly instances. It does not emulate an STM32.
-The upstream menu, selector, camera, widget, animation, u8g2 rendering and embedded
-bitmap-font implementations are preserved. Two missing bool returns in Selector are defined
-for WebAssembly safety; the exact patch is recorded in upstream.json. `upstream.json` pins source commits and
-SHA-256 hashes. `vendor/` includes only build inputs and original licenses.
+The upstream menus, selectors, camera, widgets and u8g2 graphics use their
+embedded bitmap fonts. `upstream.json` pins the source commits and hashes and
+records the WebAssembly patches, including the Lite easing adjustment.
+`vendor/` includes the build inputs and their original licenses.
 
 `port/modern.cpp` implements Astra's HAL on top of its bundled u8g2 renderer.
 `port/lite.c` substitutes the SPI/timer driver and registers a small demo with the
@@ -18,23 +18,29 @@ The focused switches also accept short/held Enter or Space. Board keyboard
 shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
-The 3D presentation uses a perspective camera and a depth-tested assembly mesh.
+The board sits in the profile column. After a short entrance it rotates in place.
+The standby display cues power
+and drag gestures. After boot, a brief light shows the two keys and a ring
+shows progress during a long press. The icons below the board switch UIs, toggle power,
+and reset. The 3D presentation uses a perspective camera and a depth-tested assembly mesh.
 Both faces have component bodies, leads and solder joints on a 1.6 mm substrate.
 An overhead light shades the parts. The front LEDs emit from their package
-lenses and cast colored light on nearby surfaces. The live OLED returns
-to its exact physical pixel grid once the board faces forward. See
+lenses and cast colored light on nearby surfaces. The renderer samples the live
+OLED texture directly on the glass. See
 [board model sources](models/README.md) for placement and package details.
 
 Click the board or Power on to turn it to the front over 980 ms. Power starts
 230 ms into that turn. Each power-up starts a fresh instance of the selected
 engine. Astra UI replays its original boot before unlocking the keys. Lite
-animates its selector into the first row once the board faces forward. Rotate
-board or 18 seconds without interaction returns it to its unpowered orbit.
+animates its selector into the first row as the turn nears the front. Dragging
+the powered board turns it off, fades its last OLED frame and resumes the orbit
+on release.
+The power icon or 18 seconds without interaction also returns it to the orbit.
 Keyboard focus and held keys keep the front view available. Reduced-motion
 mode settles immediately.
 The orbit and LED animation pause offscreen, in hidden tabs and on blur.
-The mesh redraws during motion, power fading, heartbeat pulses, resizing
-or key presses. Subsequent power-ups reuse the compiled WebAssembly module.
+The mesh redraws during motion, display updates, power fading, heartbeat
+pulses, resizing or key presses. Subsequent power-ups reuse the compiled module.
 Demonstration content is supplied by these adapters. Hardware-only effects and
 serial/ADC peripherals are not simulated. No UI engine is rewritten in JavaScript.
 
@@ -49,21 +55,16 @@ The website retains the active instance while powered and stops stepping at
 rest, out of view, on blur or in a hidden tab. Fonts are the bitmap
 arrays in the original source, embedded in WASM.
 
-`oled-clock.js` advances Astra at 240 bounded native steps per active second and
-Lite at its own slower 60-step cadence. Rendering follows every browser animation frame, with no
-15 ms frame gate, so 90/144 Hz displays do not lose alternating refreshes. At most
-50 ms is caught up after a stall; hidden/offscreen clocks reset instead of queuing
-work. The original easing constants are unchanged. The display uploads one 128 x 64
-RGBA image when pixels change, with contiguous white pixels and a true black
-background. No oversized backing canvas, per-dot grid or repeated cell drawing.
+`oled-clock.js` advances Astra at 240 bounded native steps per active second
+and Lite at 120. Each pair of Lite steps matches the easing of one original
+60 Hz update. The port keeps the time-based widgets and hourglass duration.
+The browser presents the latest frame at its display cadence. The clock
+catches up at most 50 ms after a stall and resets when paused. The renderer
+uploads a 128 x 64 image when the native pixels change and filters it to the
+available screen resolution. The 2D canvas provides the WebGL fallback.
 
-`oled-grid.js` fits an integer physical-pixel pitch and aligns the canvas origin
-to physical pixels, including fractional desktop DPI and visual-viewport zoom.
-This prevents equal-width native dots alternating between two raster widths as
-they move. The complete board scales with the physical OLED pitch, preserving the
-specified glass, active area and component proportions. Narrow phones may use
-their page gutters without overflowing the viewport. Alignment updates only
-on layout/viewport events or input; it does not add a permanent animation loop.
+`oled-grid.js` fits the assembled board and its camera to the profile slot.
+The physical glass, active area and component proportions scale together.
 `oled-keys.js` handles the two switches and cancels stale long-press timers.
 
 Core geometry now follows the owner's 36.4 x 26.3 x 1.6 mm dimensions and PCB2.zip

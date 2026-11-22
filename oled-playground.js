@@ -3,10 +3,7 @@ import { OledFrameClock } from './oled-clock.js';
 import { mountOledGrid } from './oled-grid.js';
 import { bindOledKeys } from './oled-keys.js';
 import { mountOledStage } from './oled-stage.js';
-const engineRepositories = {
-  modern: 'https://github.com/AstraThreshold/oled-ui-astra',
-  lite: 'https://github.com/AstraThreshold/astra-launcher'
-};
+export const liteRefreshRate = 120;
 
 // WASI is restricted to libc's abort/write hooks. Neither engine gets a filesystem.
 export async function createOledEngine(source) {
@@ -44,7 +41,7 @@ export function initOledPlayground(getLanguage) {
   const board = root.querySelector('.pcb-board');
   const canvas = root.querySelector('.oled-screen');
   const context = canvas.getContext('2d', { alpha: false });
-  const grid = mountOledGrid(canvas);
+  mountOledGrid(root.querySelector('.pcb-scene'));
   const announcement = root.querySelector('.oled-announcement');
   const loading = root.querySelector('[data-oled-loading]');
   const actions = [...root.querySelectorAll('[data-oled-action]')];
@@ -53,7 +50,6 @@ export function initOledPlayground(getLanguage) {
   const resetButton = root.querySelector('[data-oled-reset]');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const controls = root.querySelector('.pcb-controls');
-  const sceneHint = root.querySelector('.pcb-scene-hint');
   const powerToggle = root.querySelector('.pcb-power-toggle');
   let stage, booting = false;
   let selected = 'modern', current = null, manifestPromise;
@@ -69,19 +65,17 @@ export function initOledPlayground(getLanguage) {
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
   const allowed = () => visible && focused && !document.hidden && !failure && stage?.powered;
+  function labelCommand(button, label) {
+    button.title = label;
+    button.setAttribute('aria-label', label);
+  }
   function updateControls() {
     const ready = root.dataset.state === 'ready' && stage?.interactive && !booting;
     controls.inert = !ready;
     actions.forEach(button => { if (button.disabled === ready) button.disabled = !ready; });
-    const active = stage?.mode === 'active', aligning = stage?.mode === 'aligning';
-    sceneHint.textContent = active && ready ? localText('已通电 · 可使用板上按键', 'Powered on · Use the board keys')
-      : active ? (failure ? localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.')
-        : localText('正在通电…', 'Powering up…'))
-      : aligning ? localText('正在转正通电…', 'Turning to the front…')
-      : localText('拖动旋转 · 点击板子通电', 'Drag to rotate · Click the board to power on');
-    powerToggle.querySelector('span').textContent = active || aligning
-      ? localText('旋转查看', 'Rotate board') : localText('通电体验', 'Power on');
-    powerToggle.setAttribute('aria-pressed', String(active || aligning));
+    const active = stage?.mode === 'active' || stage?.mode === 'aligning';
+    labelCommand(powerToggle, active ? localText('关闭电源', 'Power off') : localText('通电', 'Power on'));
+    powerToggle.setAttribute('aria-pressed', String(active));
   }
   function syncHeartbeat() {
     board.dataset.heartbeat = String(allowed() && root.dataset.state === 'ready' && !reducedMotion.matches);
@@ -133,13 +127,16 @@ export function initOledPlayground(getLanguage) {
       }
       displayed[i] = frame[i];
     }
-    if (changed) context.putImageData(pixels, 0, 0);
+    if (changed) {
+      context.putImageData(pixels, 0, 0);
+      stage.writeScreen(pixels.data);
+    }
     root.dataset.selected = String(engine.sim_selected());
     return changed;
   }
   function tick(now) {
     request = 0;
-    if (!allowed() || !current?.engine) { stop();return; }
+    if (!allowed() || !current?.started) { stop();return; }
     try {
       clock.advance(now, milliseconds => {
         current.time += milliseconds;
@@ -152,8 +149,7 @@ export function initOledPlayground(getLanguage) {
   }
   function wake() {
     syncHeartbeat();
-    if (!allowed() || !current?.engine) return;
-    if (selected === 'lite' && !stage.interactive) return;
+    if (!allowed() || !current?.started) return;
     if (reducedMotion.matches) {
       if (booting) { advanceWithoutMotion();draw(); }
       stop();return;
@@ -167,6 +163,8 @@ export function initOledPlayground(getLanguage) {
   }
   function showFailure() {
     stop();failure = true;root.dataset.state = 'error';
+    board.dataset.screenReady = 'false';
+    resetButton.disabled = false;
     syncHeartbeat();
     actions.forEach(button => { button.disabled = true; });
     loading.hidden = false;
@@ -192,41 +190,51 @@ export function initOledPlayground(getLanguage) {
     selected = name;
     root.dataset.engine = name;
     picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
-    root.querySelector('[data-oled-source]').href = engineRepositories[name];
+  }
+  function startScreen() {
+    if (selected === 'lite' && !stage.approachingFront) return;
+    if (!current || current.started) return;
+    current.started = true;
+    try {
+      if (reducedMotion.matches) advanceWithoutMotion();
+      else current.engine.sim_step(Math.round(current.time += clock.quantum));
+      draw(true);announce();
+      root.dataset.state = 'ready';
+      board.dataset.screenReady = 'true';
+      loading.hidden = true;
+      resetButton.disabled = false;
+      updateControls();wake();
+    } catch { showFailure(); }
   }
   async function powerUp() {
     const name = selected;
     const ticket = ++sequence;
-    keys.cancel();grid.sync();
+    keys.cancel();
     stop();failure = false;current = null;
-    clock.setRate(name === 'lite' ? 60 : 240);
+    clock.setRate(name === 'lite' ? liteRefreshRate : 240);
+    root.dataset.keysUsed = 'false';
     resetButton.disabled = true;
     root.dataset.state = 'loading';
+    board.dataset.screenReady = 'false';
     booting = false;root.dataset.booting = 'false';
     syncHeartbeat();
     updateControls();
-    loading.hidden = false;loading.textContent = localText('正在通电…', 'Powering up…');
+    loading.hidden = !stage.approachingFront;
+    loading.textContent = localText('正在通电…', 'Powering up…');
     try {
       const module = await loadModule(name);
       if (ticket !== sequence || !stage.powered) return;
       const engine = await createOledEngine(module);
       if (ticket !== sequence || !stage.powered) return;
-      current = { engine, time: 0 };lastFlags = -1;
-      // Lite starts on its opening frame so the selector can animate once the board faces forward.
-      if (reducedMotion.matches) advanceWithoutMotion();
-      else engine.sim_step(Math.round(current.time += 1000 / 60));
-      draw(true);announce();
-      root.dataset.state = 'ready';loading.hidden = true;
-      resetButton.disabled = false;
-      updateControls();
-      wake();
-    } catch { if (ticket === sequence) { resetButton.disabled = false;showFailure(); } }
+      current = { engine, time: 0, started: false };lastFlags = -1;
+      startScreen();
+    } catch { if (ticket === sequence) showFailure(); }
   }
   function input(action) {
     if (!current?.engine || root.dataset.state !== 'ready' || !stage.interactive || booting) return;
     try {
       stage.activity();
-      grid.sync();
+      root.dataset.keysUsed = 'true';
       current.engine.sim_input(action);
       if (reducedMotion.matches) {
         advanceWithoutMotion();
@@ -245,13 +253,23 @@ export function initOledPlayground(getLanguage) {
       sequence++;
       current = null;booting = false;
       root.dataset.state = 'waiting';root.dataset.booting = 'false';
+      loading.hidden = true;
+      // Retain the displayed frame while the power fade runs. Startup clears it.
       board.dataset.led = 'false';
       resetButton.disabled = false;
       stop();updateControls();
     },
+    onApproach() {
+      if (root.dataset.state !== 'loading') return;
+      if (current) startScreen();
+      else loading.hidden = false;
+    },
     onMode(mode) {
-      keys.cancel();grid.sync();updateControls();
-      if (mode === 'active' && selected === 'lite') wake();
+      keys.cancel();updateControls();
+      if (mode === 'aligning') {
+        root.dataset.used = '';
+        loadModule(selected).catch(() => {});
+      }
     }
   });
   picker.forEach(button => button.addEventListener('click', () => {
@@ -274,13 +292,17 @@ export function initOledPlayground(getLanguage) {
   });
   function syncAvailability() {
     const available = visible && focused && !document.hidden;
+    root.dataset.available = String(available);
     stage.setAvailable(available);
     if (!available) stop();else if (stage.powered) wake();
   }
   document.addEventListener('visibilitychange', syncAvailability);
   window.addEventListener('blur', () => { focused = false;syncAvailability(); });
   window.addEventListener('focus', () => { focused = true;syncAvailability(); });
-  window.addEventListener('pagehide', () => { stage.setAvailable(false);stop();board.dataset.heartbeat = 'false'; });
+  window.addEventListener('pagehide', () => {
+    root.dataset.available = 'false';
+    stage.setAvailable(false);stop();board.dataset.heartbeat = 'false';
+  });
   window.addEventListener('pageshow', syncAvailability);
   reducedMotion.addEventListener('change', wake);
   if ('IntersectionObserver' in window) {
@@ -295,7 +317,7 @@ export function initOledPlayground(getLanguage) {
     actions.forEach((button, index) => button.setAttribute('aria-label',
       getLanguage() === 'en' ? ['Previous; hold to go back','Next; hold to enter'][index] : ['上一项，长按返回','下一项，长按确认'][index]));
     actions.forEach(button => { button.title = button.getAttribute('aria-label'); });
-    grid.schedule();
+    labelCommand(resetButton, localText('重启', 'Reset'));
     board.setAttribute('aria-label', localText('可操作的 OLED 开发板', 'Interactive OLED development board'));
     if (failure) loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
     else if (root.dataset.state !== 'ready') loading.textContent = localText('正在通电…', 'Powering up…');

@@ -2,16 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { createOledEngine } from '../oled-playground.js';
+import { createOledEngine, liteRefreshRate } from '../oled-playground.js';
 import { OledFrameClock } from '../oled-clock.js';
-import { fitOledGrid, fitCoreWidth } from '../oled-grid.js';
+import { fitCoreWidth, boardWidthMm, boardHeightMm, oledAreaMm } from '../oled-grid.js';
 import { OledKeyGesture } from '../oled-keys.js';
 
 const root = new URL('../', import.meta.url);
 async function fresh(name) {
   const engine = await createOledEngine(await readFile(new URL(`assets/simulator/${name}.wasm`, root)));
+  const rate = name === 'lite' ? liteRefreshRate : 60;
   let time = 0;
-  const step = (frames = 220) => { for (let i = 0; i < frames; i++) engine.sim_step(Math.round(time += 1000 / 60)); };
+  const step = (frames = 220) => { for (let i = 0; i < frames; i++) engine.sim_step(Math.round(time += 1000 / rate)); };
   const input = action => { engine.sim_input(action);step(); };
   const frame = () => Buffer.from(new Uint8Array(engine.memory.buffer, engine.sim_buffer(), 1024));
   const label = () => {
@@ -93,8 +94,8 @@ test('upstream source and declared patches match pinned hashes; shipped WASM mat
   }
 });
 
-test('the 240 Hz Astra and 60 Hz Lite clocks keep their cadence across display refresh rates', () => {
-  for (const rate of [60,240]) for (const refresh of [30,60,90,120,144,240]) {
+test('the 240 Hz Astra and 120 Hz Lite clocks keep their cadence across display refresh rates', () => {
+  for (const rate of [liteRefreshRate,240]) for (const refresh of [30,60,90,120,144,240]) {
     const clock = new OledFrameClock(rate);clock.reset(0);
     let steps = 0, elapsed = 0;
     for (let frame = 1; frame <= refresh; frame++) clock.advance(frame * 1000 / refresh, ms => { steps++;elapsed += ms; });
@@ -105,9 +106,9 @@ test('the 240 Hz Astra and 60 Hz Lite clocks keep their cadence across display r
 
 test('changing engine cadence clears fractional work and cannot inherit a paused backlog', () => {
   const clock=new OledFrameClock(240);clock.reset(0);clock.advance(6,()=>{});
-  clock.setRate(60);let steps=0;
+  clock.setRate(liteRefreshRate);let steps=0;
   assert.equal(clock.advance(4000,()=>steps++),0);
-  assert.equal(clock.advance(4000+1000/60,()=>steps++),1);
+  assert.equal(clock.advance(4000+1000/liteRefreshRate,()=>steps++),1);
   assert.equal(steps,1);
 });
 
@@ -141,7 +142,7 @@ test('every home tile has a white field with a dark cut-out motif', async () => 
 
 test('Lite retains its slower hourglass transition and the complete staged copyright page, then rests', async () => {
   const engine=await createOledEngine(await readFile(new URL('assets/simulator/lite.wasm',root)));
-  let time=0;const step=()=>engine.sim_step(Math.round(time+=1000/60));
+  let time=0;const step=()=>engine.sim_step(Math.round(time+=1000/liteRefreshRate));
   const advance=ms=>{const end=time+ms;while(time<end)step();};
   const frame=()=>Buffer.from(new Uint8Array(engine.memory.buffer,engine.sim_buffer(),1024));
   advance(3000);engine.sim_input(0);advance(800);engine.sim_input(3);
@@ -157,14 +158,13 @@ test('Lite retains its slower hourglass transition and the complete staged copyr
   engine.sim_input(3);advance(4800);assert.deepEqual(frame(),settled,'reentry resets and replays the same final card');
 });
 
-test('the measured assembly scales with its OLED grid without distorting the board or overflowing a phone', () => {
-  for(const [available,viewport] of [[280,320],[350,390],[737,1440]]) for(const ratio of [1,1.25,1.5,2,3]) {
-    const width=fitCoreWidth(available,viewport,ratio);
-    const pixelPitch=width/36.4*29.42*ratio/128;
-    assert.ok(Math.abs(pixelPitch-Math.round(pixelPitch))<1e-8);
-    assert.ok(width<viewport);
-    assert.ok(width>=150&&width<=360.01);
+test('the measured assembly fits the responsive profile slot at its physical proportions', () => {
+  for (const [width,height] of [[184,138],[164,123],[130,97],[98,73]]) {
+    const fitted = fitCoreWidth(width,height);
+    assert.ok(fitted > 0 && fitted <= width - 10);
+    assert.ok(fitted * boardHeightMm / boardWidthMm <= height - 8 + 1e-7);
   }
+  assert.equal(fitCoreWidth(0,138),0);
 });
 
 test('a paused or stalled clock cannot burst through a background backlog', () => {
@@ -194,22 +194,11 @@ test('real Astra animation settles within 800 ms and matches across display refr
   }
 });
 
-test('the OLED pixel pitch and origin remain physical integers at fractional DPI and zoom', () => {
-  const padding={left:8,right:8,top:8,bottom:8};
-  for (const dpr of [1,1.25,1.5,2,3]) for(const width of [224,407.625,409]) for(const zoom of [1,1.3,2]) {
-    const rect={left:512.375,top:313.71875,width,height:(width-16)/2+16};
-    const viewport={scale:zoom,offsetLeft:37.5,offsetTop:19.25};
-    const grid=fitOledGrid(rect,dpr,padding,viewport);
-    const ratio=dpr*zoom;
-    const left=(rect.left+grid.x-viewport.offsetLeft)*ratio;
-    const top=(rect.top+grid.y-viewport.offsetTop)*ratio;
-    assert.ok(Math.abs(left-Math.round(left))<1e-7);
-    assert.ok(Math.abs(top-Math.round(top))<1e-7);
-    assert.equal(grid.pitch,Math.round(grid.pitch));
-    assert.ok(Math.abs(grid.scale*ratio-grid.pitch)<1e-7);
-    assert.ok(128*grid.pitch<= (width-16)*ratio + 1e-7);
-    assert.ok(64*grid.pitch<= (rect.height-16)*ratio + 1e-7);
-  }
+test('the 128 by 64 screen area remains within the measured assembly', () => {
+  const {left,top,width,height} = oledAreaMm;
+  assert.equal(width,height*2);
+  assert.ok(left > 0 && left + width < boardWidthMm);
+  assert.ok(top > 0 && top + height < boardHeightMm);
 });
 
 function fakeTimers() {

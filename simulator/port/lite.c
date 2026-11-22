@@ -1,5 +1,5 @@
 /* Browser driver and demo; GPL-3.0-or-later, WoooLAB, 2026.
- * Menu, widgets and drawing are the unmodified astraLauncher Lite sources.
+ * Menu, widgets and drawing use the astraLauncher Lite sources.
  */
 #include "astra-ui-lite/astra_ui_core.h"
 #include "astra-ui-lite/astra_ui_item.h"

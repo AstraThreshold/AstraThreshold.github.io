@@ -65,8 +65,16 @@ void astra_animation(float *_pos, float _posTrg, float _speed)
 {
   if (*_pos != _posTrg)
   {
+#ifdef __wasm__
+    const float remaining = 1.0f - 1.0f / (100.0f - _speed);
+    // Two half-steps equal one original step. Keep the extra settling step
+    // before snapping so the faster update rate preserves transition timing.
+    if (fabsf(*_pos - _posTrg) <= remaining) *_pos = _posTrg;
+    else *_pos += (_posTrg - *_pos) * (1.0f - sqrtf(remaining));
+#else
     if (fabs(*_pos - _posTrg) <= 1.0f) *_pos = _posTrg;
     else *_pos += (_posTrg - *_pos) / (100.0f - _speed) / 1.0f;
+#endif
   }
 }
 

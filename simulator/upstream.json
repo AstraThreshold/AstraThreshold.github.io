@@ -96,6 +96,20 @@
       "Core/Src/u8g2/u8x8_8x8.c": "da32dff05050e4b18ea9007fdefc49ef31bf24b85ba2200fa791755aa81b2884",
       "Core/Src/main.c": "74a0c501523a57036bf670c49e0ecf63b22ef22e450d9b36dae53becfaf9e5e1",
       "Core/Src/astra-launcher/launcher_home_page.c": "ffe95d0e5cb7292686e023dd5615124fdab7421013b21229ae2d5ceea4e169c2"
+    },
+    "patches": {
+      "Core/Src/astra-ui-lite/astra_ui_core.c": {
+        "sha256": "aed7c5882735e4db80c905f4cc2f550d6f836e9defb615f157afe21f96c2d968",
+        "reason": "Preserve the easing and settling time as the browser updates at 120 Hz."
+      },
+      "Core/Src/astra-ui-lite/astra_ui_core.h": {
+        "sha256": "a3db2d736bb24de39190522a8443d9b0cbb32317cf7ece2ccd22da90d695df71",
+        "reason": "Declare the shared easing function for the menu and its exit animation."
+      },
+      "Core/Src/astra-ui-lite/astra_ui_drawer.c": {
+        "sha256": "1a483fb83be0a364af376c10d63d0a466e50abe5845e6d5dcb5400c6058df75f",
+        "reason": "Use the shared time-equivalent easing for the hourglass transition."
+      }
     }
   }
 }

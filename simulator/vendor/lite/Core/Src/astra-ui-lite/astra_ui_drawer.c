@@ -9,15 +9,6 @@
 
 #include "astra_ui_core.h"
 
-void astra_exit_animation(float *_pos, float _posTrg, float _speed)
-{
-  if (*_pos != _posTrg)
-  {
-    if (fabs(*_pos - _posTrg) <= 1.0f) *_pos = _posTrg;
-    else *_pos += (_posTrg - *_pos) / (100.0f - _speed) / 1.0f;
-  }
-}
-
 uint8_t astra_exit_animation_status = 0;
 
 void astra_draw_exit_animation()
@@ -101,7 +92,7 @@ void astra_draw_exit_animation()
         oled_draw_pixel(i, j);
     }
 
-  astra_exit_animation(&_temp_h, _temp_h_trg, 94);
+  astra_animation(&_temp_h, _temp_h_trg, 94);
 
   //下落过程
   if (astra_exit_animation_status == 0 && _temp_h == _temp_h_trg && _temp_h == OLED_HEIGHT + 8)

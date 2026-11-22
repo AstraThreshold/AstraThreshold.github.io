@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { boardWidthMm, cameraDistanceMm } from './oled-grid.js';
+import { boardWidthMm, boardHeightMm, cameraDistanceMm, oledAreaMm } from './oled-grid.js';
 
 const vertexSource = `
 attribute vec3 position, normal, tint, material;
@@ -21,13 +21,13 @@ void main() {
   color = tint;
   finish = material;
   uv = vec2((material.x == 2.0 ? -local.x : local.x) / ${boardWidthMm} + 0.5,
-    local.y / 26.3 + 0.5);
+    local.y / ${boardHeightMm} + 0.5);
 }`;
 
 const fragmentSource = `
 precision highp float;
-uniform sampler2D frontFace, backFace;
-uniform float camera;
+uniform sampler2D frontFace, backFace, oledPixels;
+uniform float camera, oledOn;
 uniform vec3 ledLevels;
 varying vec3 world, local, direction, color, finish;
 varying vec2 uv;
@@ -59,6 +59,12 @@ void main() {
   if (surface == 3.0) {
     // The glass remains almost black around the black pixels, with a faint grazing reflection.
     lit = base + vec3(0.006, 0.008, 0.010) * pow(1.0 - max(dot(n, view), 0.0), 3.0);
+    vec2 pixel = (local.xy - vec2(${oledAreaMm.left - boardWidthMm / 2}, ${oledAreaMm.top - boardHeightMm / 2}))
+      / vec2(${oledAreaMm.width}, ${oledAreaMm.height});
+    if (oledOn > 0.0 && all(greaterThanEqual(pixel, vec2(0.0))) && all(lessThan(pixel, vec2(1.0)))) {
+      float luma = texture2D(oledPixels, pixel).r;
+      lit = mix(lit, vec3(0.98, 0.99, 1.0), luma * oledOn);
+    }
   }
   if (local.z >= -1.221 && local.x > 12.8 && local.y > 3.6) {
     lit += heartbeatColor * ledLevels.x * spill(7.115, -0.65);
@@ -105,13 +111,13 @@ function makeProgram(gl) {
 function boardTexture(gl, image, side, shadows) {
   const texture = gl.createTexture();
   const paper = document.createElement('canvas');
-  paper.width = 1024;
-  paper.height = 740;
+  paper.width = 512;
+  paper.height = 370;
   const ctx = paper.getContext('2d', { alpha: false });
   ctx.fillStyle = side === 1 ? '#1b6757' : '#1a6d60';
   ctx.fillRect(0, 0, paper.width, paper.height);
   ctx.drawImage(image, 0, 0, paper.width, paper.height);
-  ctx.scale(paper.width / boardWidthMm, paper.height / 26.3);
+  ctx.scale(paper.width / boardWidthMm, paper.height / boardHeightMm);
   // Bake small contact shadows; they rotate with the parts and cost no extra draw pass.
   for (let i = 0; i < shadows.length; i += 6) {
     const [face, x, y, w, h, angle] = shadows.subarray(i, i + 6);
@@ -154,7 +160,7 @@ function makePainter(gl, bytes, images) {
     throw new Error('PCB mesh exceeds this graphics context');
   }
   const program = makeProgram(gl);
-  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'frontFace', 'backFace', 'ledLevels']
+  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'frontFace', 'backFace', 'ledLevels', 'oledPixels', 'oledOn']
     .map(name => [name, gl.getUniformLocation(program, name)]));
   const packed = new Uint8Array(bytes, headerSize, vertices * vertexSize);
   const palette = new Uint8Array(bytes, paletteOffset, paletteBytes);
@@ -185,11 +191,21 @@ function makePainter(gl, bytes, images) {
   gl.activeTexture(gl.TEXTURE1);
   boardTexture(gl, images[1], 2, shadows);
   gl.uniform1i(uniform.backFace, 1);
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+  // On the compact board several pixels may share one display sample.
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.uniform1i(uniform.oledPixels, 2);
   gl.enable(gl.DEPTH_TEST);
   gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
-  return (matrix, width, height, scale, shift, upper, lower, heartbeat, power) => {
+  return (matrix, width, height, scale, shift, upper, lower, heartbeat, power, screenOn, frame) => {
+    if (frame) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 128, 64, gl.RGBA, gl.UNSIGNED_BYTE, frame);
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(uniform.pose, false, matrix);
@@ -197,6 +213,7 @@ function makePainter(gl, bytes, images) {
     gl.uniform1f(uniform.centerY, -2 * shift / height);
     gl.uniform2f(uniform.pressed, upper, lower);
     gl.uniform3f(uniform.ledLevels, heartbeat, power, power);
+    gl.uniform1f(uniform.oledOn, screenOn ? power : 0);
     const indexType = wide ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
     gl.drawElements(gl.TRIANGLES, opaqueIndices, indexType, 0);
     // Clear resin is the only transparent pass. Internal dies and the board remain depth-tested.
@@ -214,7 +231,8 @@ export function mountPcbModel(scene, object) {
   const images = [object.querySelector('.pcb-artwork'), object.querySelector('.pcb-back img')];
   const buttons = [...object.querySelectorAll('.pcb-key')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let paint, attempted = false, available = false, moving = false, request = 0, heartbeatTimer = 0;
+  let paint, attempted = false, available = false, moving = false, orbiting = false, request = 0, timer = 0;
+  let screenFrame, screenDirty = false;
   let power = 0, powerFrom = 0, powerTarget = 0, powerAt = 0, pulseAt = null;
 
   async function load() {
@@ -226,17 +244,18 @@ export function mountPcbModel(scene, object) {
       const [response] = await Promise.all([fetch(url, { signal: AbortSignal.timeout(12000) }), ...images.map(image => image.decode())]);
       if (!response.ok || gl.isContextLost()) return;
       paint = makePainter(gl, await response.arrayBuffer(), images);
+      screenDirty = Boolean(screenFrame);
       schedule();
     } catch { /* The lightweight DOM board is still usable if 3D assets fail. */ }
   }
   function schedule() {
     if (!paint || !available || request) return;
-    clearTimeout(heartbeatTimer);heartbeatTimer = 0;
+    clearTimeout(timer);timer = 0;
     request = requestAnimationFrame(draw);
   }
   function cancelDraw() {
     cancelAnimationFrame(request);request = 0;
-    clearTimeout(heartbeatTimer);heartbeatTimer = 0;
+    clearTimeout(timer);timer = 0;
   }
   function draw(now) {
     request = 0;
@@ -276,10 +295,12 @@ export function mountPcbModel(scene, object) {
     } else pulseAt = null;
     paint(pose.toFloat32Array(), width, height, scale, parseFloat(style.top),
       Number(buttons[0].hasAttribute('data-key-pressed')), Number(buttons[1].hasAttribute('data-key-pressed')),
-      heartbeat, power);
+      heartbeat, power, board.dataset.screenReady === 'true', screenDirty ? screenFrame : null);
+    screenDirty = false;
     if (scene.dataset.model !== 'ready') scene.dataset.model = 'ready';
-    if (moving || (powerFrom !== powerTarget && t < 1)) schedule();
-    else if (pulseDelay) heartbeatTimer = setTimeout(schedule, pulseDelay);
+    if (moving && orbiting) timer = setTimeout(schedule, 24);
+    else if (moving || (powerFrom !== powerTarget && t < 1)) schedule();
+    else if (pulseDelay) timer = setTimeout(schedule, pulseDelay);
   }
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
@@ -293,16 +314,25 @@ export function mountPcbModel(scene, object) {
     if (available) load();
   });
   new ResizeObserver(schedule).observe(object);
+  window.addEventListener('resize', schedule, { passive: true });
   const stateObserver = new MutationObserver(schedule);
   for (const button of buttons) stateObserver.observe(button, { attributes: true, attributeFilter: ['data-key-pressed'] });
-  stateObserver.observe(board, { attributes: true, attributeFilter: ['data-power', 'data-led', 'data-heartbeat'] });
+  stateObserver.observe(board, { attributes: true, attributeFilter: ['data-power', 'data-screen-ready', 'data-led', 'data-heartbeat'] });
   reduced.addEventListener('change', schedule);
 
-  return (visible, animated) => {
-    available = visible;
-    moving = animated;
-    if (!available) { cancelDraw();return; }
-    if (!attempted) load();
-    schedule();
+  return {
+    sync(visible, animated, idleOrbit) {
+      available = visible;
+      moving = animated;
+      orbiting = idleOrbit;
+      if (!available) { cancelDraw();return; }
+      if (!attempted) load();
+      schedule();
+    },
+    writeScreen(frame) {
+      screenFrame = frame;
+      screenDirty = true;
+      schedule();
+    }
   };
 }
