@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { mountPcbModel } from './oled-model.js';
 
-export function mountOledStage(root, board, { onPower, onApproach, onMode }) {
+export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode }) {
   const scene = root.querySelector('.pcb-scene');
   const object = root.querySelector('.pcb-object');
-  const toggle = root.querySelector('.pcb-power-toggle');
   const model = mountPcbModel(scene, object);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const front = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)';
@@ -156,8 +155,10 @@ export function mountOledStage(root, board, { onPower, onApproach, onMode }) {
     if (!drag) return;
     const ending = drag;cancelAnimationFrame(frame);paintDrag();drag = null;
     if (scene.hasPointerCapture(ending.id)) scene.releasePointerCapture(ending.id);
-    if (!canceled && ending.moved) orbit(object.style.transform);
-    else if (!canceled) activate();
+    if (canceled) return;
+    if (ending.moved) orbit(object.style.transform);
+    else if (mode === 'active') { activity();onTap(); }
+    else activate();
   }
   scene.addEventListener('pointerdown', event => {
     if (mode === 'active') activity();
@@ -195,16 +196,14 @@ export function mountOledStage(root, board, { onPower, onApproach, onMode }) {
   board.addEventListener('focusin', () => {
     if (document.documentElement.dataset.inputMode === 'keyboard') activate();
   });
-  toggle.addEventListener('click', () => mode === 'active' || mode === 'aligning' ? showDisplay() : activate());
   reduced.addEventListener('change', () => {
     if (mode === 'display') orbit(reduced.matches && motion?.id === 'pcb-entrance' ? display : snapshot());
     else if (reduced.matches) motion?.finish();
   });
   return {
-    activate, showDisplay, activity, setAvailable, writeScreen: model.writeScreen,
+    activate, activity, setAvailable, writeScreen: model.writeScreen,
     get powered() { return powered; },
     get approachingFront() { return approachingFront; },
-    get interactive() { return mode === 'active' && powered; },
-    get mode() { return mode; }
+    get interactive() { return mode === 'active' && powered; }
   };
 }

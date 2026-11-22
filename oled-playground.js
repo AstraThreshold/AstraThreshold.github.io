@@ -45,14 +45,13 @@ export function initOledPlayground(getLanguage) {
   const announcement = root.querySelector('.oled-announcement');
   const loading = root.querySelector('[data-oled-loading]');
   const actions = [...root.querySelectorAll('[data-oled-action]')];
-  const picker = [...root.querySelectorAll('[data-ui-engine]')];
+  const picker = root.querySelector('.engine-picker');
   const modules = new Map();
-  const resetButton = root.querySelector('[data-oled-reset]');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const controls = root.querySelector('.pcb-controls');
-  const powerToggle = root.querySelector('.pcb-power-toggle');
   let stage, booting = false;
-  let selected = 'modern', current = null, manifestPromise;
+  let selected = picker.querySelector(':checked').value, current = null, manifestPromise;
+  root.dataset.engine = selected;
   let visible = false, focused = document.hasFocus(), sequence = 0;
   let request = 0, endTime = 0, stableTime = 0;
   const clock = new OledFrameClock();
@@ -64,18 +63,12 @@ export function initOledPlayground(getLanguage) {
   let lastFlags = -1;
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
+  const failureText = () => localText('通电失败，点击板子再试一次。', 'Could not power up. Tap the board to try again.');
   const allowed = () => visible && focused && !document.hidden && !failure && stage?.powered;
-  function labelCommand(button, label) {
-    button.title = label;
-    button.setAttribute('aria-label', label);
-  }
   function updateControls() {
     const ready = root.dataset.state === 'ready' && stage?.interactive && !booting;
     controls.inert = !ready;
     actions.forEach(button => { if (button.disabled === ready) button.disabled = !ready; });
-    const active = stage?.mode === 'active' || stage?.mode === 'aligning';
-    labelCommand(powerToggle, active ? localText('关闭电源', 'Power off') : localText('通电', 'Power on'));
-    powerToggle.setAttribute('aria-pressed', String(active));
   }
   function syncHeartbeat() {
     board.dataset.heartbeat = String(allowed() && root.dataset.state === 'ready' && !reducedMotion.matches);
@@ -164,11 +157,9 @@ export function initOledPlayground(getLanguage) {
   function showFailure() {
     stop();failure = true;root.dataset.state = 'error';
     board.dataset.screenReady = 'false';
-    resetButton.disabled = false;
     syncHeartbeat();
-    actions.forEach(button => { button.disabled = true; });
     loading.hidden = false;
-    loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
+    loading.textContent = failureText();
     updateControls();
   }
   async function loadModule(name) {
@@ -186,11 +177,6 @@ export function initOledPlayground(getLanguage) {
     }
     return modules.get(name);
   }
-  function choose(name) {
-    selected = name;
-    root.dataset.engine = name;
-    picker.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.uiEngine === name)));
-  }
   function startScreen() {
     if (selected === 'lite' && !stage.approachingFront) return;
     if (!current || current.started) return;
@@ -202,7 +188,6 @@ export function initOledPlayground(getLanguage) {
       root.dataset.state = 'ready';
       board.dataset.screenReady = 'true';
       loading.hidden = true;
-      resetButton.disabled = false;
       updateControls();wake();
     } catch { showFailure(); }
   }
@@ -213,7 +198,6 @@ export function initOledPlayground(getLanguage) {
     stop();failure = false;current = null;
     clock.setRate(name === 'lite' ? liteRefreshRate : 240);
     root.dataset.keysUsed = 'false';
-    resetButton.disabled = true;
     root.dataset.state = 'loading';
     board.dataset.screenReady = 'false';
     booting = false;root.dataset.booting = 'false';
@@ -256,13 +240,15 @@ export function initOledPlayground(getLanguage) {
       loading.hidden = true;
       // Retain the displayed frame while the power fade runs. Startup clears it.
       board.dataset.led = 'false';
-      resetButton.disabled = false;
       stop();updateControls();
     },
     onApproach() {
       if (root.dataset.state !== 'loading') return;
       if (current) startScreen();
       else loading.hidden = false;
+    },
+    onTap() {
+      if (failure) powerUp();
     },
     onMode(mode) {
       keys.cancel();updateControls();
@@ -272,13 +258,9 @@ export function initOledPlayground(getLanguage) {
       }
     }
   });
-  picker.forEach(button => button.addEventListener('click', () => {
-    const changed = selected !== button.dataset.uiEngine;
-    choose(button.dataset.uiEngine);
-    stage.activate();
-    if (changed && stage.powered) powerUp();
-  }));
-  resetButton.addEventListener('click', () => {
+  picker.addEventListener('change', event => {
+    selected = event.target.value;
+    root.dataset.engine = selected;
     if (stage.powered) { stage.activity();powerUp(); }
     else stage.activate();
   });
@@ -288,7 +270,9 @@ export function initOledPlayground(getLanguage) {
     const action = keyActions[event.key];
     // Focused switches handle Enter/Space themselves, including long presses.
     if (action === undefined || (event.key === 'Enter' && event.target.closest('button'))) return;
-    event.preventDefault();input(action);
+    event.preventDefault();
+    if (failure && event.key === 'Enter') powerUp();
+    else input(action);
   });
   function syncAvailability() {
     const available = visible && focused && !document.hidden;
@@ -317,9 +301,9 @@ export function initOledPlayground(getLanguage) {
     actions.forEach((button, index) => button.setAttribute('aria-label',
       getLanguage() === 'en' ? ['Previous; hold to go back','Next; hold to enter'][index] : ['上一项，长按返回','下一项，长按确认'][index]));
     actions.forEach(button => { button.title = button.getAttribute('aria-label'); });
-    labelCommand(resetButton, localText('重启', 'Reset'));
+    picker.setAttribute('aria-label', localText('切换 OLED UI', 'OLED UI'));
     board.setAttribute('aria-label', localText('可操作的 OLED 开发板', 'Interactive OLED development board'));
-    if (failure) loading.textContent = localText('通电失败，点击重启再试一次。', 'Could not power up. Press Reset to try again.');
+    if (failure) loading.textContent = failureText();
     else if (root.dataset.state !== 'ready') loading.textContent = localText('正在通电…', 'Powering up…');
     announce();
   } };

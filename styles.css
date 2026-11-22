@@ -156,22 +156,19 @@ html[data-fonts-loading] .site-header .brand img { animation-play-state: paused;
 :root[data-theme="dark"] .theme-icon--sun { opacity: 1; }
 .profile { display: grid; grid-template-columns: 218px minmax(0, 1fr) 260px; gap: 38px; align-items: stretch; padding-top: 36px; padding-bottom: 22px; }
 .identity-column { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-.identity-column > .avatar, .identity-text { flex-shrink: 0; }
+.identity-column > :is(.avatar, h1) { flex-shrink: 0; }
 .avatar { width: 112px; height: 112px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); margin-bottom: 18px; }
 h1 { font: 600 32px/1.12 var(--mono); letter-spacing: -.035em; }
-.aliases { display: flex; gap: .65em; margin-top: 9px; font: 12px/1.8 var(--serif); color: var(--muted); }
-.signature { color: var(--accent); }
 .identity-column > .oled-playground { margin-top: auto; }
 /* Empty pseudo-elements keep the real font layout without showing fallback text. */
-html[data-fonts-loading] :where(.site-header nav a, .language-switch, .theme-toggle, h1, h2, h3, .aliases, .social-link, .affiliation-copy, .profile-description, .mini-cv > div, .profile-honors p, .social-stat, .refresh-count, .project-meta, .entry-description, .entry-links a, .entry-tags, .entry-heading > .entry-date, .minor-heading, .honor-list li, .affiliations p, .education-details summary, .school-list li, .section-footnote, .site-footer p, .site-footer > a:last-child, .error-page p, .error-page > a:last-child) { position: relative; }
-html[data-fonts-loading] :where(.site-header nav a, .language-switch, .theme-toggle, h1, h2, h3, .aliases, .social-link, .affiliation-copy, .profile-description, .mini-cv > div, .profile-honors p, .social-stat, .refresh-count, .project-meta, .entry-description, .entry-links a, .entry-tags, .entry-heading > .entry-date, .minor-heading, .honor-list li, .affiliations p, .education-details summary, .school-list li, .section-footnote, .site-footer p, .site-footer > a:last-child, .error-page p, .error-page > a:last-child)::after {
+html[data-fonts-loading] :where(.site-header nav a, .language-switch, .theme-toggle, h1, h2, h3, .social-link, .affiliation-copy, .profile-description, .mini-cv > div, .profile-honors p, .social-stat, .refresh-count, .project-meta, .entry-description, .entry-links a, .entry-tags, .entry-heading > .entry-date, .minor-heading, .honor-list li, .affiliations p, .education-details summary, .school-list li, .section-footnote, .site-footer p, .site-footer > a:last-child, .error-page p, .error-page > a:last-child) { position: relative; }
+html[data-fonts-loading] :where(.site-header nav a, .language-switch, .theme-toggle, h1, h2, h3, .social-link, .affiliation-copy, .profile-description, .mini-cv > div, .profile-honors p, .social-stat, .refresh-count, .project-meta, .entry-description, .entry-links a, .entry-tags, .entry-heading > .entry-date, .minor-heading, .honor-list li, .affiliations p, .education-details summary, .school-list li, .section-footnote, .site-footer p, .site-footer > a:last-child, .error-page p, .error-page > a:last-child)::after {
   content: ""; visibility: visible; position: absolute; pointer-events: none; left: 0; top: .3em;
   width: min(100%, var(--skeleton-width, 100%)); height: calc(100% - .6em); min-height: .5em; border-radius: 3px;
   background: repeating-linear-gradient(to bottom, var(--line) 0 .65em, transparent .65em var(--skeleton-row, 1.8em));
   opacity: .55; animation: skeleton-pulse 1.6s ease-in-out infinite alternate;
 }
 html[data-fonts-loading] h1 { --skeleton-width: 180px; }
-html[data-fonts-loading] .aliases { --skeleton-width: 100px; }
 html[data-fonts-loading] :where(.entry-description, .profile-description) { --skeleton-row: 1.9em; }
 html[data-fonts-loading] .entry-tags { --skeleton-width: 180px; }
 html[data-fonts-loading] :where(.social-link, .theme-toggle)::after { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: var(--line); }
@@ -194,6 +191,7 @@ html[data-media-placeholders] .site-header .brand:has(img:not([data-media-ready]
 .social-icon--xiaohongshu { --social-icon-source: url("assets/icons/xiaohongshu.svg"); width: 32px; height: 22px; }
 .social-icon--email { --social-icon-source: url("assets/icons/email.svg"); }
 .profile-social { padding-top: 12px; }
+.profile-social > .social-link:first-child { margin-inline-start: calc((var(--social-icon-size, 22px) - var(--social-hit-size, 32px)) / 2); }
 .entry-links a { display: inline-flex; align-items: baseline; gap: 5px; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line); }
 :where(html:not(.has-adaptive-cursor)) .entry-links a:hover, .entry-links a[data-cursor-within] { text-decoration-color: var(--accent); }
 .link-arrow { font-family: var(--sans); font-size: .9em; color: var(--soft); }
@@ -379,13 +377,12 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .profile { display: block; padding-top: 28px; padding-bottom: 28px; }
   .identity-column { display: grid; grid-template-columns: 94px minmax(0,1fr); gap: 0 22px; align-items: start; }
   .avatar { width: 94px; height: 94px; border-radius: 6px; margin: 0; }
-  .identity-column > .avatar { grid-column: 1; grid-row: 1 / span 2; }
-  .identity-text { grid-column: 2; grid-row: 1; padding-top: 1px; }
+  .identity-column > .avatar { grid-column: 1; grid-row: 1; }
+  .identity-column > h1 { grid-column: 2; grid-row: 1; align-self: center; }
   h1 { font-size: clamp(23px, 6.3vw, 29px); }
-  .aliases { font-size: 11px; margin-top: 7px; line-height: 1.65; }
-  .identity-column > .oled-playground { grid-column: 2; grid-row: 2; margin-top: 7px; }
+  .identity-column > .oled-playground { grid-column: 1 / -1; grid-row: 2; margin-top: 12px; }
   .social-links { --social-hit-size: 44px; gap: 8px; }
-  .profile-social { grid-column: 2; grid-row: 3; margin-top: 7px; padding-top: 0; }
+  .profile-social { grid-column: 1 / -1; grid-row: 3; margin-top: 7px; padding-top: 0; }
   .profile-details { padding-top: 28px; }
   .affiliation-row { align-items: flex-start; gap: 10px; }
   .affiliation-icon { --mark-size: 21px; margin-top: 2px; }
@@ -445,9 +442,6 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   html[lang=en] .job-role { font-size: 13px; }
   html[lang=en] :is(.experience-entry, .project-entry) h3 { font-size: 17px; }
   html[lang=en] :is(#experience, #work) .entry-description { font-size: 12px; }
-}
-@media (max-width: 355px) {
-  .profile-social { grid-column: 1 / -1; justify-self: end; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

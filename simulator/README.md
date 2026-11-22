@@ -21,21 +21,23 @@ the browser's dark image-selection overlay during pointer/keyboard operation.
 The board sits in the profile column. After a short entrance it rotates in place.
 The standby display cues power
 and drag gestures. After boot, a brief light shows the two keys and a ring
-shows progress during a long press. The icons below the board switch UIs, toggle power,
-and reset. The 3D presentation uses a perspective camera and a depth-tested assembly mesh.
+shows progress during a long press. The selector below the board switches
+between Astra UI and Lite. The 3D presentation uses a perspective camera and a
+depth-tested assembly mesh.
 Both faces have component bodies, leads and solder joints on a 1.6 mm substrate.
 An overhead light shades the parts. The front LEDs emit from their package
 lenses and cast colored light on nearby surfaces. The renderer samples the live
 OLED texture directly on the glass. See
 [board model sources](models/README.md) for placement and package details.
 
-Click the board or Power on to turn it to the front over 980 ms. Power starts
-230 ms into that turn. Each power-up starts a fresh instance of the selected
+Click the board or choose a different UI to turn it to the front over 980 ms.
+Power starts 230 ms into that turn. Each power-up starts a fresh instance of the selected
 engine. Astra UI replays its original boot before unlocking the keys. Lite
 animates its selector into the first row as the turn nears the front. Dragging
 the powered board turns it off, fades its last OLED frame and resumes the orbit
 on release.
-The power icon or 18 seconds without interaction also returns it to the orbit.
+The board also returns to the orbit after 18 seconds without interaction.
+If an engine fails to load, tap the board to retry.
 Keyboard focus and held keys keep the front view available. Reduced-motion
 mode settles immediately.
 The orbit and LED animation pause offscreen, in hidden tabs and on blur.
