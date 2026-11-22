@@ -6,7 +6,7 @@ attribute vec3 position, normal, tint, material;
 uniform mat4 pose;
 uniform vec2 projection, pressed;
 uniform float camera, centerY;
-varying vec3 world, local, direction, color, finish;
+varying vec3 world, local, localNormal, direction, color, finish;
 varying vec2 uv;
 void main() {
   local = position * 0.01;
@@ -17,6 +17,7 @@ void main() {
   gl_Position = vec4(p.x * projection.x, -p.y * projection.y + centerY * depth,
     camera / 34.0 * depth - (camera * camera - 1156.0) / 34.0, depth);
   world = p;
+  localNormal = normal;
   direction = mat3(pose) * normal;
   color = tint;
   finish = material;
@@ -29,16 +30,19 @@ precision highp float;
 uniform sampler2D frontFace, backFace, oledPixels;
 uniform float camera, oledOn;
 uniform vec3 ledLevels;
-varying vec3 world, local, direction, color, finish;
+uniform vec2 keyHover;
+varying vec3 world, local, localNormal, direction, color, finish;
 varying vec2 uv;
 const vec3 heartbeatColor = vec3(0.69, 0.90, 1.0);
-const vec3 blueColor = vec3(0.36, 0.79, 1.0);
-const vec3 amberColor = vec3(1.0, 0.65, 0.38);
+const vec3 blueColor = vec3(0.44, 0.86, 1.0);
+const vec3 amberColor = vec3(1.0, 0.59, 0.28);
 
-float spill(float y, float z) {
-  float d = length(local - vec3(16.49, y, z));
-  float falloff = 1.0 - smoothstep(0.25, 3.5, d);
-  return 0.28 * falloff * falloff;
+float ledSpill(float y, float z, vec3 normal) {
+  vec3 ray = vec3(16.49, y, z) - local;
+  float range = length(ray);
+  float facing = max(dot(normal, ray) / max(range, 0.15), 0.0);
+  float falloff = 1.0 - smoothstep(0.45, 4.8, range);
+  return falloff * (0.19 + 0.65 * facing) / (1.0 + 0.48 * range * range);
 }
 
 void main() {
@@ -47,29 +51,48 @@ void main() {
   if (surface == 2.0) base = texture2D(backFace, uv).rgb;
   else if (surface == 1.0) base = texture2D(frontFace, uv).rgb;
   vec3 n = normalize(direction);
-  vec3 light = normalize(vec3(-26.0, -48.0, 64.0) - world);
+  vec3 toKey = vec3(-31.0, -54.0, 82.0) - world;
+  vec3 light = normalize(toKey);
   vec3 view = normalize(vec3(0.0, 0.0, camera) - world);
   float diffuse = max(dot(n, light), 0.0);
-  float bounce = 0.10 * max(dot(n, normalize(vec3(0.55, 0.34, 0.29))), 0.0);
+  float keyPower = 1.32 / (1.0 + 0.000048 * dot(toKey, toKey));
+  float bounce = max(dot(n, normalize(vec3(0.57, 0.35, 0.75))), 0.0);
+  vec3 warmKey = vec3(1.0, 0.94, 0.85);
+  vec3 coolFill = vec3(0.57, 0.73, 0.89);
+  vec3 illumination = vec3(0.22, 0.23, 0.26) + warmKey * (keyPower * diffuse)
+    + coolFill * (0.21 * bounce);
   float polish = finish.y / 255.0;
-  float sheen = pow(max(dot(n, normalize(light + view)), 0.0), mix(12.0, 86.0, polish));
+  float sheen = pow(max(dot(n, normalize(light + view)), 0.0), mix(14.0, 64.0, polish));
+  float viewCosine = clamp(dot(n, view), 0.0, 1.0);
+  float rim = 1.0 - viewCosine;
+  float grazing = rim * rim * rim;
   float grain = fract(sin(dot(floor(local * 80.0), vec3(12.9898, 78.233, 37.719))) * 437.58);
-  vec3 lit = base * (0.43 + 0.62 * diffuse + bounce + (grain - 0.5) * 0.024);
-  lit += vec3(0.97, 0.99, 1.0) * sheen * polish * (0.36 * diffuse + 0.07);
+  vec3 reflected = warmKey * sheen * mix(0.014, 0.24, polish * polish) * keyPower
+    + coolFill * grazing * (0.011 + 0.024 * polish);
+
+  // Light from the LED packages falls on the nearby board and solder in board space.
+  vec3 spill = vec3(0.0);
+  if (surface < 4.0 && local.z >= -1.221 && local.x > 11.6 && local.y > 2.3
+      && any(greaterThan(ledLevels, vec3(0.0)))) {
+    vec3 receiver = normalize(localNormal);
+    spill = heartbeatColor * ledLevels.x * ledSpill(7.115, -0.57, receiver)
+      + blueColor * ledLevels.y * ledSpill(8.513, -0.57, receiver)
+      + amberColor * ledLevels.z * ledSpill(10.164, -0.37, receiver);
+  }
+  // Accumulate reflected light before converting back to display intensity.
+  vec3 radiance = base * base * (illumination + (grain - 0.5) * 0.018)
+    + reflected + spill * (0.19 + 0.41 * base);
+  vec3 lit = sqrt(max(radiance, vec3(0.0)));
   if (surface == 3.0) {
-    // The glass remains almost black around the black pixels, with a faint grazing reflection.
-    lit = base + vec3(0.006, 0.008, 0.010) * pow(1.0 - max(dot(n, view), 0.0), 3.0);
+    // Keep the OLED glass dark, with a broad highlight from the overhead light.
+    lit = base + vec3(0.027, 0.030, 0.036) * sheen
+      + vec3(0.008, 0.011, 0.016) * grazing + spill * 0.075;
     vec2 pixel = (local.xy - vec2(${oledAreaMm.left - boardWidthMm / 2}, ${oledAreaMm.top - boardHeightMm / 2}))
       / vec2(${oledAreaMm.width}, ${oledAreaMm.height});
     if (oledOn > 0.0 && all(greaterThanEqual(pixel, vec2(0.0))) && all(lessThan(pixel, vec2(1.0)))) {
       float luma = texture2D(oledPixels, pixel).r;
       lit = mix(lit, vec3(0.98, 0.99, 1.0), luma * oledOn);
     }
-  }
-  if (local.z >= -1.221 && local.x > 12.8 && local.y > 3.6) {
-    lit += heartbeatColor * ledLevels.x * spill(7.115, -0.65);
-    lit += blueColor * ledLevels.y * spill(8.513, -0.65);
-    lit += amberColor * ledLevels.z * spill(10.164, -0.64);
   }
   float opacity = 1.0;
   if (surface >= 4.0) {
@@ -78,17 +101,19 @@ void main() {
     vec3 hue = lamp == 4.0 ? heartbeatColor : lamp == 5.0 ? blueColor : amberColor;
     float power = lamp == 4.0 ? ledLevels.x : lamp == 5.0 ? ledLevels.y : lamp == 6.0 ? ledLevels.z : 0.0;
     if (resin) {
-      float face = dot(n, view);
-      if (face <= 0.0) discard;
-      float edge = pow(1.0 - face, 2.0);
+      if (viewCosine <= 0.0) discard;
+      float edge = rim * rim;
       float center = lamp == 4.0 ? 7.115 : lamp == 5.0 ? 8.513 : 10.164;
       vec2 radius = lamp == 6.0 ? vec2(0.63, 0.59) : vec2(0.50, 0.39);
       vec2 offset = (local.xy - vec2(16.49, center)) / radius;
-      float scatter = power * exp(-1.85 * dot(offset, offset));
-      lit = mix(lit, mix(hue, vec3(1.0), 0.35), power * 0.32 + scatter * 0.52);
-      opacity = 0.22 + 0.34 * edge + 0.54 * scatter;
-    } else lit = mix(lit, mix(hue, vec3(1.0), 0.62), power);
+      float core = exp(-1.55 * dot(offset, offset));
+      vec3 emission = mix(hue, vec3(1.0), 0.16 + 0.46 * core) * (1.05 + 0.28 * core);
+      lit = mix(lit, emission, power * (0.69 + 0.31 * core));
+      opacity = min(0.98, 0.21 + 0.31 * edge + power * (0.25 + 0.55 * core));
+    } else lit = mix(lit, mix(hue, vec3(1.0), 0.74) * 1.12, power);
   }
+  float hover = finish.z == 1.0 ? keyHover.x : finish.z == 2.0 ? keyHover.y : 0.0;
+  lit *= 1.0 - 0.28 * hover;
   gl_FragColor = vec4(lit, opacity);
 }`;
 
@@ -123,13 +148,14 @@ function boardTexture(gl, image, side, shadows) {
     const [face, x, y, w, h, angle] = shadows.subarray(i, i + 6);
     if (face !== side) continue;
     ctx.save();
-    ctx.translate(x + .08, y + .13);
+    ctx.translate(x + .12, y + .20);
     ctx.rotate(angle * Math.PI / 180);
     ctx.scale(w / 2 + .24, h / 2 + .24);
-    const shadow = ctx.createRadialGradient(0, 0, .45, 0, 0, 1.34);
-    shadow.addColorStop(0, '#00191488');
-    shadow.addColorStop(.72, '#00191458');
-    shadow.addColorStop(1, '#00191400');
+    const shadow = ctx.createRadialGradient(0, 0, .48, 0, 0, 1.34);
+    shadow.addColorStop(0, '#00141098');
+    shadow.addColorStop(.68, '#00141066');
+    shadow.addColorStop(.90, '#00141022');
+    shadow.addColorStop(1, '#00141000');
     ctx.fillStyle = shadow;
     ctx.fillRect(-1.34, -1.34, 2.68, 2.68);
     ctx.restore();
@@ -160,7 +186,7 @@ function makePainter(gl, bytes, images) {
     throw new Error('PCB mesh exceeds this graphics context');
   }
   const program = makeProgram(gl);
-  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'frontFace', 'backFace', 'ledLevels', 'oledPixels', 'oledOn']
+  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'keyHover', 'frontFace', 'backFace', 'ledLevels', 'oledPixels', 'oledOn']
     .map(name => [name, gl.getUniformLocation(program, name)]));
   const packed = new Uint8Array(bytes, headerSize, vertices * vertexSize);
   const palette = new Uint8Array(bytes, paletteOffset, paletteBytes);
@@ -204,14 +230,15 @@ function makePainter(gl, bytes, images) {
   gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
-  return (matrix, width, height, scale, shift, upper, lower, heartbeat, power, screenOn, frame) => {
+  return (matrix, width, height, scale, shift, pressed, hovered, heartbeat, power, screenOn, frame) => {
     if (frame) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 128, 64, gl.RGBA, gl.UNSIGNED_BYTE, frame);
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(uniform.pose, false, matrix);
     gl.uniform2f(uniform.projection, 2 * cameraDistanceMm * scale / width, 2 * cameraDistanceMm * scale / height);
     gl.uniform1f(uniform.centerY, -2 * shift / height);
-    gl.uniform2f(uniform.pressed, upper, lower);
+    gl.uniform2fv(uniform.pressed, pressed);
+    gl.uniform2fv(uniform.keyHover, hovered);
     gl.uniform3f(uniform.ledLevels, heartbeat, power, power);
     gl.uniform1f(uniform.oledOn, screenOn ? power : 0);
     const indexType = wide ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
@@ -232,7 +259,7 @@ export function mountPcbModel(scene, object) {
   const buttons = [...object.querySelectorAll('.pcb-key')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let paint, attempted = false, available = false, moving = false, orbiting = false, request = 0, timer = 0;
-  let screenFrame, screenDirty = false;
+  let screenFrame, screenDirty = false, mouseKey = null;
   let power = 0, powerFrom = 0, powerTarget = 0, powerAt = 0, pulseAt = null;
 
   async function load() {
@@ -293,8 +320,11 @@ export function mountPcbModel(scene, object) {
       heartbeat *= pulse(.10, .10) + .8 * pulse(.32, .13);
       pulseDelay = phase > .46 ? (1 - phase) * 1600 : 42;
     } else pulseAt = null;
-    paint(pose.toFloat32Array(), width, height, scale, parseFloat(style.top),
-      Number(buttons[0].hasAttribute('data-key-pressed')), Number(buttons[1].hasAttribute('data-key-pressed')),
+    const pressed = buttons.map(button => Number(button.hasAttribute('data-key-pressed')));
+    const nativeCursor = !document.documentElement.classList.contains('has-adaptive-cursor');
+    const hovered = buttons.map(button => Number(!button.disabled
+      && (button.hasAttribute('data-cursor-magnet') || (nativeCursor && mouseKey === button))));
+    paint(pose.toFloat32Array(), width, height, scale, parseFloat(style.top), pressed, hovered,
       heartbeat, power, board.dataset.screenReady === 'true', screenDirty ? screenFrame : null);
     screenDirty = false;
     if (scene.dataset.model !== 'ready') scene.dataset.model = 'ready';
@@ -316,7 +346,19 @@ export function mountPcbModel(scene, object) {
   new ResizeObserver(schedule).observe(object);
   window.addEventListener('resize', schedule, { passive: true });
   const stateObserver = new MutationObserver(schedule);
-  for (const button of buttons) stateObserver.observe(button, { attributes: true, attributeFilter: ['data-key-pressed'] });
+  for (const button of buttons) {
+    stateObserver.observe(button, { attributes: true, attributeFilter: ['data-key-pressed', 'data-cursor-magnet', 'disabled'] });
+    button.addEventListener('pointerenter', event => {
+      if (event.pointerType !== 'mouse') return;
+      mouseKey = button;
+      schedule();
+    });
+    button.addEventListener('pointerleave', () => {
+      if (mouseKey !== button) return;
+      mouseKey = null;
+      schedule();
+    });
+  }
   stateObserver.observe(board, { attributes: true, attributeFilter: ['data-power', 'data-screen-ready', 'data-led', 'data-heartbeat'] });
   reduced.addEventListener('change', schedule);
 

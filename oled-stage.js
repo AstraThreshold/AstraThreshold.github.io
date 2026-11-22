@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { mountPcbModel } from './oled-model.js';
 
+function rotateInPlace(base, x, y, z, lift = 0) {
+  const orientation = DOMMatrix.fromMatrix(base);
+  orientation.m41 = orientation.m42 = orientation.m43 = 0;
+  return new DOMMatrix().translate(base.m41, base.m42 + lift, base.m43).rotate(x, y, z).multiply(orientation).toString();
+}
+
 export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode }) {
   const scene = root.querySelector('.pcb-scene');
   const object = root.querySelector('.pcb-object');
   const model = mountPcbModel(scene, object);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const front = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)';
-  const display = 'rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg)';
+  const display = getComputedStyle(object).getPropertyValue('--pcb-case-pose').trim();
   const turnDuration = 980, powerAt = 230, approachAt = 780;
   let mode = 'display', powered = false, approachingFront = false, available = false, introduced = false, motion, drag, frame = 0;
   let idleTimer = 0, turnTimer = 0, epoch = 0, returning;
@@ -45,7 +51,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     snapshot();object.style.transform = base;
     if (!reduced.matches) {
       const matrix = new DOMMatrix(base);
-      const tilt = (x, y, z, lift) => new DOMMatrix().translate(0, lift, 0).rotate(x, y, z).multiply(matrix).toString();
+      const tilt = (x, y, z, lift) => rotateInPlace(matrix, x, y, z, lift);
       motion = object.animate([
         { transform: matrix.toString() },
         { transform: tilt(8, 60, 4, -1) },
@@ -100,7 +106,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     const start = snapshot();
     setMode('aligning');
     const animation = motion = object.animate([{transform:start},{transform:front}], {
-      duration:reduced.matches ? 0 : turnDuration,easing:'cubic-bezier(.3,0,.16,1)',fill:'forwards'
+      id:'pcb-approach', duration:reduced.matches ? 0 : turnDuration,easing:'cubic-bezier(.3,0,.16,1)',fill:'forwards'
     });
     if (!available) animation.pause();
     syncModel();
@@ -120,7 +126,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     const start = snapshot();
     setPower(false);setMode('returning');
     const animation = motion = object.animate([{transform:start},{transform:display}], {
-      duration:reduced.matches ? 0 : 850,easing:'cubic-bezier(.3,0,.2,1)',fill:'forwards'
+      id:'pcb-return', duration:reduced.matches ? 0 : 850,easing:'cubic-bezier(.3,0,.2,1)',fill:'forwards'
     });
     if (!available) animation.pause();
     syncModel();
@@ -142,6 +148,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       if (introduced) orbit(object.style.transform);
       else enterDisplay();
     }
+    if (mode === 'returning' && !motion && !drag) showDisplay();
     if (mode === 'aligning') scheduleTurn(epoch);
     if (mode === 'active') activity();
     syncModel();
@@ -156,9 +163,16 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     const ending = drag;cancelAnimationFrame(frame);paintDrag();drag = null;
     if (scene.hasPointerCapture(ending.id)) scene.releasePointerCapture(ending.id);
     if (canceled) return;
-    if (ending.moved) orbit(object.style.transform);
+    if (ending.moved && mode === 'returning') showDisplay();
+    else if (ending.moved) orbit(object.style.transform);
     else if (mode === 'active') { activity();onTap(); }
     else activate();
+  }
+  function cancelPointerDrag() {
+    if (!drag) return;
+    endDrag(true);
+    if (mode === 'returning') showDisplay();
+    else if (mode === 'display') orbit(object.style.transform);
   }
   scene.addEventListener('pointerdown', event => {
     if (mode === 'active') activity();
@@ -178,15 +192,15 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       if (Math.hypot(dx,dy) <= 5) return;
       drag.moved = true;
       if (mode === 'active') {
-        clearTimers();setPower(false);setMode('display');
+        clearTimers();setPower(false);setMode('returning');
       }
     }
-    drag.next = new DOMMatrix().rotate(Math.max(-65,Math.min(65,-dy*.35)),dx*.45,0).multiply(drag.base).toString();
+    drag.next = rotateInPlace(drag.base, Math.max(-65,Math.min(65,-dy*.35)), dx*.45, 0);
     if (!frame) frame = requestAnimationFrame(paintDrag);
   }, {passive:true});
   scene.addEventListener('pointerup', event => { if (drag?.id === event.pointerId) endDrag(); });
-  scene.addEventListener('pointercancel', () => { endDrag(true);if (mode === 'display') orbit(object.style.transform); });
-  scene.addEventListener('lostpointercapture', () => { if (drag) {endDrag(true);orbit(object.style.transform);} });
+  scene.addEventListener('pointercancel', cancelPointerDrag);
+  scene.addEventListener('lostpointercapture', cancelPointerDrag);
   scene.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (mode === 'active') { activity();return; }

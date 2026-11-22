@@ -159,7 +159,7 @@ test('Lite retains its slower hourglass transition and the complete staged copyr
 });
 
 test('the measured assembly fits the responsive profile slot at its physical proportions', () => {
-  for (const [width,height] of [[184,138],[164,123],[130,97],[98,73]]) {
+  for (const [width,height] of [[244,183],[218,163],[164,123],[98,73]]) {
     const fitted = fitCoreWidth(width,height);
     assert.ok(fitted > 0 && fitted <= width - 10);
     assert.ok(fitted * boardHeightMm / boardWidthMm <= height - 8 + 1e-7);

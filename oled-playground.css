@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: minmax(0,1fr);
   gap: 3px;
-  width: min(184px,100%);
+  width: min(244px,100%);
 }
 .engine-picker {
   display: inline-flex;
@@ -31,16 +31,77 @@
 .engine-picker :focus-visible + span { outline: 1px solid var(--accent); }
 
 /* Use the mesh camera's projection for the live display and physical hit areas. */
-.pcb-scene { --oled-board-width: 174px; position: relative; isolation: isolate; display: grid; place-items: center; aspect-ratio: 4 / 3; min-width: 0; overflow: clip; touch-action: pan-y; perspective: var(--pcb-camera,526px); perspective-origin: 50% calc(50% - 2px); }
+.pcb-scene { --oled-board-width: 234px; position: relative; isolation: isolate; display: grid; place-items: center; aspect-ratio: 4 / 3; min-width: 0; overflow: clip; touch-action: pan-y; perspective: var(--pcb-camera,707px); perspective-origin: 50% calc(50% - 2px); }
 /* Align the board edge while keeping clearance for its rotating silhouette. */
-.pcb-scene { width: 100%; margin-inline-start: -5px; }
-.pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.pcb-object { --pcb-mm: calc(var(--oled-board-width) / 36.4); --pcb-depth: calc(1.6 * var(--pcb-mm)); position: relative; top: -2px; width: min(var(--oled-board-width),calc(100% - 10px)); aspect-ratio: 36.4 / 26.3; transform-style: preserve-3d; transform: rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg); }
-@media (prefers-reduced-motion: no-preference) {
-  .pcb-object { transform: translateY(10px) rotateX(-34deg) rotateY(-36deg) rotateZ(-9deg) scale(.84); }
+.pcb-scene {
+  width: 100%;
+  margin-inline-start: -5px;
+  mask-image: linear-gradient(to right, transparent, #000 6px calc(100% - 6px), transparent),
+    linear-gradient(to bottom, transparent, #000 8px calc(100% - 8px), transparent);
+  mask-composite: intersect;
 }
-.pcb-spotlight { position: absolute; inset: 0 8% 12%; pointer-events: none; background: radial-gradient(ellipse 35% 62% at 50% 0%,#e4f3ff30,#deecf40d 50%,transparent 84%); mask-image: linear-gradient(transparent,#000 18%,#000 75%,transparent); }
-.pcb-ground { position: absolute; left: 12%; right: 12%; bottom: 0; height: 14px; pointer-events: none; background: radial-gradient(ellipse,#0b181535,transparent 68%); }
+.pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pcb-object {
+  --pcb-mm: calc(var(--oled-board-width) / 36.4);
+  --pcb-depth: calc(1.6 * var(--pcb-mm));
+  --pcb-case-pose: translate3d(0, 3px, -26px) rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg) scale(.85);
+  position: relative;
+  top: -2px;
+  width: min(var(--oled-board-width),calc(100% - 10px));
+  aspect-ratio: 36.4 / 26.3;
+  transform-style: preserve-3d;
+  transform: var(--pcb-case-pose);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pcb-object { transform: translate3d(0, 10px, -42px) rotateX(-34deg) rotateY(-36deg) rotateZ(-9deg) scale(.73); }
+}
+.pcb-cabinet, .pcb-cabinet-glass {
+  position: absolute;
+  inset: 8px 9px;
+  border-radius: 5px;
+  pointer-events: none;
+  transition: opacity .44s ease;
+}
+.pcb-cabinet {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line) 76%, var(--ink));
+  background:
+    radial-gradient(ellipse 60% 90% at 47% -5%, #ffeac05c, #ead8b521 46%, transparent 85%),
+    linear-gradient(150deg, #9cbfc51a, transparent 50%, #16262714),
+    color-mix(in srgb, var(--paper) 65%, var(--line));
+  box-shadow: inset 0 8px 14px #120c0b24, inset 0 -12px 25px #120c0b32;
+}
+.pcb-cabinet::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 26%;
+  right: 29%;
+  height: 2px;
+  border-radius: 2px;
+  background: #fff3d8;
+  box-shadow: 0 0 7px 1px #ffedca95, 0 4px 19px 3px #ffdb924b;
+}
+.pcb-cabinet::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 12px;
+  border-top: 1px solid #d5e7e329;
+  background: linear-gradient(180deg, #a5bcc238, #2631344d 55%, #11161362);
+}
+.pcb-cabinet-glass {
+  border: 1px solid #b6d6d459;
+  background:
+    linear-gradient(114deg, transparent 18%, #e0f6ff1a 31%, #e4f6ff06 46%, transparent 51%),
+    linear-gradient(90deg, #ccecf322, transparent 6% 94%, #d1eef419);
+  box-shadow: inset 0 1px #effaff30, inset 0 -1px #100e1037;
+}
+.oled-playground:is([data-pose="aligning"],[data-pose="active"]) :is(.pcb-cabinet,.pcb-cabinet-glass) {
+  opacity: 0;
+}
+.oled-playground[data-pose="aligning"] :is(.pcb-cabinet,.pcb-cabinet-glass) { transition-delay: .08s; }
+.pcb-ground { position: absolute; left: 12%; right: 7%; bottom: 1px; height: 22px; pointer-events: none; background: radial-gradient(ellipse at 55% 63%,#10171545,#1017151a 43%,transparent 74%); }
 .pcb-back { position: absolute; inset: 0; background: linear-gradient(115deg,#205244,#123d34); border: .5px solid #9aa77e; backface-visibility: hidden; transform: translateZ(calc(-1 * var(--pcb-depth))) rotateY(180deg); }
 .pcb-back img { width: 100%; height: 100%; user-select: none; pointer-events: none; }
 .pcb-edge { position: absolute; display: block; pointer-events: none; background: repeating-linear-gradient(#254333 0 14%,#b3aa70 15% 23%,#42523a 24% 47%,#a49a63 48% 56%,#294333 57% 100%); }
@@ -161,6 +222,11 @@
 .tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 1px; border-inline: .6px solid #8e9d7b; border-radius: 1px; }
 .tact-switch i { z-index: 1; width: calc(1.7 * var(--mm)); height: calc(1.7 * var(--mm)); border-radius: 50%; border: .7px solid #1d2b16; background: radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; }
 .pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(.7px); background: #182310; box-shadow: inset 0 1px 2px #000; }
+.pcb-scene:not([data-model="ready"]) .pcb-key:enabled[data-cursor-magnet] .tact-switch i { filter: brightness(.72); }
+:root:has(.pcb-key[data-cursor-magnet]) .adaptive-cursor[data-mode="target"] { --cursor-surface: rgb(128 128 128 / .10); }
+@media (hover: hover) and (pointer: fine) {
+  :where(html:not(.has-adaptive-cursor)) .pcb-scene:not([data-model="ready"]) .pcb-key:enabled:hover .tact-switch i { filter: brightness(.72); }
+}
 .pcb-key:disabled { opacity: 1; }
 .pcb-key-guide {
   position: absolute;
@@ -207,8 +273,8 @@
 }
 .pcb-status i:nth-child(2) { --led-core: #97e4ff; --led-halo: #63bcff; top: calc(21.2626 * var(--mm)); }
 .pcb-status i:last-child { --led-core: #ffd7b0; --led-halo: #ffad78; left: calc(33.6878 * var(--mm)); top: calc(22.7143 * var(--mm)); width: calc(2 * var(--mm)); height: calc(1.20 * var(--mm)); }
-.pcb-status i::before { content: ""; position: absolute; inset: calc(-1.3 * var(--mm)) calc(-2.3 * var(--mm)); pointer-events: none; background: radial-gradient(ellipse,color-mix(in srgb,var(--led-halo) 40%,transparent),color-mix(in srgb,var(--led-halo) 12%,transparent) 40%,transparent 72%); }
-.pcb-status i::after { content: ""; position: absolute; inset: 0 18%; border-radius: .5px; background: radial-gradient(ellipse,#fff 12%,var(--led-core) 53%,color-mix(in srgb,var(--led-halo) 48%,transparent)); box-shadow: 0 0 calc(.38 * var(--mm)) var(--led-halo); pointer-events: none; }
+.pcb-status i::before { content: ""; position: absolute; inset: calc(-1.55 * var(--mm)) calc(-2.65 * var(--mm)); pointer-events: none; background: radial-gradient(ellipse,color-mix(in srgb,var(--led-halo) 58%,transparent),color-mix(in srgb,var(--led-halo) 23%,transparent) 36%,color-mix(in srgb,var(--led-halo) 7%,transparent) 56%,transparent 76%); }
+.pcb-status i::after { content: ""; position: absolute; inset: 0 18%; border-radius: .5px; background: radial-gradient(ellipse,#fff 18%,var(--led-core) 61%,color-mix(in srgb,var(--led-halo) 65%,transparent)); box-shadow: 0 0 calc(.51 * var(--mm)) var(--led-halo); pointer-events: none; }
 .pcb-status .board-led::before, .pcb-status .board-led::after { opacity: 0; }
 .pcb-board[data-led="true"] .board-led::before, .pcb-board[data-led="true"] .board-led::after { opacity: .9; }
 @media (prefers-reduced-motion: no-preference) {
@@ -227,7 +293,7 @@
 
 html:not([data-input-mode="pointer"]) .pcb-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 @media (prefers-reduced-motion: reduce) {
-  .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
+  .pcb-cabinet, .pcb-cabinet-glass, .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
   .oled-playground .pcb-idle-guide,
   .pcb-idle-guide :is(.pcb-guide-left,.pcb-guide-right),
   .oled-playground .pcb-key .pcb-key-guide { animation: none !important; }

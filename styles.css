@@ -154,11 +154,12 @@ html[data-fonts-loading] .site-header .brand img { animation-play-state: paused;
 .theme-icon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 .theme-icon--sun, :root[data-theme="dark"] .theme-icon--moon { opacity: 0; }
 :root[data-theme="dark"] .theme-icon--sun { opacity: 1; }
-.profile { display: grid; grid-template-columns: 218px minmax(0, 1fr) 260px; gap: 38px; align-items: stretch; padding-top: 36px; padding-bottom: 22px; }
+.profile { display: grid; grid-template-columns: 260px minmax(0, 1fr) 260px; gap: 38px; align-items: stretch; padding-top: 36px; padding-bottom: 22px; }
 .identity-column { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .identity-column > :is(.avatar, h1) { flex-shrink: 0; }
 .avatar { width: 112px; height: 112px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); margin-bottom: 18px; }
 h1 { font: 600 32px/1.12 var(--mono); letter-spacing: -.035em; }
+#profile-name { font-family: var(--serif); }
 .identity-column > .oled-playground { margin-top: 18px; }
 /* Empty pseudo-elements keep the real font layout without showing fallback text. */
 html[data-fonts-loading] :where(.site-header nav a, .language-switch, .theme-toggle, h1, h2, h3, .social-link, .affiliation-copy, .profile-description, .mini-cv > div, .profile-honors p, .social-stat, .refresh-count, .project-meta, .entry-description, .entry-links a, .entry-tags, .entry-heading > .entry-date, .minor-heading, .honor-list li, .affiliations p, .education-details summary, .school-list li, .section-footnote, .site-footer p, .site-footer > a:last-child, .error-page p, .error-page > a:last-child) { position: relative; }
@@ -345,13 +346,13 @@ html[lang=en] #experience .job-role { font-size: 12px; }
 .error-page p { color: var(--muted); }
 .error-page > a:last-child { display: inline-block; margin-top: 24px; text-decoration: underline; }
 @media (max-width: 1040px) {
-  .profile { grid-template-columns: 218px minmax(0, 1fr); gap: 28px 32px; }
+  .profile { grid-template-columns: 244px minmax(0, 1fr); gap: 28px 32px; }
   .profile-gallery { grid-column: 1 / -1; height: 210px; min-height: 0; }
 }
 @media (max-width: 800px) {
   .shell { width: calc(100% - 56px); }
   .content-section { width: calc(100% - 80px); }
-  .profile { grid-template-columns: 190px 1fr; gap: 32px; }
+  .profile { grid-template-columns: 218px minmax(0, 1fr); gap: 32px; }
   .mini-cv > div { grid-template-columns: 94px 1fr; gap: 12px; }
   .mini-cv dt { font-size: 11px; }
   h1 { font-size: 32px; }
