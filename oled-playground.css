@@ -21,7 +21,7 @@
   display: grid;
   place-items: center;
   min-height: 28px;
-  padding-inline: 10px;
+  padding-inline: 7px;
   border-radius: 2px;
   color: var(--muted);
   font: 12px/1.5 var(--mono);
