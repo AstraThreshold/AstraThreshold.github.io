@@ -148,7 +148,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       if (introduced) orbit(object.style.transform);
       else enterDisplay();
     }
-    if (mode === 'returning' && !motion && !drag) showDisplay();
+    if (mode === 'dragging' && !drag) showDisplay();
     if (mode === 'aligning') scheduleTurn(epoch);
     if (mode === 'active') activity();
     syncModel();
@@ -163,7 +163,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     const ending = drag;cancelAnimationFrame(frame);paintDrag();drag = null;
     if (scene.hasPointerCapture(ending.id)) scene.releasePointerCapture(ending.id);
     if (canceled) return;
-    if (ending.moved && mode === 'returning') showDisplay();
+    if (ending.moved && mode === 'dragging') showDisplay();
     else if (ending.moved) orbit(object.style.transform);
     else if (mode === 'active') { activity();onTap(); }
     else activate();
@@ -171,7 +171,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
   function cancelPointerDrag() {
     if (!drag) return;
     endDrag(true);
-    if (mode === 'returning') showDisplay();
+    if (mode === 'dragging') showDisplay();
     else if (mode === 'display') orbit(object.style.transform);
   }
   scene.addEventListener('pointerdown', event => {
@@ -192,7 +192,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       if (Math.hypot(dx,dy) <= 5) return;
       drag.moved = true;
       if (mode === 'active') {
-        clearTimers();setPower(false);setMode('returning');
+        clearTimers();setPower(false);setMode('dragging');
       }
     }
     drag.next = rotateInPlace(drag.base, Math.max(-65,Math.min(65,-dy*.35)), dx*.45, 0);
