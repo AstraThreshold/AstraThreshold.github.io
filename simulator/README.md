@@ -40,8 +40,9 @@ lenses and cast colored light on nearby surfaces. The renderer samples the live
 OLED texture directly on the glass. See
 [board model sources](models/README.md) for placement and package details.
 
-Click the board or choose a different UI to bring it forward and turn it to
-the front over 980 ms while the cabinet fades. Power starts 230 ms into that
+Drag anywhere on the cabinet glass or base with the mouse to rotate the board
+inside the cabinet. Click the board or choose a different UI to bring it
+forward and turn it to the front over 980 ms while the cabinet fades. Power starts 230 ms into that
 turn. Each power-up starts a fresh instance of the selected
 engine. Astra UI replays its original boot before unlocking the keys. Lite
 animates its selector into the first row as the turn nears the front. Dragging

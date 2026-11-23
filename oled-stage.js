@@ -181,25 +181,29 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     if (scene.hasPointerCapture(ending.id)) scene.releasePointerCapture(ending.id);
     if (canceled) return;
     if (ending.moved && mode === 'dragging') showDisplay();
-    else if (ending.moved) orbit(object.style.transform);
+    else if (ending.moved || !ending.onBoard) orbit(object.style.transform);
     else if (mode === 'active') { activity();onTap(); }
     else activate();
   }
-  function cancelPointerDrag() {
-    if (!drag) return;
+  function cancelPointerDrag(event) {
+    if (!drag || drag.id !== event.pointerId) return;
     endDrag(true);
     if (mode === 'dragging') showDisplay();
     else if (mode === 'display') orbit(object.style.transform);
   }
   scene.addEventListener('pointerdown', event => {
     if (mode === 'active') activity();
-    if ((mode !== 'display' && mode !== 'active') || !event.isPrimary || event.button !== 0
-        || event.ctrlKey || event.metaKey || !event.target.closest('.pcb-object')) return;
+    if ((mode !== 'display' && mode !== 'active') || drag || !event.isPrimary || event.button !== 0
+        || event.ctrlKey || event.metaKey) return;
+    const onBoard = Boolean(event.target.closest('.pcb-object'));
+    const onCabinet = mode === 'display' && event.pointerType === 'mouse'
+      && event.target.closest('.pcb-cabinet, .pcb-cabinet-base');
+    if (!onBoard && !onCabinet) return;
     if (event.target.closest('.pcb-key') || board.querySelector('[data-key-pressed]')) return;
     const base = snapshot();
-    syncModel();
-    drag = {id:event.pointerId,x:event.clientX,y:event.clientY,base:new DOMMatrix(base),moved:false,next:base};
+    drag = {id:event.pointerId,x:event.clientX,y:event.clientY,base:new DOMMatrix(base),moved:false,next:base,onBoard};
     scene.setPointerCapture(event.pointerId);
+    syncModel();
   }, true);
   scene.addEventListener('pointermove', event => {
     if (mode === 'active') activity();

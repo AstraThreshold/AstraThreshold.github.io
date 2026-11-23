@@ -206,6 +206,10 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
 .oled-playground:is([data-pose="display"],[data-pose="active"]) .pcb-object { cursor: grab; }
 .oled-playground:is([data-pose="display"],[data-pose="active"]) .pcb-object:active { cursor: grabbing; }
 .oled-playground[data-pose="dragging"] .pcb-object { cursor: grabbing; }
+@media (any-pointer: fine) {
+  .oled-playground[data-pose="display"] .pcb-scene:not([data-model="error"]) :is(.pcb-cabinet, .pcb-cabinet-base) { pointer-events: auto; cursor: grab; }
+  .oled-playground[data-pose="display"] :is(.pcb-cabinet, .pcb-cabinet-base):active { cursor: grabbing; }
+}
 
 /* Geometry is in mm, based on PCB2.GTP/GM1 and the owner's CH1115 panel data. */
 .pcb-board { --mm: calc(100cqw / 36.4); position: relative; isolation: isolate; container-type: inline-size; width: var(--oled-board-width,100%); aspect-ratio: 36.4 / 26.3; margin-inline: calc((100% - var(--oled-board-width,100%)) / 2); border: 0; border-radius: 1px; background: linear-gradient(116deg,#1b5145,#12463c 64%,#16473c); color: #d9dfd0; font-family: var(--mono); box-shadow: inset 0 0 0 1px #8caa7050,0 3px 6px #0002; }
