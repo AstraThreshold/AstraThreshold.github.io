@@ -19,7 +19,8 @@ shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
 The board sits in the profile column. After a short entrance it rotates under
-the overhead light in a glass cabinet.
+the overhead light in a glass cabinet. The cabinet is already visible in gray
+while the site fonts load.
 The standby display reads "Click to start..." with each dot hopping in turn.
 After boot, a brief light shows the two keys and a ring
 shows progress during a long press. The selector below the board switches

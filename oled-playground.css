@@ -53,7 +53,7 @@
 .oled-playground[data-pose="aligning"] .pcb-scene {
   transition: translate .74s cubic-bezier(.3,0,.16,1) .24s;
 }
-.pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: filter .24s ease; }
 .pcb-scene:is([data-model="loading"], [data-model="error"]) .pcb-object { visibility: hidden; opacity: 0; }
 .pcb-model-status {
   position: absolute;
@@ -97,7 +97,12 @@
 :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base) {
   position: absolute;
   pointer-events: none;
-  transition: opacity .34s ease;
+  transition: opacity .34s ease, filter .24s ease;
+}
+/* The cabinet and canvas can paint while the text waits for web fonts. */
+html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base, .pcb-model) {
+  visibility: visible;
+  filter: grayscale(1);
 }
 :is(.pcb-cabinet, .pcb-cabinet-glass) {
   inset: var(--cabinet-top) var(--cabinet-side) var(--cabinet-bottom);
@@ -349,7 +354,7 @@
 
 html:not([data-input-mode="pointer"]) .pcb-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 @media (prefers-reduced-motion: reduce) {
-  .pcb-scene, .pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base, .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
+  .pcb-scene, .pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base, .pcb-model, .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
   .pcb-idle-dot { animation: none; }
   .oled-playground .pcb-key .pcb-key-guide { animation: none !important; }
   .pcb-key[data-key-pressed] .pcb-key-guide { opacity: 1; transition: opacity 0s .22s; }
