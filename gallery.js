@@ -51,7 +51,7 @@ function photoShadow(width, height, scale) {
 export function initGallery(getLanguage) {
   const gallery = document.getElementById('gallery');
   const wall = gallery?.querySelector('[data-photo-wall]');
-  const tracks = wall?.querySelectorAll('.photo-track');
+  let tracks;
   const links = [...(wall?.querySelectorAll('.photo-link') || [])]
     .sort((a, b) => Number(a.dataset.photoIndex) - Number(b.dataset.photoIndex));
   const openButton = gallery?.querySelector('[data-gallery-open]');
@@ -398,12 +398,8 @@ export function initGallery(getLanguage) {
     });
   }
 
-  if (wall && links.length) {
-    if (dialogReady && openButton) {
-      openButton.hidden = false;
-      links.forEach(link => { link.tabIndex = -1; });
-      openButton.addEventListener('click', () => openPhoto(current, openButton));
-    }
+  function startTracks() {
+    tracks = wall.querySelectorAll('.photo-track');
     tracks.forEach((track, index) => {
       const repeat = track.querySelector('.photo-group').cloneNode(true);
       repeat.dataset.photoClone = '';
@@ -417,6 +413,19 @@ export function initGallery(getLanguage) {
     setDurations();
     wall.classList.add('is-ready');
     syncMotion();
+  }
+
+  if (wall && links.length) {
+    if (dialogReady && openButton) {
+      openButton.hidden = false;
+      links.forEach(link => { link.tabIndex = -1; });
+      openButton.addEventListener('click', () => openPhoto(current, openButton));
+    }
+    startTracks();
+    wall.addEventListener('site-gallery-layout', () => {
+      returnPhoto(true);
+      startTracks();
+    });
     const resize = () => {
       if (resizeFrame !== null) return;
       resizeFrame = window.requestAnimationFrame(() => {

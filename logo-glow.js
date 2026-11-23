@@ -2,6 +2,8 @@
 // CSS blur layers would quantize the close glow again after that final step.
 const stops = [0, .36, .63, 1];
 const clamp = value => Math.max(0, Math.min(1, value));
+const emptyWordmark = { size: [1, 1], width: 1, height: 1,
+  masks: [new Float32Array(1), new Float32Array(1)], texture: new Uint8Array(4) };
 
 function color(value) {
   value = value.trim();
@@ -223,7 +225,8 @@ export function initLogoGlow() {
   if (!renderer) { canvas.remove(); return; }
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const scheme = matchMedia('(prefers-color-scheme: dark)');
-  let request = 0, configuration = '', maskKey = '', near, startBrightness = 1, endBrightness = 1.18, unavailable = false, themeSnapshot;
+  const touch = matchMedia('(pointer: coarse)');
+  let request = 0, configuration = '', maskKey, near, startBrightness = 1, endBrightness = 1.18, unavailable = false, themeSnapshot;
   const brightness = filter => Number(filter.match(/brightness\(([\d.]+)\)/)?.[1] ?? 1);
 
   function configure() {
@@ -234,15 +237,16 @@ export function initLogoGlow() {
     const colors = ['core','mid','edge'].map(key => color(style.getPropertyValue('--brand-aura-' + key)));
     const glowCore = color(style.getPropertyValue('--brand-glow')), glowHalo = color(style.getPropertyValue('--brand-halo'));
     const radius = style.getPropertyValue('--brand-aura-radii').match(/[\d.]+/g).map(Number);
-    const box = brand.getBoundingClientRect();
+    const box = logo.getBoundingClientRect();
     const x = box.left + box.width / 2, y = box.top + box.height / 2;
     const left = Math.round((x - size[0] / 2) * dpr) / dpr;
     const top = Math.round((y - size[1] * .38) * dpr) / dpr;
     canvas.style.left = `${left}px`;
     canvas.style.top = `${top}px`;
     const center = [x - left, y - top];
-    const sourceKey = JSON.stringify([logo.currentSrc, logo.clientWidth, logo.clientHeight, dpr]);
-    if (sourceKey !== maskKey) { near = wordmarkGlow(logo, dpr); maskKey = sourceKey; }
+    // On touch browsers the close glow stays on the logo, outside the fixed canvas.
+    const sourceKey = touch.matches ? '' : JSON.stringify([logo.currentSrc, logo.clientWidth, logo.clientHeight, dpr]);
+    if (sourceKey !== maskKey) { near = sourceKey ? wordmarkGlow(logo, dpr) : emptyWordmark; maskKey = sourceKey; }
     const key = JSON.stringify([size, dpr, paper, colors, radius, center, sourceKey, glowCore, glowHalo]);
     startBrightness = brightness(style.getPropertyValue('--logo-filter'));
     endBrightness = brightness(style.getPropertyValue('--header-logo-filter'));
@@ -271,7 +275,9 @@ export function initLogoGlow() {
   const observer = new ResizeObserver(refresh); observer.observe(brand);
   logo.addEventListener('load', refresh);
   scheme.addEventListener('change', refresh); reducedMotion.addEventListener('change', refresh);
+  touch.addEventListener('change', refresh);
   addEventListener('resize', refresh);
+  window.visualViewport?.addEventListener('resize', refresh);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   document.fonts.ready.then(refresh);
   document.addEventListener('site-fonts-ready', refresh);

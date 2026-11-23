@@ -173,6 +173,13 @@ html[data-fonts-loading] .site-header .brand img { animation-play-state: paused;
 }
 @keyframes brand-glow-out { from { filter: var(--brand-glow-from, var(--logo-filter)); } }
 @keyframes brand-aura-out { from { opacity: var(--brand-aura-opacity, 0); } }
+@media (pointer: coarse) {
+  .site-banner::before { z-index: 0; clip-path: inset(0); }
+  .site-header { position: relative; z-index: 1; }
+  .site-header .brand,
+  .site-header .brand[data-glow-renderer] { --brand-logo-shadows: drop-shadow(0 0 3px var(--brand-glow)); }
+  .site-header .brand img { clip-path: inset(-10px); }
+}
 .site-header nav { display: flex; gap: 27px; margin-left: auto; font-size: 13px; letter-spacing: .025em; }
 :where(html:not(.has-adaptive-cursor)) .site-header nav a:hover, .site-header nav a[data-cursor-within] { text-decoration: underline; }
 .header-controls { display: flex; align-items: center; gap: 12px; margin-left: 12px; }
@@ -343,7 +350,12 @@ details[open] > summary:before { content: "−"; }
 .affiliations { border-top: 1px solid var(--line); margin-top: 23px; }
 .affiliations p { font-size: 14px; line-height: 1.9; color: var(--muted); }
 .profile-gallery { position: relative; min-width: 0; min-height: 350px; }
-.photo-wall { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.photo-wall { --photo-columns: 2; position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--photo-columns), minmax(0, 1fr)); align-items: start; gap: 8px; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.photo-wall[data-photo-columns="3"] { --photo-columns: 3; }
+@media (pointer: coarse) {
+  .photo-wall:not([data-photo-columns]) { --photo-columns: 3; }
+  .photo-wall:not([data-photo-columns]) :is(.photo-column, .photo-track, .photo-group) { display: contents; }
+}
 .photo-wall::-webkit-scrollbar { display: none; }
 .photo-wall.is-ready { overflow: hidden; }
 .photo-column { min-width: 0; }
