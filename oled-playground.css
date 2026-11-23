@@ -220,7 +220,7 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
 .oled-bezel { position: absolute; left: calc(4.8 * var(--mm)); top: calc(1.38 * var(--mm)); width: calc(29.42 * var(--mm)); height: calc(14.71 * var(--mm)); padding: 0; background: #000; }
 .pcb-board[data-power="on"] .oled-bezel { box-shadow: 0 0 calc(.7 * var(--mm)) #d7efff16,0 0 calc(2.1 * var(--mm)) #c0e6ff0d; }
 .oled-bezel::before { content: ""; position: absolute; z-index: 2; inset: calc(-.1 * var(--mm)); border: calc(.05 * var(--mm)) solid #8192951c; pointer-events: none; }
-.oled-screen { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: #000; image-rendering: pixelated; opacity: 0; visibility: hidden; transition: opacity .36s ease, visibility 0s .36s; }
+.oled-screen { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: #000; image-rendering: auto; opacity: 0; visibility: hidden; transition: opacity .36s ease, visibility 0s .36s; }
 :where(.pcb-board[data-power="on"][data-screen-ready="true"]) .oled-screen { opacity: 1; visibility: visible; transition-delay: 0s; }
 .pcb-scene[data-model="ready"] .oled-screen { visibility: hidden; transition: none; }
 .pcb-board[data-power="off"] .oled-loading { visibility: hidden; }
@@ -237,6 +237,8 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
   color: #d4eaf3;
   font: 700 calc(4.85 * var(--mm))/.94 var(--mono);
   font-variant-ligatures: none;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
   white-space: nowrap;
   pointer-events: none;
 }

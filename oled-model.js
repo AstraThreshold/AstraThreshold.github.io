@@ -36,6 +36,22 @@ varying vec2 uv;
 const vec3 heartbeatColor = vec3(0.69, 0.90, 1.0);
 const vec3 blueColor = vec3(0.44, 0.86, 1.0);
 const vec3 amberColor = vec3(1.0, 0.59, 0.28);
+const vec2 oledResolution = vec2(128.0, 64.0);
+
+float sampleOled(vec2 uv) {
+#ifdef OLED_EDGE_COVERAGE
+  vec2 dotPosition = uv * oledResolution;
+  vec2 footprint = clamp(fwidth(dotPosition), 0.0001, 1.0);
+  vec2 edge = floor(dotPosition + 0.5);
+  // Sample the flat center of each dot, blending only over a framebuffer pixel at its edges.
+  vec2 samplePosition = edge + clamp((dotPosition - edge) / footprint, -0.5, 0.5);
+  vec2 coverage = clamp(min(dotPosition, oledResolution - dotPosition) / footprint + 0.5, 0.0, 1.0);
+  return texture2D(oledPixels, samplePosition / oledResolution).r * coverage.x * coverage.y;
+#else
+  if (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) return 0.0;
+  return texture2D(oledPixels, uv).r;
+#endif
+}
 
 float ledSpill(float y, float z, vec3 normal) {
   vec3 ray = vec3(16.49, y, z) - local;
@@ -87,11 +103,10 @@ void main() {
     // Keep the OLED glass dark, with a broad highlight from the overhead light.
     lit = base + vec3(0.027, 0.030, 0.036) * sheen
       + vec3(0.008, 0.011, 0.016) * grazing + spill * 0.075;
-    vec2 pixel = (local.xy - vec2(${oledAreaMm.left - boardWidthMm / 2}, ${oledAreaMm.top - boardHeightMm / 2}))
-      / vec2(${oledAreaMm.width}, ${oledAreaMm.height});
-    if (oledOn > 0.0 && all(greaterThanEqual(pixel, vec2(0.0))) && all(lessThan(pixel, vec2(1.0)))) {
-      float luma = texture2D(oledPixels, pixel).r;
-      lit = mix(lit, vec3(0.98, 0.99, 1.0), luma * oledOn);
+    if (oledOn > 0.0) {
+      vec2 displayUv = (local.xy - vec2(${oledAreaMm.left - boardWidthMm / 2}, ${oledAreaMm.top - boardHeightMm / 2}))
+        / vec2(${oledAreaMm.width}, ${oledAreaMm.height});
+      lit = mix(lit, vec3(0.98, 0.99, 1.0), sampleOled(displayUv) * oledOn);
     }
   }
   float opacity = 1.0;
@@ -268,7 +283,10 @@ function makePainter(gl, bytes, images, highResolution) {
   if (!vertices || !indices || (wide && !gl.getExtension('OES_element_index_uint'))) {
     throw new Error('PCB mesh exceeds this graphics context');
   }
-  const program = makeProgram(gl);
+  const fragment = gl.getExtension('OES_standard_derivatives')
+    ? '#extension GL_OES_standard_derivatives : enable\n#define OLED_EDGE_COVERAGE\n' + fragmentSource
+    : fragmentSource;
+  const program = makeProgram(gl, fragment);
   const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'pressed', 'keyHover', 'frontFace', 'backFace', 'ledLevels', 'oledPixels', 'oledOn']
     .map(name => [name, gl.getUniformLocation(program, name)]));
   const packed = new Uint8Array(bytes, headerSize, vertices * vertexSize);
@@ -305,9 +323,9 @@ function makePainter(gl, bytes, images, highResolution) {
   gl.uniform1i(uniform.backFace, 1);
   gl.activeTexture(gl.TEXTURE2);
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-  // Filter when shrinking the display and preserve individual pixels when enlarging it.
+  // The shader centers these linear samples inside each dot away from its boundary.
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
