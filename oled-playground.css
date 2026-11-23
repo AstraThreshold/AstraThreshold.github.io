@@ -44,6 +44,31 @@
   mask-composite: intersect;
 }
 .pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pcb-scene:is([data-model="loading"], [data-model="error"]) .pcb-object { visibility: hidden; opacity: 0; }
+.pcb-model-status {
+  position: absolute;
+  inset: var(--cabinet-top) var(--cabinet-side) var(--cabinet-bottom);
+  display: grid;
+  place-content: end center;
+  padding-bottom: 9px;
+  color: var(--ink);
+  font: 11px/1.5 var(--sans);
+  text-align: center;
+  pointer-events: none;
+}
+.pcb-scene:not([data-model="loading"]) .pcb-model-status span,
+.pcb-scene:not([data-model="error"]) .pcb-model-retry { display: none; }
+.pcb-model-retry {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pcb-model-retry:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 .pcb-object {
   --pcb-mm: calc(var(--oled-board-width) / 36.4);
   --pcb-depth: calc(1.6 * var(--pcb-mm));
@@ -249,15 +274,18 @@
 .pcb-key-grid { display: grid; height: 100%; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
 .pcb-key { position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 1px; background: transparent; color: #d6dfcf; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .tact-switch { position: relative; display: grid; place-items: center; width: calc(3 * var(--mm)); height: calc(2.5 * var(--mm)); border: .7px solid; border-color: var(--tact-edges, #d6deca #7f8d75 #75816b #c1cfb5); border-radius: 2px; background: var(--tact-bezel, linear-gradient(135deg,#c8d1ba,#b7c3a7 43%,#a1b08e 46%,#bac3a5)); box-shadow: inset 0 .5px #f0f2dc90,0 .6px 1px #0b2017; }
-.tact-switch::before { content: ""; position: absolute; left: calc(-.5 * var(--mm)); right: calc(-.5 * var(--mm)); height: 65%; border-inline: calc(.3 * var(--mm)) solid #bfc9ac; box-shadow: -1px 0 #7c9470,1px 0 #7c9470; }
-.tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 1px; border-inline: .6px solid #8e9d7b; border-radius: 1px; }
-.tact-switch i { z-index: 1; width: calc(1.7 * var(--mm)); height: calc(1.7 * var(--mm)); border-radius: 50%; border: .7px solid #1d2b16; background: radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; filter: var(--tact-cap-filter, none); }
+.tact-switch::before { content: ""; position: absolute; left: calc(-.5 * var(--mm)); right: calc(-.5 * var(--mm)); height: 65%; border-inline: calc(.3 * var(--mm)) solid var(--tact-terminal, #bfc9ac); box-shadow: -1px 0 #7c9470,1px 0 #7c9470; }
+.tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 1px; border-inline: .6px solid var(--tact-rim, #8e9d7b); border-radius: 1px; }
+.tact-switch i { z-index: 1; width: calc(1.7 * var(--mm)); height: calc(1.7 * var(--mm)); border-radius: 50%; border: .7px solid var(--tact-cap-edge, #1d2b16); background: var(--tact-cap, radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%)); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; }
 .pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(.7px); background: #182310; box-shadow: inset 0 1px 2px #000; }
 @media (any-hover: hover) and (any-pointer: fine) {
   .pcb-scene:not([data-model="ready"]) :is(.pcb-key[data-cursor-magnet], :where(html:not(.has-adaptive-cursor)) .pcb-key:hover):enabled {
     --tact-edges: #f8d7a5 #b68049 #8f653f #dfb479;
     --tact-bezel: linear-gradient(135deg,#f0d3a1,#dfb680 45%,#bd8d57 48%,#d3a46c);
-    --tact-cap-filter: brightness(.42);
+    --tact-terminal: #d7a878;
+    --tact-rim: #b57c4c;
+    --tact-cap-edge: #734420;
+    --tact-cap: radial-gradient(ellipse at 43% 18%,#ce9558,#a7693b 63%,#8e532c 90%);
   }
 }
 .pcb-key:disabled { opacity: 1; }

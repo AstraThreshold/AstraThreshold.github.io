@@ -10,13 +10,13 @@ function rotateInPlace(base, x, y, z, lift = 0) {
 export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode }) {
   const scene = root.querySelector('.pcb-scene');
   const object = root.querySelector('.pcb-object');
-  const model = mountPcbModel(scene, object);
+  const model = mountPcbModel(scene, object, present);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const front = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)';
   const display = getComputedStyle(object).getPropertyValue('--pcb-case-pose').trim();
   const turnDuration = 980, powerAt = 230, approachAt = 780;
   let mode = 'display', powered = false, approachingFront = false, available = false, introduced = false, motion, drag, frame = 0;
-  let idleTimer = 0, turnTimer = 0, epoch = 0, returning;
+  let idleTimer = 0, turnTimer = 0, epoch = 0, returning, activationPending = false;
   root.dataset.pose = mode;
   board.dataset.power = 'off';
 
@@ -73,6 +73,17 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       id:'pcb-entrance', duration:720, easing:'cubic-bezier(.2,.65,.24,1)', fill:'forwards'
     });
     entrance.finished.then(() => { if (motion === entrance) orbit(); }).catch(() => {});
+    syncModel();
+  }
+  function present() {
+    if (!available || !model.ready) return;
+    if (activationPending) {
+      activationPending = false;
+      activate();
+    } else if (mode === 'display' && !motion && !drag) {
+      if (introduced) orbit(object.style.transform);
+      else enterDisplay();
+    }
   }
   function activity() {
     clearTimeout(idleTimer);idleTimer = 0;
@@ -100,6 +111,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
   function activate() {
     if (mode === 'active') { activity();return Promise.resolve(); }
     if (mode === 'aligning') return returning;
+    if (!model.ready) { activationPending = true;return; }
     const ticket = ++epoch;
     introduced = true;
     clearTimers();endDrag(true);
@@ -144,14 +156,11 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       return;
     }
     if (motion?.playState === 'paused') motion.play();
-    if (mode === 'display' && !motion && !drag) {
-      if (introduced) orbit(object.style.transform);
-      else enterDisplay();
-    }
     if (mode === 'dragging' && !drag) showDisplay();
     if (mode === 'aligning') scheduleTurn(epoch);
     if (mode === 'active') activity();
     syncModel();
+    present();
   }
   function paintDrag() {
     frame = 0;
@@ -203,7 +212,9 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
   scene.addEventListener('lostpointercapture', cancelPointerDrag);
   // Clicks retargeted by the magnetic cursor reach the body at their intended control.
   document.body.addEventListener('click', event => {
-    if ((mode === 'active' || mode === 'aligning') && !root.contains(event.target)) showDisplay();
+    if (root.contains(event.target)) return;
+    activationPending = false;
+    if (mode === 'active' || mode === 'aligning') showDisplay();
   }, {capture:true, passive:true});
   scene.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -215,6 +226,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     if (document.documentElement.dataset.inputMode === 'keyboard') activate();
   });
   reduced.addEventListener('change', () => {
+    if (!model.ready) return;
     if (mode === 'display') orbit(reduced.matches && motion?.id === 'pcb-entrance' ? display : snapshot());
     else if (reduced.matches) motion?.finish();
   });

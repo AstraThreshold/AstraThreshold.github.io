@@ -112,21 +112,32 @@ void main() {
       opacity = min(0.98, 0.21 + 0.31 * edge + power * (0.25 + 0.55 * core));
     } else lit = mix(lit, mix(hue, vec3(1.0), 0.74) * 1.12, power);
   }
-  // The stamped covers of the two front switches pick up a warm highlight.
-  if (surface == 0.0 && abs(finish.y - 212.0) < 0.5 && abs(local.x - 11.8585) < 1.56) {
+  // These bounds contain the two front switch assemblies above the substrate.
+  if (surface == 0.0 && local.z > -1.20 && abs(local.x - 11.8585) <= 2.29) {
     vec2 distanceToKey = abs(vec2(local.y) - vec2(8.1949, 11.2442));
-    float bezelHover = dot(keyHover, vec2(1.0) - step(vec2(1.28), distanceToKey));
-    vec3 warmMetal = lit * vec3(1.30, 0.99, 0.65) + vec3(0.095, 0.035, 0.0);
-    lit = mix(lit, warmMetal, 0.8 * bezelHover);
+    float highlight = dot(keyHover, vec2(1.0) - step(vec2(1.29), distanceToKey));
+    float shade = clamp(dot(lit, vec3(0.30, 0.59, 0.11)), 0.0, 1.0);
+    vec3 amber = mix(vec3(0.61, 0.32, 0.16), vec3(1.0, 0.82, 0.57), shade);
+    lit = mix(lit, amber, 0.89 * highlight);
   }
-  float capHover = finish.z == 1.0 ? keyHover.x : finish.z == 2.0 ? keyHover.y : 0.0;
-  lit *= 1.0 - 0.58 * capHover;
   gl_FragColor = vec4(lit, opacity);
 }`;
 
-function makeProgram(gl) {
+const previewFragmentSource = `
+precision mediump float;
+uniform float phase;
+varying vec3 world, direction, color;
+void main() {
+  float light = max(dot(normalize(direction), normalize(vec3(-0.37, -0.54, 0.78))), 0.0);
+  float gray = color.r * (0.55 + 0.53 * light);
+  float sweep = abs(world.x + 0.60 * world.y - mix(-12.0, 12.0, phase));
+  float shimmer = 1.0 - smoothstep(0.0, 3.7, sweep);
+  gl_FragColor = vec4(vec3(mix(gray, 0.92, 0.48 * shimmer)), 1.0);
+}`;
+
+function makeProgram(gl, fragment = fragmentSource) {
   const program = gl.createProgram();
-  for (const [type, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragmentSource]]) {
+  for (const [type, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragment]]) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
@@ -140,15 +151,74 @@ function makeProgram(gl) {
   return program;
 }
 
-function boardTexture(gl, image, side, shadows) {
-  const texture = gl.createTexture();
+function project(gl, uniform, matrix, width, height, scale, shift) {
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.uniformMatrix4fv(uniform.pose, false, matrix);
+  gl.uniform2f(uniform.projection, 2 * cameraDistanceMm * scale / width, 2 * cameraDistanceMm * scale / height);
+  gl.uniform1f(uniform.centerY, -2 * shift / height);
+}
+
+function makePreviewPainter(gl, bounds) {
+  const vertices = [];
+  const face = [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]];
+  for (const box of bounds) {
+    for (const [axis, u, v] of [[0, 1, 2], [1, 0, 2], [2, 0, 1]]) {
+      for (const side of [0, 1]) {
+        const normal = [0, 0, 0];
+        normal[axis] = side ? 1 : -1;
+        for (const [s, t] of face) {
+          const point = [0, 0, 0];
+          point[axis] = box[axis + 3 * side];
+          point[u] = box[u + 3 * s];
+          point[v] = box[v + 3 * t];
+          vertices.push(...point, ...normal, box[6] / 255);
+        }
+      }
+    }
+  }
+  const program = makeProgram(gl, previewFragmentSource);
+  const uniform = Object.fromEntries(['pose', 'projection', 'centerY', 'camera', 'phase']
+    .map(name => [name, gl.getUniformLocation(program, name)]));
+  const attributes = [['position', 3, 0], ['normal', 3, 12], ['tint', 1, 24]]
+    .map(([name, size, offset]) => [gl.getAttribLocation(program, name), size, offset]);
+  const material = gl.getAttribLocation(program, 'material');
+  const buffer = gl.createBuffer();
+  const vertexCount = vertices.length / 7;
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  gl.enable(gl.DEPTH_TEST);
+  gl.clearColor(0, 0, 0, 0);
+
+  return {
+    draw(matrix, width, height, scale, shift, phase) {
+      gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.disableVertexAttribArray(material);
+      for (const [location, size, offset] of attributes) {
+        gl.vertexAttribPointer(location, size, gl.FLOAT, false, 28, offset);
+        gl.enableVertexAttribArray(location);
+      }
+      gl.uniform1f(uniform.camera, cameraDistanceMm);
+      gl.uniform1f(uniform.phase, phase);
+      project(gl, uniform, matrix, width, height, scale, shift);
+      gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+    },
+    release() {
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(program);
+    }
+  };
+}
+
+function paintBoardTexture(gl, texture, image, side, shadows) {
   const paper = document.createElement('canvas');
   paper.width = 512;
   paper.height = 370;
   const ctx = paper.getContext('2d', { alpha: false });
   ctx.fillStyle = side === 1 ? '#1b6757' : '#1a6d60';
   ctx.fillRect(0, 0, paper.width, paper.height);
-  ctx.drawImage(image, 0, 0, paper.width, paper.height);
+  if (image) ctx.drawImage(image, 0, 0, paper.width, paper.height);
   ctx.scale(paper.width / boardWidthMm, paper.height / boardHeightMm);
   // Bake small contact shadows; they rotate with the parts and cost no extra draw pass.
   for (let i = 0; i < shadows.length; i += 6) {
@@ -174,12 +244,10 @@ function boardTexture(gl, image, side, shadows) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, paper);
   paper.width = paper.height = 1;
-  return texture;
 }
 
 function makePainter(gl, bytes, images) {
   const header = new DataView(bytes);
-  if (header.getUint32(0, true) !== 0x33424350) throw new Error('Unrecognized PCB mesh');
   const vertices = header.getUint32(4, true), indices = header.getUint32(8, true);
   const opaqueIndices = header.getUint32(20, true);
   const headerSize = 24, vertexSize = 10, materialSize = 6;
@@ -218,11 +286,14 @@ function makePainter(gl, bytes, images) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(bytes, indicesOffset, indexBytes), gl.STATIC_DRAW);
   gl.uniform1f(uniform.camera, cameraDistanceMm);
-  gl.activeTexture(gl.TEXTURE0);
-  boardTexture(gl, images[0], 1, shadows);
+  const boardTextures = [gl.createTexture(), gl.createTexture()];
+  function setArtwork(index, image) {
+    gl.activeTexture(gl.TEXTURE0 + index);
+    try { paintBoardTexture(gl, boardTextures[index], image, index + 1, shadows); }
+    finally { gl.activeTexture(gl.TEXTURE2); }
+  }
+  boardTextures.forEach((_, index) => setArtwork(index, images[index]));
   gl.uniform1i(uniform.frontFace, 0);
-  gl.activeTexture(gl.TEXTURE1);
-  boardTexture(gl, images[1], 2, shadows);
   gl.uniform1i(uniform.backFace, 1);
   gl.activeTexture(gl.TEXTURE2);
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
@@ -237,13 +308,9 @@ function makePainter(gl, bytes, images) {
   gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
-  return (matrix, width, height, scale, shift, pressed, hovered, heartbeat, power, screenOn, frame) => {
+  function draw(matrix, width, height, scale, shift, pressed, hovered, heartbeat, power, screenOn, frame) {
     if (frame) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 128, 64, gl.RGBA, gl.UNSIGNED_BYTE, frame);
-    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.uniformMatrix4fv(uniform.pose, false, matrix);
-    gl.uniform2f(uniform.projection, 2 * cameraDistanceMm * scale / width, 2 * cameraDistanceMm * scale / height);
-    gl.uniform1f(uniform.centerY, -2 * shift / height);
+    project(gl, uniform, matrix, width, height, scale, shift);
     gl.uniform2fv(uniform.pressed, pressed);
     gl.uniform2fv(uniform.keyHover, hovered);
     gl.uniform3f(uniform.ledLevels, heartbeat, power, power);
@@ -256,34 +323,115 @@ function makePainter(gl, bytes, images) {
     gl.drawElements(gl.TRIANGLES, indices - opaqueIndices, indexType, opaqueIndices * indexSize);
     gl.depthMask(true);
     gl.disable(gl.BLEND);
-  };
+  }
+  return { draw, setArtwork };
 }
 
-export function mountPcbModel(scene, object) {
+async function fetchMesh(path, compressed = false) {
+  const response = await fetch(new URL(path, import.meta.url));
+  if (!response.ok) throw new Error(`PCB mesh request returned ${response.status}`);
+  const body = compressed ? new Response(response.body.pipeThrough(new DecompressionStream('gzip'))) : response;
+  const bytes = await body.arrayBuffer();
+  if (bytes.byteLength < 24 || new DataView(bytes).getUint32(0, true) !== 0x33424350) {
+    throw new Error('Unrecognized PCB mesh');
+  }
+  return bytes;
+}
+
+async function downloadMesh({ mesh, meshGzip }) {
+  if (meshGzip && typeof DecompressionStream === 'function') {
+    try { return await fetchMesh(meshGzip, true); }
+    catch { /* The original binary can recover from a missing or invalid compressed response. */ }
+  }
+  return fetchMesh(mesh);
+}
+
+export function mountPcbModel(scene, object, onReady) {
   const canvas = scene.querySelector('.pcb-model');
   const board = object.querySelector('.pcb-board');
   const images = [object.querySelector('.pcb-artwork'), object.querySelector('.pcb-back img')];
   const buttons = [...object.querySelectorAll('.pcb-key')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let paint, attempted = false, available = false, moving = false, orbiting = false, request = 0, timer = 0;
+  const artwork = [null, null];
+  let gl, preview, painter, mesh, loading, artworkStarted = false;
+  let available = false, moving = false, orbiting = false, request = 0, timer = 0;
   let screenFrame, screenDirty = false, mouseKey = null;
   let power = 0, powerFrom = 0, powerTarget = 0, powerAt = 0, pulseAt = null;
 
+  async function loadArtwork(image, index) {
+    image.loading = 'eager';
+    try { await image.decode(); }
+    catch {
+      const retry = new URL(image.src);
+      retry.searchParams.set('retry', '1');
+      image.src = retry.href;
+      await image.decode();
+    }
+    artwork[index] = image;
+    if (painter && !gl.isContextLost()) {
+      painter.setArtwork(index, image);
+      schedule();
+    }
+  }
+  function startArtwork() {
+    if (artworkStarted) return;
+    artworkStarted = true;
+    images.forEach((image, index) => {
+      loadArtwork(image, index).catch(() => { /* The mesh already has a base finish. */ });
+    });
+  }
+  function showModel(state) {
+    scene.dataset.model = state;
+    object.inert = false;
+    onReady();
+  }
   async function load() {
-    attempted = true;
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true, powerPreference: 'low-power' });
-    if (!gl) return;
     try {
-      const url = new URL(canvas.dataset.mesh, import.meta.url);
-      const [response] = await Promise.all([fetch(url, { signal: AbortSignal.timeout(12000) }), ...images.map(image => image.decode())]);
-      if (!response.ok || gl.isContextLost()) return;
-      paint = makePainter(gl, await response.arrayBuffer(), images);
+      gl ??= canvas.getContext('webgl', { alpha: true, antialias: true, powerPreference: 'low-power' });
+      if (!gl) {
+        startArtwork();
+        showModel('fallback');
+        return;
+      }
+      if (gl.isContextLost()) return;
+      if (!mesh) {
+        if (!preview && canvas.dataset.preview) {
+          preview = makePreviewPainter(gl, JSON.parse(canvas.dataset.preview));
+          schedule();
+        }
+        const download = downloadMesh(canvas.dataset);
+        startArtwork();
+        try { mesh = await download; }
+        catch {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          mesh = await downloadMesh(canvas.dataset);
+        }
+      }
+      if (gl.isContextLost()) return;
+      painter = makePainter(gl, mesh, artwork);
+      preview?.release();
+      preview = null;
       screenDirty = Boolean(screenFrame);
       schedule();
-    } catch { /* The lightweight DOM board is still usable if 3D assets fail. */ }
+    } catch {
+      if (!gl?.isContextLost()) {
+        scene.dataset.model = 'error';
+        schedule();
+      }
+    }
+  }
+  function requestModel() {
+    if (!available || painter || loading || scene.dataset.model !== 'loading') return;
+    loading = load().finally(() => { loading = null; });
+  }
+  function retryModel() {
+    if (scene.dataset.model !== 'error') return;
+    scene.dataset.model = 'loading';
+    requestModel();
+    schedule();
   }
   function schedule() {
-    if (!paint || !available || request) return;
+    if ((!painter && !preview) || !available || request) return;
     clearTimeout(timer);timer = 0;
     request = requestAnimationFrame(draw);
   }
@@ -293,7 +441,7 @@ export function mountPcbModel(scene, object) {
   }
   function draw(now) {
     request = 0;
-    if (!available || !paint) return;
+    if (!available || (!painter && !preview) || gl.isContextLost()) return;
     const width = scene.clientWidth, height = scene.clientHeight;
     if (!width || !height) return;
     const density = Math.min(devicePixelRatio || 1, 2);
@@ -306,6 +454,14 @@ export function mountPcbModel(scene, object) {
     pose.m41 /= scale;
     pose.m42 /= scale;
     pose.m43 /= scale;
+    const matrix = pose.toFloat32Array();
+    const shift = parseFloat(style.top);
+    if (!painter) {
+      const shimmer = scene.dataset.model === 'loading' && !reduced.matches;
+      preview.draw(matrix, width, height, scale, shift, shimmer ? (now % 2150) / 2150 : -1);
+      if (shimmer) timer = setTimeout(schedule, 28);
+      return;
+    }
     const face = pose.m33 > 0 ? 'front' : 'back';
     if (scene.dataset.facing !== face) scene.dataset.facing = face;
     const nextPower = board.dataset.power === 'on' ? 1 : 0;
@@ -331,25 +487,26 @@ export function mountPcbModel(scene, object) {
     const nativeCursor = !document.documentElement.classList.contains('has-adaptive-cursor');
     const hovered = buttons.map(button => Number(!button.disabled
       && (button.hasAttribute('data-cursor-magnet') || (nativeCursor && mouseKey === button))));
-    paint(pose.toFloat32Array(), width, height, scale, parseFloat(style.top), pressed, hovered,
+    painter.draw(matrix, width, height, scale, shift, pressed, hovered,
       heartbeat, power, board.dataset.screenReady === 'true', screenDirty ? screenFrame : null);
     screenDirty = false;
-    if (scene.dataset.model !== 'ready') scene.dataset.model = 'ready';
-    if (moving && orbiting) timer = setTimeout(schedule, 24);
+    if (scene.dataset.model !== 'ready') showModel('ready');
+    if (moving && orbiting && !request) timer = setTimeout(schedule, 24);
     else if (moving || (powerFrom !== powerTarget && t < 1)) schedule();
     else if (pulseDelay) timer = setTimeout(schedule, pulseDelay);
   }
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
-    paint = null;
-    delete scene.dataset.model;
+    preview = null;
+    painter = null;
+    object.inert = true;
+    scene.dataset.model = 'loading';
     delete scene.dataset.facing;
     cancelDraw();
   });
-  canvas.addEventListener('webglcontextrestored', () => {
-    attempted = false;
-    if (available) load();
-  });
+  canvas.addEventListener('webglcontextrestored', requestModel);
+  scene.querySelector('.pcb-model-retry').addEventListener('click', retryModel);
+  window.addEventListener('online', retryModel);
   new ResizeObserver(schedule).observe(object);
   window.addEventListener('resize', schedule, { passive: true });
   const stateObserver = new MutationObserver(schedule);
@@ -370,12 +527,13 @@ export function mountPcbModel(scene, object) {
   reduced.addEventListener('change', schedule);
 
   return {
+    get ready() { return scene.dataset.model === 'ready' || scene.dataset.model === 'fallback'; },
     sync(visible, animated, idleOrbit) {
       available = visible;
       moving = animated;
       orbiting = idleOrbit;
       if (!available) { cancelDraw();return; }
-      if (!attempted) load();
+      requestModel();
       schedule();
     },
     writeScreen(frame) {

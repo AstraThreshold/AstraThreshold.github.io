@@ -6,6 +6,7 @@ import { createOledEngine, liteRefreshRate } from '../oled-playground.js';
 import { OledFrameClock } from '../oled-clock.js';
 import { fitCoreWidth, boardWidthMm, boardHeightMm, oledAreaMm } from '../oled-grid.js';
 import { OledKeyGesture } from '../oled-keys.js';
+import { pcbPreviewBounds } from '../simulator/tools/pcb-preview.mjs';
 
 const root = new URL('../', import.meta.url);
 async function fresh(name) {
@@ -199,6 +200,28 @@ test('the 128 by 64 screen area remains within the measured assembly', () => {
   assert.equal(width,height*2);
   assert.ok(left > 0 && left + width < boardWidthMm);
   assert.ok(top > 0 && top + height < boardHeightMm);
+});
+
+test('the embedded gray PCB keeps the full mesh envelope and 1.6 mm substrate', async () => {
+  const mesh = await readFile(new URL('assets/simulator/astra-core-mesh.bin', root));
+  const preview = pcbPreviewBounds(mesh);
+  const low = [Infinity, Infinity, Infinity];
+  const high = [-Infinity, -Infinity, -Infinity];
+  for (let index = 0; index < mesh.readUInt32LE(4); index++) {
+    for (let axis = 0; axis < 3; axis++) {
+      const coordinate = mesh.readInt16LE(24 + index * 10 + axis * 2);
+      low[axis] = Math.min(low[axis], coordinate);
+      high[axis] = Math.max(high[axis], coordinate);
+    }
+  }
+  for (let axis = 0; axis < 3; axis++) {
+    assert.equal(Math.min(...preview.map(box => box[axis])), low[axis]);
+    assert.equal(Math.max(...preview.map(box => box[axis + 3])), high[axis]);
+  }
+  const board = preview.find(box => box[3] - box[0] === boardWidthMm * 100
+    && box[4] - box[1] === boardHeightMm * 100);
+  assert.ok(board);
+  assert.equal(board[5] - board[2], 160);
 });
 
 function fakeTimers() {

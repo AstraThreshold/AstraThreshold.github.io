@@ -2,7 +2,9 @@ import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } fr
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { validGithubSnapshot } from '../github-stats.js';
+import { pcbPreviewBounds } from '../simulator/tools/pcb-preview.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
@@ -82,6 +84,12 @@ async function copyAssets(relative) {
   }
 }
 if (await exists(path.join(root, 'assets'))) await copyAssets('assets');
+const meshAsset = 'assets/simulator/astra-core-mesh.bin';
+const compressedMesh = `${meshAsset}.gz`;
+const mesh = await readFile(path.join(output, meshAsset));
+const previewBounds = JSON.stringify(pcbPreviewBounds(mesh));
+await writeFile(path.join(output, compressedMesh), gzipSync(mesh, { level: 9 }));
+count++;
 
 // Keep the entry module and its imports on the same fresh source version.
 const modules = required.filter(file => file.endsWith('.js'));
@@ -173,7 +181,7 @@ index = index.replace('src="script.js"', `src="script.js?v=${moduleVersion}"`);
 index = index.replace('href="assets/simulator/source.zip"', `href="${await versionAsset('assets/simulator/source.zip')}"`);
 index = index.replace('src="assets/simulator/astra-core-artwork.svg"', `src="${await versionAsset('assets/simulator/astra-core-artwork.svg')}"`);
 index = index.replace('src="assets/simulator/astra-core-back.svg"', `src="${await versionAsset('assets/simulator/astra-core-back.svg')}"`);
-index = index.replace('data-mesh="assets/simulator/astra-core-mesh.bin"', `data-mesh="${await versionAsset('assets/simulator/astra-core-mesh.bin')}"`);
+index = index.replace(`data-mesh="${meshAsset}"`, `data-mesh="${await versionAsset(meshAsset)}" data-mesh-gzip="${await versionAsset(compressedMesh)}" data-preview="${previewBounds}"`);
 await writeFile(indexPath, await versionStylesheets(await versionBrandAssets(preloadFonts(index))));
 const errorPage = path.join(output, '404.html');
 if (await exists(errorPage)) await writeFile(errorPage, await versionStylesheets(await versionBrandAssets(preloadFonts(await readFile(errorPage, 'utf8'), true))));

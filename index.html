@@ -81,15 +81,15 @@
         <img class="avatar" src="assets/profile/avatar.webp" width="512" height="512" alt="Heng Zhang — Bilibili profile avatar" fetchpriority="high">
         <h1 id="profile-name">Heng Zhang</h1>
         <div class="oled-playground" data-oled-playground data-engine="modern" data-state="waiting" role="group" aria-label="OLED">
-          <div class="pcb-scene">
+          <div class="pcb-scene" data-model="loading">
             <div class="pcb-cabinet" aria-hidden="true"></div>
             <div class="pcb-ground" aria-hidden="true"></div>
             <canvas class="pcb-model" data-mesh="assets/simulator/astra-core-mesh.bin" width="1" height="1" aria-hidden="true"></canvas>
-            <div class="pcb-object">
-              <div class="pcb-back" aria-hidden="true"><img src="assets/simulator/astra-core-back.svg" width="364" height="263" alt="" draggable="false" loading="lazy" decoding="async"></div>
+            <div class="pcb-object" inert>
+              <div class="pcb-back" aria-hidden="true"><img src="assets/simulator/astra-core-back.svg" width="364" height="263" alt="" draggable="false" loading="lazy" decoding="async" fetchpriority="low"></div>
               <span class="pcb-edge pcb-edge--top" aria-hidden="true"></span><span class="pcb-edge pcb-edge--bottom" aria-hidden="true"></span><span class="pcb-edge pcb-edge--left" aria-hidden="true"></span><span class="pcb-edge pcb-edge--right" aria-hidden="true"></span>
               <div class="pcb-board" data-power="off" data-board-width-mm="36.4" data-board-height-mm="26.3" data-board-thickness-mm="1.6" tabindex="0" role="group" aria-label="Interactive OLED development board" aria-describedby="oled-help">
-                <img class="pcb-artwork" src="assets/simulator/astra-core-artwork.svg" width="364" height="263" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async">
+                <img class="pcb-artwork" src="assets/simulator/astra-core-artwork.svg" width="364" height="263" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async" fetchpriority="low">
                 <div class="oled-module"><div class="oled-bezel">
                   <canvas class="oled-screen" width="128" height="64" role="img" aria-label="128 by 64 monochrome OLED display"></canvas>
                   <div class="oled-loading" data-oled-loading hidden><span data-en="Powering up…">正在通电…</span></div>
@@ -113,6 +113,10 @@
             </div>
             <div class="pcb-cabinet-glass" aria-hidden="true"></div>
             <div class="pcb-cabinet-base" aria-hidden="true"></div>
+            <div class="pcb-model-status">
+              <span class="sr-only" role="status" data-en="Loading 3D model…">3D 模型加载中…</span>
+              <button class="pcb-model-retry" type="button" data-en="Retry loading 3D model">重新加载 3D 模型</button>
+            </div>
           </div>
           <div class="engine-picker" role="radiogroup" aria-label="切换 OLED UI">
             <label data-cursor-control><input class="sr-only" type="radio" name="oled-engine" value="modern" checked><span>astra UI</span></label>
