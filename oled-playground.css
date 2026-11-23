@@ -3,6 +3,9 @@
  * SH side-entry shells use the 6:4.25 outline ratio in JST's SH drawing. */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .oled-playground {
+  --cabinet-top: 12%;
+  --cabinet-bottom: 15%;
+  --cabinet-base-height: 14px;
   display: grid;
   grid-template-columns: minmax(0,1fr);
   gap: 3px;
@@ -38,8 +41,6 @@
 /* Align the cabinet glass in display mode and the board edge when powered. */
 .pcb-scene {
   --cabinet-side: calc(50% * (1 - var(--pcb-cabinet-scale)));
-  --cabinet-top: 12%;
-  --cabinet-bottom: 15%;
   --pcb-side-inset: 5px;
   width: 100%;
   margin-inline-start: calc(-1 * var(--pcb-side-inset));
@@ -148,7 +149,7 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
 }
 .pcb-cabinet-base {
   inset: calc(100% - var(--cabinet-bottom) - 1px) calc(var(--cabinet-side) - 5px) auto;
-  height: 14px;
+  height: var(--cabinet-base-height);
   border: 1px solid #351c13;
   border-radius: 2px 2px 5px 5px;
   background:
@@ -234,7 +235,7 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
   inset: 0;
   place-items: center;
   color: #d4eaf3;
-  font: 700 calc(5.35 * var(--mm))/.94 var(--mono);
+  font: 700 calc(4.85 * var(--mm))/.94 var(--mono);
   font-variant-ligatures: none;
   white-space: nowrap;
   pointer-events: none;
@@ -323,12 +324,21 @@ html[data-fonts-loading] :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base
 }
 @media (pointer: coarse) {
   .oled-playground {
+    --cabinet-top: 18px;
+    --cabinet-bottom: 29px;
     width: 100%;
     grid-template-columns: minmax(0, var(--pcb-stage-width)) minmax(0, var(--pcb-panel-width));
-    align-items: center;
+    align-items: stretch;
     gap: var(--pcb-panel-gap);
   }
-  .oled-panel { display: grid; gap: 8px; min-width: 0; }
+  .oled-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    padding-block: var(--cabinet-top) calc(var(--cabinet-bottom) - var(--cabinet-base-height) + 1px);
+  }
   .oled-touch-help { display: block; color: var(--muted); font: 11px/1.55 var(--sans); }
   .engine-picker { display: grid; width: 100%; padding: 2px; }
   .engine-picker span { min-height: 44px; padding-inline: 3px; font-size: 11px; }

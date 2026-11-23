@@ -21,15 +21,44 @@ document.addEventListener('keydown', event => {
 }, true);
 
 const banner = document.querySelector('.site-banner');
+const bannerBrand = banner.querySelector('.brand');
+const bannerLogo = bannerBrand.querySelector('img');
+const backToTop = document.querySelector('.back-to-top');
+let bannerHeight;
 function measureBanner() {
-  inputRoot.style.setProperty('--banner-height', `${banner.offsetHeight}px`);
+  bannerHeight = banner.offsetHeight;
+  inputRoot.style.setProperty('--banner-height', `${bannerHeight}px`);
+  syncBanner();
 }
-function syncBanner() { banner.toggleAttribute('data-pinned', window.scrollY > 0); }
+function syncBanner() {
+  const top = window.scrollY;
+  backToTop.toggleAttribute('inert', top <= bannerHeight);
+  const pinned = top > 0;
+  if (banner.hasAttribute('data-pinned') === pinned) return;
+  if (pinned) {
+    banner.style.setProperty('--brand-glow-from', getComputedStyle(bannerLogo).filter);
+    if (!bannerBrand.hasAttribute('data-glow-renderer')) {
+      const aura = getComputedStyle(bannerBrand, '::before');
+      banner.style.setProperty('--brand-aura-opacity', aura.opacity);
+      banner.style.setProperty('--brand-aura-transform', aura.transform);
+    }
+  }
+  banner.toggleAttribute('data-pinned', pinned);
+  banner.dispatchEvent(new Event('site-banner-change'));
+}
 measureBanner();
-syncBanner();
 new ResizeObserver(measureBanner).observe(banner);
 window.addEventListener('scroll', syncBanner, { passive: true });
 window.addEventListener('pageshow', syncBanner);
+
+const identity = document.querySelector('.identity-column');
+const touchPointer = matchMedia('(pointer: coarse)');
+identity.addEventListener('selectstart', event => {
+  if (touchPointer.matches) event.preventDefault();
+});
+identity.addEventListener('contextmenu', event => {
+  if ((touchPointer.matches || event.pointerType === 'touch') && !event.target.closest('a[href]')) event.preventDefault();
+});
 
 initLogoGlow();
 initAdaptiveCursor();
@@ -189,6 +218,7 @@ function setLanguage(value) {
   gallery.updateLanguage();
   oledPlayground.updateLanguage();
   theme.updateLabel();
+  backToTop.setAttribute('aria-label', language === 'en' ? 'Back to top' : '回到顶部');
   document.querySelectorAll('[data-language]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.language === language));
   });

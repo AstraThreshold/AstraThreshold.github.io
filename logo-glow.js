@@ -208,11 +208,13 @@ function canvasRenderer(canvas) {
 }
 
 export function initLogoGlow() {
-  const brand = document.querySelector('.site-header .brand');
+  const banner = document.querySelector('.site-banner');
+  const brand = banner?.querySelector('.brand');
   if (!brand) return;
   const logo = brand.querySelector('img');
   let canvas = document.createElement('canvas'), renderer;
-  canvas.className = 'brand-aura-canvas'; canvas.setAttribute('aria-hidden', 'true'); brand.prepend(canvas);
+  // The fixed glow stays below the page content and outside the sticky header's glass layer.
+  canvas.className = 'brand-aura-canvas'; canvas.setAttribute('aria-hidden', 'true'); banner.after(canvas);
   try { renderer = gpuRenderer(canvas); } catch { /* Use a fresh canvas for the 2D renderer. */ }
   if (!renderer) {
     canvas.replaceWith(canvas = canvas.cloneNode());
@@ -221,7 +223,7 @@ export function initLogoGlow() {
   if (!renderer) { canvas.remove(); return; }
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const scheme = matchMedia('(prefers-color-scheme: dark)');
-  let request = 0, configuration = '', maskKey = '', near, startBrightness = 1, endBrightness = 1.18, unavailable = false, introComplete = false, themeSnapshot;
+  let request = 0, configuration = '', maskKey = '', near, startBrightness = 1, endBrightness = 1.18, unavailable = false, themeSnapshot;
   const brightness = filter => Number(filter.match(/brightness\(([\d.]+)\)/)?.[1] ?? 1);
 
   function configure() {
@@ -232,11 +234,13 @@ export function initLogoGlow() {
     const colors = ['core','mid','edge'].map(key => color(style.getPropertyValue('--brand-aura-' + key)));
     const glowCore = color(style.getPropertyValue('--brand-glow')), glowHalo = color(style.getPropertyValue('--brand-halo'));
     const radius = style.getPropertyValue('--brand-aura-radii').match(/[\d.]+/g).map(Number);
-    canvas.style.transform = '';
-    const box = canvas.getBoundingClientRect();
-    const shift = [Math.round((box.x + scrollX) * dpr) / dpr - box.x - scrollX, Math.round((box.y + scrollY) * dpr) / dpr - box.y - scrollY];
-    canvas.style.transform = `translate(calc(-50% + ${shift[0]}px), calc(-38% + ${shift[1]}px))`;
-    const center = [size[0] / 2 - shift[0], size[1] * .38 - shift[1]];
+    const box = brand.getBoundingClientRect();
+    const x = box.left + box.width / 2, y = box.top + box.height / 2;
+    const left = Math.round((x - size[0] / 2) * dpr) / dpr;
+    const top = Math.round((y - size[1] * .38) * dpr) / dpr;
+    canvas.style.left = `${left}px`;
+    canvas.style.top = `${top}px`;
+    const center = [x - left, y - top];
     const sourceKey = JSON.stringify([logo.currentSrc, logo.clientWidth, logo.clientHeight, dpr]);
     if (sourceKey !== maskKey) { near = wordmarkGlow(logo, dpr); maskKey = sourceKey; }
     const key = JSON.stringify([size, dpr, paper, colors, radius, center, sourceKey, glowCore, glowHalo]);
@@ -252,12 +256,18 @@ export function initLogoGlow() {
 
   function draw() {
     request = 0;
-    const spread = reducedMotion.matches || introComplete ? 1 : clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
-    renderer.draw(spread); brand.dataset.glowRenderer = renderer.kind;
+    const spread = clamp((brightness(getComputedStyle(logo).filter) - startBrightness) / (endBrightness - startBrightness));
+    renderer.draw(spread);
+    if (!canvas.hasAttribute('data-ready')) {
+      brand.dataset.glowRenderer = renderer.kind; canvas.dataset.ready = '';
+    }
     if (!reducedMotion.matches && logo.getAnimations().some(animation => animation.playState === 'running' || animation.pending)) request = requestAnimationFrame(draw);
   }
   function refresh() { if (!unavailable && configure() && !request) request = requestAnimationFrame(draw); }
-  canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); unavailable = true; cancelAnimationFrame(request); request = 0; delete brand.dataset.glowRenderer; });
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault(); unavailable = true; cancelAnimationFrame(request); request = 0;
+    delete brand.dataset.glowRenderer; delete canvas.dataset.ready;
+  });
   const observer = new ResizeObserver(refresh); observer.observe(brand);
   logo.addEventListener('load', refresh);
   scheme.addEventListener('change', refresh); reducedMotion.addEventListener('change', refresh);
@@ -265,9 +275,13 @@ export function initLogoGlow() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   document.fonts.ready.then(refresh);
   document.addEventListener('site-fonts-ready', refresh);
+  banner.addEventListener('site-banner-change', () => {
+    logo.style.removeProperty('animation');
+    refresh();
+  });
   document.addEventListener('site-theme-before-change', () => {
     const intro = logo.getAnimations().find(animation => animation.animationName === 'brand-glow-in');
-    if (intro?.playState === 'finished') { introComplete = true; logo.style.animation = 'none'; }
+    if (intro?.playState === 'finished') logo.style.animation = 'none';
   });
   document.addEventListener('site-theme-change', event => {
     const duration = event.detail?.duration || 0;

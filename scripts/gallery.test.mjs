@@ -35,7 +35,7 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
     append(...children) {
       children.forEach(child => { child.remove(); this.children.push(child); child.parent = this; });
     }
-    replaceChildren(...children) { this.children.forEach(child => { child.parent = null; }); this.children = []; this.append(...children); }
+    prepend(child) { child.remove(); this.children.unshift(child); child.parent = this; }
     replaceWith(element) {
       const parent = this.parent, index = parent.children.indexOf(this);
       element.remove(); parent.children.splice(index, 1, element); element.parent = parent; this.parent = null;
@@ -76,7 +76,12 @@ function fixture({ dialogSupported = true, reduce = false, hover = true } = {}) 
     const thumbnail = new Element('img'); thumbnail.src = `https://example.test/thumb-${index}.webp`;
     link.append(thumbnail); return link;
   });
-  wall.append(...links);
+  for (const parity of [0, 1]) {
+    const column = new Element(), track = new Element(), group = new Element();
+    column.className = 'photo-column'; track.className = 'photo-track'; group.className = 'photo-group';
+    group.append(...links.filter((_, index) => index % 2 === parity));
+    track.append(group); column.append(track); wall.append(column);
+  }
   const viewer = new Element('dialog');
   if (!dialogSupported) viewer.showModal = undefined;
   for (const name of ['close', 'previous', 'next']) {
@@ -122,16 +127,19 @@ function fire(element, type, values = {}, target = element) {
   return event;
 }
 
-test('responsive columns retain every photo and repeated copies stay out of keyboard navigation', () => {
+test('the original two columns survive resizing and repeated copies stay out of keyboard navigation', () => {
   const f = fixture();
-  assert.equal(f.wall.querySelectorAll('.photo-column').length, 2);
+  const columns = f.wall.querySelectorAll('.photo-column');
+  assert.equal(columns.length, 2);
+  assert.equal(columns[0].querySelector('.photo-group').contains(f.links[0]), true);
+  assert.equal(columns[1].querySelector('.photo-track').children[1].contains(f.links[1]), true);
   assert.equal(f.wall.querySelectorAll('.photo-link').length, 14);
   for (const width of [720, 360, 260]) {
     f.resize(width);
     const originals = f.wall.querySelectorAll('.photo-link').filter(link => f.links.includes(link));
     assert.equal(new Set(originals).size, 7);
     assert.equal(f.wall.querySelectorAll('.photo-link').length, 14);
-    assert.equal(f.wall.querySelectorAll('.photo-column').length, Math.min(6, Math.max(2, Math.round(width / 120))));
+    assert.deepEqual(f.wall.querySelectorAll('.photo-column'), columns);
     f.wall.querySelectorAll('.photo-link').filter(link => !f.links.includes(link)).forEach(link => assert.equal(link.tabIndex, -1));
   }
 });

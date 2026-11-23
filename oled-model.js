@@ -211,10 +211,10 @@ function makePreviewPainter(gl, bounds) {
   };
 }
 
-function paintBoardTexture(gl, texture, image, side, shadows) {
+function paintBoardTexture(gl, texture, image, side, shadows, highResolution) {
   const paper = document.createElement('canvas');
-  paper.width = 512;
-  paper.height = 370;
+  paper.width = highResolution ? 1024 : 512;
+  paper.height = highResolution ? 1024 : 370;
   const ctx = paper.getContext('2d', { alpha: false });
   ctx.fillStyle = side === 1 ? '#1b6757' : '#1a6d60';
   ctx.fillRect(0, 0, paper.width, paper.height);
@@ -238,15 +238,23 @@ function paintBoardTexture(gl, texture, image, side, shadows) {
     ctx.restore();
   }
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, highResolution ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, paper);
+  if (highResolution) {
+    gl.generateMipmap(gl.TEXTURE_2D);
+    const anisotropy = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (anisotropy) {
+      const samples = Math.min(4, gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+      gl.texParameterf(gl.TEXTURE_2D, anisotropy.TEXTURE_MAX_ANISOTROPY_EXT, samples);
+    }
+  }
   paper.width = paper.height = 1;
 }
 
-function makePainter(gl, bytes, images) {
+function makePainter(gl, bytes, images, highResolution) {
   const header = new DataView(bytes);
   const vertices = header.getUint32(4, true), indices = header.getUint32(8, true);
   const opaqueIndices = header.getUint32(20, true);
@@ -289,7 +297,7 @@ function makePainter(gl, bytes, images) {
   const boardTextures = [gl.createTexture(), gl.createTexture()];
   function setArtwork(index, image) {
     gl.activeTexture(gl.TEXTURE0 + index);
-    try { paintBoardTexture(gl, boardTextures[index], image, index + 1, shadows); }
+    try { paintBoardTexture(gl, boardTextures[index], image, index + 1, shadows, highResolution); }
     finally { gl.activeTexture(gl.TEXTURE2); }
   }
   boardTextures.forEach((_, index) => setArtwork(index, images[index]));
@@ -409,7 +417,7 @@ export function mountPcbModel(scene, object, onStateChange) {
         }
       }
       if (gl.isContextLost()) return;
-      painter = makePainter(gl, mesh, artwork);
+      painter = makePainter(gl, mesh, artwork, touchViewport.matches);
       preview?.release();
       preview = null;
       screenDirty = Boolean(screenFrame);
@@ -510,7 +518,9 @@ export function mountPcbModel(scene, object, onStateChange) {
   canvas.addEventListener('webglcontextrestored', requestModel);
   scene.querySelector('.pcb-model-retry').addEventListener('click', retryModel);
   window.addEventListener('online', retryModel);
-  new ResizeObserver(schedule).observe(object);
+  const resize = new ResizeObserver(schedule);
+  resize.observe(scene);
+  resize.observe(object);
   window.addEventListener('resize', schedule, { passive: true });
   const stateObserver = new MutationObserver(schedule);
   for (const button of buttons) {

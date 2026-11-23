@@ -51,6 +51,7 @@ function photoShadow(width, height, scale) {
 export function initGallery(getLanguage) {
   const gallery = document.getElementById('gallery');
   const wall = gallery?.querySelector('[data-photo-wall]');
+  const tracks = wall?.querySelectorAll('.photo-track');
   const links = [...(wall?.querySelectorAll('.photo-link') || [])]
     .sort((a, b) => Number(a.dataset.photoIndex) - Number(b.dataset.photoIndex));
   const openButton = gallery?.querySelector('[data-gallery-open]');
@@ -68,7 +69,6 @@ export function initGallery(getLanguage) {
   let pointerInside = false;
   let keyboardInside = false;
   let resizeFrame = null;
-  let columnCount = 0;
   let active = null;
   let pointer = null;
   let touchActive = false;
@@ -174,6 +174,7 @@ export function initGallery(getLanguage) {
     const bounds = link.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
     const source = link.querySelector('img');
+    if (!source || source.naturalWidth === 0) return;
     const floating = document.createElement('div');
     floating.className = 'photo-float';
     floating.setAttribute('aria-hidden', 'true');
@@ -390,39 +391,11 @@ export function initGallery(getLanguage) {
   }
 
   function setDurations() {
-    wall.querySelectorAll('.photo-track').forEach(track => {
+    tracks.forEach(track => {
       // One complete group plus its following gap is exactly one loop.
       const distance = track.querySelector('.photo-group').getBoundingClientRect().height + 8;
       track.style.setProperty('--photo-duration', `${Math.max(30, distance / 11)}s`);
     });
-  }
-
-  function buildColumns() {
-    const columnsInStyle = parseInt(window.getComputedStyle(wall).getPropertyValue?.('--photo-columns'), 10);
-    const count = clamp(columnsInStyle || Math.round(wall.clientWidth / 120), 2, 6);
-    if (count === columnCount) { setDurations(); return; }
-    returnPhoto(true);
-    columnCount = count;
-    const columns = Array.from({ length: count }, (_, columnIndex) => {
-      const column = document.createElement('div');
-      const track = document.createElement('div');
-      const group = document.createElement('div');
-      column.className = 'photo-column';
-      track.className = 'photo-track';
-      group.className = 'photo-group';
-      links.forEach((link, index) => { if (index % count === columnIndex) group.append(link); });
-      const repeat = group.cloneNode(true);
-      repeat.dataset.photoClone = '';
-      repeat.setAttribute('aria-hidden', 'true');
-      repeat.querySelectorAll('a').forEach(link => { link.tabIndex = -1; });
-      track.append(group, repeat);
-      column.append(track);
-      return column;
-    });
-    wall.replaceChildren(...columns);
-    wall.classList.add('is-ready');
-    setDurations();
-    syncMotion();
   }
 
   if (wall && links.length) {
@@ -431,13 +404,25 @@ export function initGallery(getLanguage) {
       links.forEach(link => { link.tabIndex = -1; });
       openButton.addEventListener('click', () => openPhoto(current, openButton));
     }
-    buildColumns();
+    tracks.forEach((track, index) => {
+      const repeat = track.querySelector('.photo-group').cloneNode(true);
+      repeat.dataset.photoClone = '';
+      repeat.setAttribute('aria-hidden', 'true');
+      repeat.querySelectorAll('a').forEach(link => { link.tabIndex = -1; });
+      repeat.querySelectorAll('img').forEach(img => { delete img.dataset.mediaReady; });
+      // The downward track starts one group up. Its original images stay visible at startup.
+      if (index % 2 === 1) track.prepend(repeat);
+      else track.append(repeat);
+    });
+    setDurations();
+    wall.classList.add('is-ready');
+    syncMotion();
     const resize = () => {
       if (resizeFrame !== null) return;
       resizeFrame = window.requestAnimationFrame(() => {
         resizeFrame = null;
         returnPhoto(true);
-        buildColumns();
+        setDurations();
       });
     };
     if (typeof ResizeObserver === 'function') new ResizeObserver(resize).observe(wall);
