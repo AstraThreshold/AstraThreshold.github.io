@@ -346,7 +346,7 @@ async function downloadMesh({ mesh, meshGzip }) {
   return fetchMesh(mesh);
 }
 
-export function mountPcbModel(scene, object, onReady) {
+export function mountPcbModel(scene, object, onStateChange) {
   const canvas = scene.querySelector('.pcb-model');
   const board = object.querySelector('.pcb-board');
   const images = [object.querySelector('.pcb-artwork'), object.querySelector('.pcb-back img')];
@@ -383,7 +383,7 @@ export function mountPcbModel(scene, object, onReady) {
   function showModel(state) {
     scene.dataset.model = state;
     object.inert = false;
-    onReady();
+    onStateChange();
   }
   async function load() {
     try {
@@ -416,6 +416,7 @@ export function mountPcbModel(scene, object, onReady) {
     } catch {
       if (!gl?.isContextLost()) {
         scene.dataset.model = 'error';
+        onStateChange();
         schedule();
       }
     }
@@ -427,6 +428,7 @@ export function mountPcbModel(scene, object, onReady) {
   function retryModel() {
     if (scene.dataset.model !== 'error') return;
     scene.dataset.model = 'loading';
+    onStateChange();
     requestModel();
     schedule();
   }

@@ -155,7 +155,14 @@ html[data-fonts-loading] .site-header .brand img { animation-play-state: paused;
 .theme-icon--sun, :root[data-theme="dark"] .theme-icon--moon { opacity: 0; }
 :root[data-theme="dark"] .theme-icon--sun { opacity: 1; }
 .profile { display: grid; grid-template-columns: 260px minmax(0, 1fr) 260px; gap: 38px; align-items: stretch; padding-top: 36px; padding-bottom: 22px; }
-.identity-column { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.identity-column {
+  --pcb-stage-width: min(244px, 100%);
+  --pcb-cabinet-scale: .8;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
 .identity-column > :is(.avatar, h1) { flex-shrink: 0; }
 .avatar { width: 112px; height: 112px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); margin-bottom: 18px; }
 h1 { font: 600 32px/1.12 var(--mono); letter-spacing: -.035em; }
@@ -191,8 +198,15 @@ html[data-media-placeholders] .site-header .brand:has(img:not([data-media-ready]
 .social-icon--bilibili { --social-icon-source: url("assets/icons/bilibili.svg"); }
 .social-icon--xiaohongshu { --social-icon-source: url("assets/icons/xiaohongshu.svg"); width: 32px; height: 22px; }
 .social-icon--email { --social-icon-source: url("assets/icons/email.svg"); }
-.profile-social { padding-top: 12px; }
-.profile-social > .social-link:first-child { margin-inline-start: calc((var(--social-icon-size, 22px) - var(--social-hit-size, 32px)) / 2); }
+.profile-social.social-links {
+  --social-edge-inset: calc((var(--social-icon-size, 22px) - var(--social-hit-size, 32px)) / 2);
+  width: calc(var(--pcb-stage-width) * var(--pcb-cabinet-scale));
+  justify-content: space-between;
+  gap: 0;
+  padding-top: 12px;
+}
+.profile-social > .social-link:first-child { margin-inline-start: var(--social-edge-inset); }
+.profile-social > .social-link:last-child { margin-inline-end: var(--social-edge-inset); }
 .entry-links a { display: inline-flex; align-items: baseline; gap: 5px; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line); }
 :where(html:not(.has-adaptive-cursor)) .entry-links a:hover, .entry-links a[data-cursor-within] { text-decoration-color: var(--accent); }
 .link-arrow { font-family: var(--sans); font-size: .9em; color: var(--soft); }
@@ -383,7 +397,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   h1 { font-size: clamp(23px, 6.3vw, 29px); }
   .identity-column > .oled-playground { grid-column: 1 / -1; grid-row: 2; margin-top: 20px; }
   .social-links { --social-hit-size: 44px; gap: 8px; }
-  .profile-social { grid-column: 1 / -1; grid-row: 3; margin-top: 7px; padding-top: 0; }
+  .profile-social.social-links { grid-column: 1 / -1; grid-row: 3; margin-top: 7px; padding-top: 0; }
   .profile-details { padding-top: 28px; }
   .affiliation-row { align-items: flex-start; gap: 10px; }
   .affiliation-icon { --mark-size: 21px; margin-top: 2px; }

@@ -25,7 +25,8 @@ After boot, a brief light shows the two keys and a ring
 shows progress during a long press. The selector below the board switches
 between Astra UI and Lite. The 3D presentation uses a perspective camera and a
 depth-tested assembly mesh.
-The cabinet shows a gray 3D model with a sweep of light while the mesh loads.
+The cabinet shows a gray 3D model that rotates under a sweep of light while the
+mesh loads. The full assembly continues from the same angle.
 The site build derives its solid bounds from the assembly mesh and serves a
 losslessly compressed copy of that mesh. The solder-mask artwork loads
 separately, and each face keeps its geometry while the artwork is pending.

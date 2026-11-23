@@ -6,17 +6,18 @@
   display: grid;
   grid-template-columns: minmax(0,1fr);
   gap: 3px;
-  width: min(244px,100%);
+  width: var(--pcb-stage-width);
 }
 .engine-picker {
   display: inline-flex;
   justify-self: start;
+  width: calc(100% * var(--pcb-cabinet-scale));
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 5px;
 }
-.engine-picker label { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.engine-picker label { flex: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .engine-picker span {
   display: grid;
   place-items: center;
@@ -34,7 +35,7 @@
 .pcb-scene { --oled-board-width: 234px; position: relative; isolation: isolate; display: grid; place-items: center; aspect-ratio: 4 / 3; min-width: 0; overflow: clip; touch-action: pan-y; perspective: var(--pcb-camera,707px); perspective-origin: 50% calc(50% - 2px); }
 /* Align the cabinet glass in display mode and the board edge when powered. */
 .pcb-scene {
-  --cabinet-side: 10%;
+  --cabinet-side: calc(50% * (1 - var(--pcb-cabinet-scale)));
   --cabinet-top: 12%;
   --cabinet-bottom: 15%;
   --pcb-side-inset: 5px;

@@ -61,7 +61,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
         { transform: tilt(6, 300, -2, 0) },
         { transform: matrix.toString() }
       ], { id:'pcb-orbit', duration: 32000, iterations: Infinity, easing: 'linear' });
-      if (!available) motion.pause();
+      if (!available || scene.dataset.model === 'error') motion.pause();
     }
     syncModel();
   }
@@ -76,11 +76,19 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     syncModel();
   }
   function present() {
-    if (!available || !model.ready) return;
-    if (activationPending) {
+    if (!available) return;
+    if (activationPending && model.ready) {
       activationPending = false;
       activate();
-    } else if (mode === 'display' && !motion && !drag) {
+      return;
+    }
+    if (mode !== 'display' || drag) return;
+    if (scene.dataset.model === 'error') {
+      motion?.pause();
+    } else if (motion?.playState === 'paused') {
+      motion.play();
+      syncModel();
+    } else if (!motion) {
       if (introduced) orbit(object.style.transform);
       else enterDisplay();
     }
@@ -155,7 +163,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
       syncModel();
       return;
     }
-    if (motion?.playState === 'paused') motion.play();
+    if (mode !== 'display' && motion?.playState === 'paused') motion.play();
     if (mode === 'dragging' && !drag) showDisplay();
     if (mode === 'aligning') scheduleTurn(epoch);
     if (mode === 'active') activity();
@@ -226,7 +234,7 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
     if (document.documentElement.dataset.inputMode === 'keyboard') activate();
   });
   reduced.addEventListener('change', () => {
-    if (!model.ready) return;
+    if (!introduced) return;
     if (mode === 'display') orbit(reduced.matches && motion?.id === 'pcb-entrance' ? display : snapshot());
     else if (reduced.matches) motion?.finish();
   });
