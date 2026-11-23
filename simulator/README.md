@@ -20,7 +20,7 @@ The board and its decorative image are non-selectable and non-draggable, avoidin
 the browser's dark image-selection overlay during pointer/keyboard operation.
 The board sits in the profile column. After a short entrance it rotates under
 the overhead light in a glass cabinet.
-The standby display reads "Click to start..." with each dot fading in turn.
+The standby display reads "Click to start..." with each dot hopping in turn.
 After boot, a brief light shows the two keys and a ring
 shows progress during a long press. The selector below the board switches
 between Astra UI and Lite. The 3D presentation uses a perspective camera and a
