@@ -398,7 +398,8 @@ export function initGallery(getLanguage) {
   }
 
   function buildColumns() {
-    const count = clamp(Math.round(wall.clientWidth / 120), 2, 6);
+    const columnsInStyle = parseInt(window.getComputedStyle(wall).getPropertyValue?.('--photo-columns'), 10);
+    const count = clamp(columnsInStyle || Math.round(wall.clientWidth / 120), 2, 6);
     if (count === columnCount) { setDurations(); return; }
     returnPhoto(true);
     columnCount = count;
@@ -418,7 +419,6 @@ export function initGallery(getLanguage) {
       column.append(track);
       return column;
     });
-    wall.style.setProperty('--photo-columns', String(count));
     wall.replaceChildren(...columns);
     wall.classList.add('is-ready');
     setDurations();
@@ -512,7 +512,11 @@ export function initGallery(getLanguage) {
       if (!link || !wall.contains(link) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       if (openPhoto(Number(link.dataset.photoIndex), link)) event.preventDefault();
     });
-    window.addEventListener('scroll', () => { noteActivity(); returnPhoto(true); }, { passive: true });
+    window.addEventListener('scroll', () => {
+      if (!document.hidden && !windowFocused) { windowFocused = true; syncMotion(); }
+      noteActivity();
+      returnPhoto(true);
+    }, { passive: true });
     wall.addEventListener('scroll', () => returnPhoto(true), { passive: true });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {

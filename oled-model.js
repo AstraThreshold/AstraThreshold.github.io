@@ -297,9 +297,9 @@ function makePainter(gl, bytes, images) {
   gl.uniform1i(uniform.backFace, 1);
   gl.activeTexture(gl.TEXTURE2);
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-  // On the compact board several pixels may share one display sample.
+  // Filter when shrinking the display and preserve individual pixels when enlarging it.
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -352,6 +352,7 @@ export function mountPcbModel(scene, object, onStateChange) {
   const images = [object.querySelector('.pcb-artwork'), object.querySelector('.pcb-back img')];
   const buttons = [...object.querySelectorAll('.pcb-key')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const touchViewport = matchMedia('(pointer: coarse)');
   const artwork = [null, null];
   let gl, preview, painter, mesh, loading, artworkStarted = false;
   let available = false, moving = false, orbiting = false, request = 0, timer = 0;
@@ -444,9 +445,9 @@ export function mountPcbModel(scene, object, onStateChange) {
   function draw(now) {
     request = 0;
     if (!available || (!painter && !preview) || gl.isContextLost()) return;
-    const width = scene.clientWidth, height = scene.clientHeight;
+    const { width, height } = scene.getBoundingClientRect();
     if (!width || !height) return;
-    const density = Math.min(devicePixelRatio || 1, 2);
+    const density = Math.min(devicePixelRatio || 1, touchViewport.matches ? 4 : 2);
     const bufferWidth = Math.round(width * density), bufferHeight = Math.round(height * density);
     if (canvas.width !== bufferWidth) canvas.width = bufferWidth;
     if (canvas.height !== bufferHeight) canvas.height = bufferHeight;
@@ -527,6 +528,7 @@ export function mountPcbModel(scene, object, onStateChange) {
   }
   stateObserver.observe(board, { attributes: true, attributeFilter: ['data-power', 'data-screen-ready', 'data-led', 'data-heartbeat'] });
   reduced.addEventListener('change', schedule);
+  touchViewport.addEventListener('change', schedule);
 
   return {
     get ready() { return scene.dataset.model === 'ready' || scene.dataset.model === 'fallback'; },

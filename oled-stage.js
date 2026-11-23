@@ -218,6 +218,10 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
   scene.addEventListener('pointerup', event => { if (drag?.id === event.pointerId) endDrag(); });
   scene.addEventListener('pointercancel', cancelPointerDrag);
   scene.addEventListener('lostpointercapture', cancelPointerDrag);
+  scene.addEventListener('selectstart', event => event.preventDefault());
+  scene.addEventListener('contextmenu', event => {
+    if (event.pointerType === 'touch' || matchMedia('(pointer: coarse)').matches) event.preventDefault();
+  });
   // Clicks retargeted by the magnetic cursor reach the body at their intended control.
   document.body.addEventListener('click', event => {
     if (root.contains(event.target)) return;

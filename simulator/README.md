@@ -19,9 +19,11 @@ shortcuts remain Up/Down, Enter and Escape, without requiring a hold.
 The board and its decorative image are non-selectable and non-draggable, avoiding
 the browser's dark image-selection overlay during pointer/keyboard operation.
 The board sits in the profile column. After a short entrance it rotates under
-the overhead light in a glass cabinet. The cabinet is already visible in gray
-while the site fonts load.
-The standby display reads "Click to start..." with each dot hopping in turn.
+the overhead light in a glass cabinet. The cabinet is visible in gray while
+the site fonts or mesh load. On touchscreens, the instructions and engine
+selector sit beside the cabinet.
+The standby display reads "Click to" and "start..." on separate lines, with
+each dot hopping in turn.
 After boot, a brief light shows the two keys and a ring
 shows progress during a long press. The selector below the board switches
 between Astra UI and Lite. The 3D presentation uses a perspective camera and a
@@ -49,7 +51,8 @@ seconds without interaction.
 If an engine fails to load, tap the board to retry.
 Keyboard focus and held keys keep the front view available. Reduced-motion
 mode settles immediately.
-The orbit and LED animation pause offscreen, in hidden tabs and on blur.
+The orbit and LED animation pause offscreen and in hidden tabs. On desktop
+they also pause on blur and resume when the visible page scrolls.
 The mesh redraws during motion, display updates, power fading, heartbeat
 pulses, resizing or key presses. Subsequent power-ups reuse the compiled module.
 Demonstration content is supplied by these adapters. Hardware-only effects and

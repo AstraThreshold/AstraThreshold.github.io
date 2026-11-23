@@ -91,7 +91,7 @@
 }
 .theme-changing .brand img { transition: filter .36s cubic-bezier(.3,0,.2,1); }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 28px; scrollbar-gutter: stable; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--banner-height, 77px) + 20px); scrollbar-gutter: stable; }
 /* Keep the logo's decorative halo below all foreground content. */
 body { margin: 0; isolation: isolate; color: var(--ink); background: var(--paper); font: 15px/1.8 var(--serif); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; text-underline-offset: 4px; }
@@ -118,8 +118,11 @@ h1, h2, h3, p, figure, ul, dl, dd { margin: 0; }
 ::selection { background: var(--accent-wash); color: var(--ink); }
 .shell { width: min(100% - 88px, 1180px); margin-inline: auto; }
 .content-section { width: min(100% - 88px, 736px); margin: 48px auto 0; }
+#main { position: relative; z-index: 0; }
 .skip-link { position: fixed; top: -100px; left: 12px; z-index: 20; padding: 6px 18px; background: var(--ink); color: var(--paper); }
 :where(html:not([data-input-mode="pointer"])) .skip-link:focus-visible { top: 10px; }
+.site-banner { position: sticky; top: 0; z-index: 0; background: var(--paper); }
+.site-banner[data-pinned] { z-index: 12; overflow: clip; }
 .site-header { display: flex; gap: 28px; align-items: center; padding: 24px 0 20px; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; flex-shrink: 0; }
 .brand img { filter: var(--logo-filter); }
@@ -154,7 +157,9 @@ html[data-fonts-loading] .site-header .brand img { animation-play-state: paused;
 .theme-icon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 .theme-icon--sun, :root[data-theme="dark"] .theme-icon--moon { opacity: 0; }
 :root[data-theme="dark"] .theme-icon--sun { opacity: 1; }
-.profile { display: grid; grid-template-columns: 260px minmax(0, 1fr) 260px; gap: 38px; align-items: stretch; padding-top: 36px; padding-bottom: 22px; }
+.profile { display: grid; grid-template-columns: 260px minmax(0, 1fr) 260px; column-gap: 38px; align-items: stretch; padding-top: 36px; }
+.portfolio-sections { grid-column: 1 / -1; min-width: 0; margin-top: 22px; }
+.portfolio-sections > .content-section { width: min(100%, 736px); }
 .identity-column {
   --pcb-stage-width: min(244px, 100%);
   --pcb-cabinet-scale: .8;
@@ -302,8 +307,12 @@ details[open] > summary:before { content: "−"; }
 .certificates-heading { border-top: 1px solid var(--line); padding-top: 21px; margin-top: 25px; }
 .affiliations { border-top: 1px solid var(--line); margin-top: 23px; }
 .affiliations p { font-size: 14px; line-height: 1.9; color: var(--muted); }
-.profile-gallery { position: relative; min-width: 0; min-height: 350px; }
+.profile-gallery { position: relative; min-width: 0; min-height: 350px; container-type: inline-size; }
 .photo-wall { --photo-columns: 2; position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--photo-columns), minmax(0, 1fr)); align-items: start; gap: 8px; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+@container (min-width: 300px) { .photo-wall { --photo-columns: 3; } }
+@container (min-width: 420px) { .photo-wall { --photo-columns: 4; } }
+@container (min-width: 540px) { .photo-wall { --photo-columns: 5; } }
+@container (min-width: 660px) { .photo-wall { --photo-columns: 6; } }
 .photo-wall::-webkit-scrollbar { display: none; }
 .photo-wall.is-ready { overflow: hidden; }
 .photo-column { min-width: 0; }
@@ -360,8 +369,8 @@ html[lang=en] #experience .job-role { font-size: 12px; }
 .error-page p { color: var(--muted); }
 .error-page > a:last-child { display: inline-block; margin-top: 24px; text-decoration: underline; }
 @media (max-width: 1040px) {
-  .profile { grid-template-columns: 244px minmax(0, 1fr); gap: 28px 32px; }
-  .profile-gallery { grid-column: 1 / -1; height: 210px; min-height: 0; }
+  .profile { grid-template-columns: 244px minmax(0, 1fr); column-gap: 32px; }
+  .profile-gallery { grid-column: 1 / -1; height: 210px; min-height: 0; margin-top: 28px; }
 }
 @media (max-width: 800px) {
   .shell { width: calc(100% - 56px); }
@@ -376,6 +385,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .project-preview img { height: 125px; }
 }
 @media (max-width: 760px) {
+  :root { --banner-height: 124px; }
   .site-header { flex-wrap: wrap; gap: 18px; }
   .header-controls { margin-left: auto; }
   .theme-toggle { width: 44px; height: 44px; }
@@ -389,7 +399,8 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .site-header .brand { --brand-aura-radii: 190px 250px; }
   .site-header .brand::before, .brand-aura-canvas { width: 400px; }
   .site-header nav { order: 3; margin: 0; width: 100%; justify-content: space-between; gap: 15px; font-size: 12px; }
-  .profile { display: block; padding-top: 28px; padding-bottom: 28px; }
+  .profile { display: block; padding-top: 28px; }
+  .portfolio-sections { margin-top: 28px; }
   .identity-column { display: grid; grid-template-columns: 94px minmax(0,1fr); gap: 0 22px; align-items: start; }
   .avatar { width: 94px; height: 94px; border-radius: 6px; margin: 0; }
   .identity-column > .avatar { grid-column: 1; grid-row: 1; }
@@ -458,6 +469,52 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   html[lang=en] :is(.experience-entry, .project-entry) h3 { font-size: 17px; }
   html[lang=en] :is(#experience, #work) .entry-description { font-size: 12px; }
 }
+@media (pointer: coarse) {
+  .identity-column {
+    --pcb-panel-width: clamp(94px, 28%, 126px);
+    --pcb-panel-gap: 8px;
+    --pcb-stage-width: min(288px, calc(100% - var(--pcb-panel-width) - var(--pcb-panel-gap)));
+    --pcb-cabinet-scale: .9;
+  }
+}
+@media (pointer: coarse) and (max-width: 760px) {
+  .profile { grid-template-columns: minmax(0, 1fr); }
+  .profile-details { padding-top: 28px; }
+}
+@media (pointer: coarse) and (min-width: 761px) {
+  .profile { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); column-gap: 28px; }
+  .profile-gallery { grid-column: 1 / -1; height: 280px; min-height: 0; margin-top: 28px; }
+}
+@media screen and (min-width: 1041px) and (hover: hover) and (pointer: fine) {
+  :root {
+    --portfolio-aside-width: clamp(256px, 20.5vw, 300px);
+    --portfolio-gap: 28px;
+    --portfolio-side-space: calc(2 * (var(--portfolio-aside-width) + var(--portfolio-gap)));
+  }
+  .profile {
+    width: min(100% - 48px, calc(736px + var(--portfolio-side-space)));
+    grid-template-columns: var(--portfolio-aside-width) minmax(0, 1fr) var(--portfolio-aside-width);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--portfolio-gap);
+    align-items: start;
+  }
+  .profile > :is(.identity-column, .profile-gallery) {
+    position: sticky;
+    top: calc(var(--banner-height, 77px) + 20px);
+    grid-row: 1 / -1;
+    align-self: start;
+  }
+  .profile > .identity-column {
+    --pcb-stage-width: min(280px, 100%);
+    grid-column: 1;
+  }
+  .identity-column > .avatar { width: 128px; height: 128px; }
+  .profile-details { grid-column: 2; grid-row: 1; }
+  .profile-gallery { grid-column: 3; height: min(540px, calc(100svh - var(--banner-height, 77px) - 40px)); min-height: 0; }
+  .profile-gallery .photo-wall { --photo-columns: 3; }
+  .portfolio-sections { grid-column: 2; grid-row: 2; }
+  .site-footer { width: min(736px, calc(100% - 48px - var(--portfolio-side-space))); }
+}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *:before, *:after { transition: none !important; animation: none !important; }
@@ -467,6 +524,7 @@ html[lang=en] #experience .job-role { font-size: 12px; }
   .photo-viewer::backdrop { animation: none !important; }
 }
 @media print {
+  .site-banner { position: static; }
   .site-header .brand img { filter: none; animation: none; }
   .site-header .brand::before, .brand-aura-canvas { display: none; }
   .site-header nav, .header-controls, .refresh-count, .project-preview, .profile-gallery, .photo-viewer, .photo-float { display: none !important; }

@@ -333,12 +333,19 @@ test('idle and unfocused walls stop scrolling, then wake on activity', () => {
   assert.equal(f.wall.classList.contains('is-paused'), false);
   fire(f.win, 'blur');
   assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.win, 'scroll');
+  assert.equal(f.wall.classList.contains('is-paused'), false);
+  fire(f.win, 'blur');
   fire(f.win, 'focus');
   assert.equal(f.wall.classList.contains('is-paused'), false);
   f.doc.hidden = true; fire(f.doc, 'visibilitychange');
   f.advanceTime(60000);
+  fire(f.win, 'scroll');
   assert.equal(f.wall.classList.contains('is-paused'), true);
+  f.doc.hasFocus = () => false;
   f.doc.hidden = false; fire(f.doc, 'visibilitychange');
+  assert.equal(f.wall.classList.contains('is-paused'), true);
+  fire(f.win, 'scroll');
   assert.equal(f.wall.classList.contains('is-paused'), false);
 });
 

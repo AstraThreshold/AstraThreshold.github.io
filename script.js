@@ -20,6 +20,17 @@ document.addEventListener('keydown', event => {
     && !['Shift', 'Control', 'Meta', 'Alt'].includes(event.key))) setInputMode('keyboard');
 }, true);
 
+const banner = document.querySelector('.site-banner');
+function measureBanner() {
+  inputRoot.style.setProperty('--banner-height', `${banner.offsetHeight}px`);
+}
+function syncBanner() { banner.toggleAttribute('data-pinned', window.scrollY > 0); }
+measureBanner();
+syncBanner();
+new ResizeObserver(measureBanner).observe(banner);
+window.addEventListener('scroll', syncBanner, { passive: true });
+window.addEventListener('pageshow', syncBanner);
+
 initLogoGlow();
 initAdaptiveCursor();
 

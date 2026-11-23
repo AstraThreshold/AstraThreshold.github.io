@@ -57,6 +57,7 @@ export function bindOledKeys(buttons, activate) {
     if (!event.isPrimary || event.button !== 0 || event.ctrlKey || event.altKey || event.metaKey) return;
     const button = buttonAt(event.target) || (event.pointerType === 'mouse' ? magneticButton(event) : null);
     if (!button || button.disabled) { cancel();return; }
+    if (event.pointerType === 'touch') event.preventDefault();
     begin(button, { pointerId: event.pointerId, x: event.clientX, y: event.clientY, type: event.pointerType });
   }, true);
   document.addEventListener('pointermove', event => {

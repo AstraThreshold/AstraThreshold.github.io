@@ -39,15 +39,17 @@ export function initOledPlayground(getLanguage) {
   const root = document.querySelector('[data-oled-playground]');
   if (!root) return { updateLanguage() {} };
   const board = root.querySelector('.pcb-board');
+  const scene = root.querySelector('.pcb-scene');
   const canvas = root.querySelector('.oled-screen');
   const context = canvas.getContext('2d', { alpha: false });
-  mountOledGrid(root.querySelector('.pcb-scene'));
+  mountOledGrid(scene);
   const announcement = root.querySelector('.oled-announcement');
   const loading = root.querySelector('[data-oled-loading]');
   const actions = [...root.querySelectorAll('[data-oled-action]')];
   const picker = root.querySelector('.engine-picker');
   const modules = new Map();
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const touchViewport = matchMedia('(pointer: coarse)');
   const controls = root.querySelector('.pcb-controls');
   let stage, booting = false;
   let selected = picker.querySelector(':checked').value, current = null, manifestPromise;
@@ -64,7 +66,8 @@ export function initOledPlayground(getLanguage) {
 
   const localText = (zh, en) => getLanguage() === 'en' ? en : zh;
   const failureText = () => localText('通电失败，点击板子再试一次。', 'Could not power up. Tap the board to try again.');
-  const allowed = () => visible && focused && !document.hidden && !failure && stage?.powered;
+  const canRender = () => visible && !document.hidden && (focused || touchViewport.matches);
+  const allowed = () => canRender() && !failure && stage?.powered;
   function updateControls() {
     const ready = root.dataset.state === 'ready' && stage?.interactive && !booting;
     controls.inert = !ready;
@@ -272,25 +275,43 @@ export function initOledPlayground(getLanguage) {
     else input(action);
   });
   function syncAvailability() {
-    const available = visible && focused && !document.hidden;
+    const available = canRender();
+    if (root.dataset.available === String(available)) return;
     root.dataset.available = String(available);
     stage.setAvailable(available);
     if (!available) stop();else if (stage.powered) wake();
   }
-  document.addEventListener('visibilitychange', syncAvailability);
+  function syncWindowVisibility() {
+    if (!document.hidden) focused = document.hasFocus();
+    syncAvailability();
+  }
+  function resumeBrowsing() {
+    if (focused || document.hidden) return;
+    focused = true;
+    syncAvailability();
+  }
+  document.addEventListener('visibilitychange', syncWindowVisibility);
+  document.addEventListener('site-fonts-ready', () => {
+    if (canRender()) stage.setAvailable(true);
+  });
   window.addEventListener('blur', () => { focused = false;syncAvailability(); });
-  window.addEventListener('focus', () => { focused = true;syncAvailability(); });
+  window.addEventListener('focus', resumeBrowsing);
+  window.addEventListener('scroll', resumeBrowsing, { passive: true });
   window.addEventListener('pagehide', () => {
     root.dataset.available = 'false';
     stage.setAvailable(false);stop();board.dataset.heartbeat = 'false';
   });
-  window.addEventListener('pageshow', syncAvailability);
+  window.addEventListener('pageshow', syncWindowVisibility);
   reducedMotion.addEventListener('change', wake);
+  touchViewport.addEventListener('change', syncAvailability);
   if ('IntersectionObserver' in window) {
+    const { top, bottom, left, right } = scene.getBoundingClientRect();
+    visible = top < innerHeight && bottom > 0 && left < innerWidth && right > 0;
+    syncAvailability();
     new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
       syncAvailability();
-    }, { threshold: .08 }).observe(root.querySelector('.pcb-scene'));
+    }, { threshold: .08 }).observe(scene);
   } else { visible = true;syncAvailability(); }
   context.putImageData(pixels, 0, 0);
   return { updateLanguage() {
