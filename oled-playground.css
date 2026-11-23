@@ -32,16 +32,25 @@
 
 /* Use the mesh camera's projection for the live display and physical hit areas. */
 .pcb-scene { --oled-board-width: 234px; position: relative; isolation: isolate; display: grid; place-items: center; aspect-ratio: 4 / 3; min-width: 0; overflow: clip; touch-action: pan-y; perspective: var(--pcb-camera,707px); perspective-origin: 50% calc(50% - 2px); }
-/* Align the board edge while keeping clearance for its rotating silhouette. */
+/* Align the cabinet glass in display mode and the board edge when powered. */
 .pcb-scene {
   --cabinet-side: 10%;
   --cabinet-top: 12%;
   --cabinet-bottom: 15%;
+  --pcb-side-inset: 5px;
   width: 100%;
-  margin-inline-start: -5px;
+  margin-inline-start: calc(-1 * var(--pcb-side-inset));
+  translate: calc(var(--pcb-side-inset) - var(--cabinet-side));
+  transition: translate .85s cubic-bezier(.3,0,.2,1);
   mask-image: linear-gradient(to right, transparent, #000 6px calc(100% - 6px), transparent),
     linear-gradient(to bottom, transparent, #000 8px calc(100% - 8px), transparent);
   mask-composite: intersect;
+}
+.oled-playground:is([data-pose="aligning"], [data-pose="active"], [data-pose="dragging"]) .pcb-scene {
+  translate: 0;
+}
+.oled-playground[data-pose="aligning"] .pcb-scene {
+  transition: translate .74s cubic-bezier(.3,0,.16,1) .24s;
 }
 .pcb-model { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .pcb-scene:is([data-model="loading"], [data-model="error"]) .pcb-object { visibility: hidden; opacity: 0; }
@@ -214,40 +223,25 @@
   display: none;
   position: absolute;
   inset: 0;
-  margin: auto;
-  width: 72%;
-  height: 52%;
-  color: #a8bcba;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.35;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  place-items: center;
+  color: #d4eaf3;
+  font: 700 calc(2.6 * var(--mm))/1 var(--mono);
+  font-variant-ligatures: none;
+  white-space: nowrap;
   pointer-events: none;
 }
-.oled-playground[data-available="true"][data-pose="display"]:not([data-used]) .pcb-idle-guide {
-  display: block;
-  animation: pcb-first-cue 3.6s ease both;
+.oled-playground[data-pose="display"] .pcb-idle-guide { display: grid; }
+.pcb-idle-dot {
+  opacity: 0;
+  animation: pcb-idle-pulse 1.8s ease-in-out infinite;
 }
-.oled-playground[data-available="true"][data-pose="display"] .pcb-object:hover:not(:active) .pcb-idle-guide {
-  display: block;
-  animation: pcb-hover-cue .34s ease both;
-}
-.pcb-guide-left { --guide-travel: -3px; }
-.pcb-guide-right { --guide-travel: 3px; }
-.pcb-idle-guide :is(.pcb-guide-left,.pcb-guide-right) { animation: pcb-drag-cue 1.7s .22s ease both; }
-@keyframes pcb-first-cue {
-  from { opacity: 0; }
-  15%, 72% { opacity: .86; }
-  to { opacity: .42; }
-}
-@keyframes pcb-hover-cue {
-  from { opacity: 0; }
-  to { opacity: .86; }
-}
-@keyframes pcb-drag-cue {
-  0%, 25%, 100% { transform: translateX(0); }
-  64% { transform: translateX(var(--guide-travel)); }
+.pcb-idle-dot:nth-child(2) { animation-delay: .6s; }
+.pcb-idle-dot:nth-child(3) { animation-delay: 1.2s; }
+.oled-playground:not([data-available="true"]) .pcb-idle-dot,
+.pcb-scene[data-facing="back"] .pcb-idle-dot { animation-play-state: paused; }
+@keyframes pcb-idle-pulse {
+  0%, 33.333%, 100% { opacity: 0; }
+  16.667% { opacity: 1; }
 }
 .pcb-components, .pcb-connectors { display: contents; }
 
@@ -354,9 +348,8 @@
 
 html:not([data-input-mode="pointer"]) .pcb-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 @media (prefers-reduced-motion: reduce) {
-  .pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base, .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
-  .oled-playground .pcb-idle-guide,
-  .pcb-idle-guide :is(.pcb-guide-left,.pcb-guide-right),
+  .pcb-scene, .pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base, .oled-screen, .pcb-status i::before, .pcb-status i::after { transition: none; }
+  .pcb-idle-dot { opacity: 1; animation: none; }
   .oled-playground .pcb-key .pcb-key-guide { animation: none !important; }
   .pcb-key[data-key-pressed] .pcb-key-guide { opacity: 1; transition: opacity 0s .22s; }
 }

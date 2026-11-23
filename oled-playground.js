@@ -252,10 +252,7 @@ export function initOledPlayground(getLanguage) {
     },
     onMode(mode) {
       keys.cancel();updateControls();
-      if (mode === 'aligning') {
-        root.dataset.used = '';
-        loadModule(selected).catch(() => {});
-      }
+      if (mode === 'aligning') loadModule(selected).catch(() => {});
     }
   });
   picker.addEventListener('change', event => {
