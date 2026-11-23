@@ -41,7 +41,7 @@ npm run preview
 - `assets/brand/`：由 WoooLAB 原始素材裁剪制作的网页标识与 favicon；分享卡片 SVG 的文字已转为轮廓，不调用设备字体。
 - `assets/projects/`：项目展示素材。
 - `oled-playground.js` / `oled-playground.css` 在个人资料栏显示 128×64 OLED 电路板。板下的选择器切换 astra UI 和 Lite，板上的短动画提示如何启动、拖动和按键。两个版本运行各自的原生 WebAssembly 和内嵌点阵字体。核心板的尺寸为 36.4×26.3×1.6 mm，玻璃为 35.8×17.1 mm，器件依照实物、BOM 和 Gerber 定位。
-- `oled-stage.js` / `oled-model.js` 将双面模型、LED 发光和 OLED 点阵绘入同一 WebGL 画面。待机时板子在玻璃展柜里旋转，点击后出柜、放大并转正，途中通电。astra UI 每次重播原版开屏，Lite 接近正面时开始选择器归位。拖动已开机的板身立即关机，放手后缩小回柜。18 秒无操作也会回柜。屏外、失焦和后台暂停绘制。器件模型来源见 [板子模型说明](simulator/models/README.md)。
+- `oled-stage.js` / `oled-model.js` 将双面模型、LED 发光和 OLED 点阵绘入同一 WebGL 画面。待机时板子在玻璃展柜里旋转，点击后出柜、放大并转正，途中通电。astra UI 每次重播原版开屏，Lite 接近正面时开始选择器归位。拖动已开机的板身立即关机，放手后缩小回柜。点击板子区域外或闲置 18 秒也会回柜。屏外、失焦和后台暂停绘制。器件模型来源见 [板子模型说明](simulator/models/README.md)。
 - `oled-clock.js` 按实际经过的时间推进原生 UI，astra UI 每秒推进 240 步，Lite 每秒推进 120 步。Lite 每两步等效于原来的一个 60 Hz 缓动步长，保留列表、选择器和沙漏的动画时长。浏览器随屏幕刷新提交最新帧。卡顿后每帧最多补 50 毫秒，暂停或切换引擎时清空积压。
 - `oled-grid.js` / `oled-keys.js` 保持板子和屏幕的实物比例，按资料栏空间缩放。短按两颗按钮可切换选项，长按 600 毫秒分别返回和确认。拖动、触屏滚动、失焦和切换引擎会取消未完成的长按。
 - `simulator/`：固定上游版本的 UI 与 u8g2 源码、网页适配层及可复现编译脚本。参见其中的 README；`assets/simulator/source.zip` 提供完整对应源码与许可证。常规网页构建使用已编译的 WASM，无需本机 C/C++ 编译器。

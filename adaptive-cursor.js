@@ -108,7 +108,7 @@ export function initAdaptiveCursor() {
         moving = floating.getAnimations().some(animation => animation.playState === 'running');
       }
     }
-    const padding = media ? 5 : 6;
+    const padding = media ? 5 : target.matches('.pcb-key') ? 3 : 6;
     const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
     const pullX = media ? 0 : clamp((pointer.x - centerX) * .035, -2, 2);
     const pullY = media ? 0 : clamp((pointer.y - centerY) * .035, -2, 2);

@@ -37,7 +37,8 @@ turn. Each power-up starts a fresh instance of the selected
 engine. Astra UI replays its original boot before unlocking the keys. Lite
 animates its selector into the first row as the turn nears the front. Dragging
 the powered board turns it off and fades its last OLED frame. It shrinks back
-into the cabinet on release or after 18 seconds without interaction.
+into the cabinet on release, on a click outside the board area, or after 18
+seconds without interaction.
 If an engine fails to load, tap the board to retry.
 Keyboard focus and held keys keep the front view available. Reduced-motion
 mode settles immediately.

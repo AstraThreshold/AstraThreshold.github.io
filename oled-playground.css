@@ -48,7 +48,7 @@
   --pcb-mm: calc(var(--oled-board-width) / 36.4);
   --pcb-depth: calc(1.6 * var(--pcb-mm));
   /* Leave clearance for the full assembly, including its diagonal at any rotation. */
-  --pcb-case-pose: translate3d(0, -1px, -30px) rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg) scale(.42);
+  --pcb-case-pose: translate3d(0, -1px, -30px) rotateX(-16deg) rotateY(-23deg) rotateZ(-5deg) scale3d(.42, .42, .42);
   position: relative;
   top: -2px;
   width: min(var(--oled-board-width),calc(100% - 10px));
@@ -57,7 +57,7 @@
   transform: var(--pcb-case-pose);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .pcb-object { transform: translate3d(0, 6px, -42px) rotateX(-34deg) rotateY(-36deg) rotateZ(-9deg) scale(.33); }
+  .pcb-object { transform: translate3d(0, 6px, -42px) rotateX(-34deg) rotateY(-36deg) rotateZ(-9deg) scale3d(.33, .33, .33); }
 }
 :is(.pcb-cabinet, .pcb-cabinet-glass, .pcb-cabinet-base) {
   position: absolute;
@@ -248,15 +248,17 @@
 .pcb-controls { position: absolute; z-index: 2; left: calc(27.699 * var(--mm)); top: calc(19.812 * var(--mm)); width: calc(4.8 * var(--mm)); height: calc(6.096 * var(--mm)); }
 .pcb-key-grid { display: grid; height: 100%; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
 .pcb-key { position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 1px; background: transparent; color: #d6dfcf; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.tact-switch { position: relative; display: grid; place-items: center; width: calc(3 * var(--mm)); height: calc(2.5 * var(--mm)); border: .7px solid; border-color: #d6deca #7f8d75 #75816b #c1cfb5; border-radius: 2px; background: linear-gradient(135deg,#c8d1ba,#b7c3a7 43%,#a1b08e 46%,#bac3a5); box-shadow: inset 0 .5px #f0f2dc90,0 .6px 1px #0b2017; }
+.tact-switch { position: relative; display: grid; place-items: center; width: calc(3 * var(--mm)); height: calc(2.5 * var(--mm)); border: .7px solid; border-color: var(--tact-edges, #d6deca #7f8d75 #75816b #c1cfb5); border-radius: 2px; background: var(--tact-bezel, linear-gradient(135deg,#c8d1ba,#b7c3a7 43%,#a1b08e 46%,#bac3a5)); box-shadow: inset 0 .5px #f0f2dc90,0 .6px 1px #0b2017; }
 .tact-switch::before { content: ""; position: absolute; left: calc(-.5 * var(--mm)); right: calc(-.5 * var(--mm)); height: 65%; border-inline: calc(.3 * var(--mm)) solid #bfc9ac; box-shadow: -1px 0 #7c9470,1px 0 #7c9470; }
 .tact-switch::after { content: ""; pointer-events: none; position: absolute; inset: 1px; border-inline: .6px solid #8e9d7b; border-radius: 1px; }
-.tact-switch i { z-index: 1; width: calc(1.7 * var(--mm)); height: calc(1.7 * var(--mm)); border-radius: 50%; border: .7px solid #1d2b16; background: radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; }
+.tact-switch i { z-index: 1; width: calc(1.7 * var(--mm)); height: calc(1.7 * var(--mm)); border-radius: 50%; border: .7px solid #1d2b16; background: radial-gradient(ellipse at 43% 18%,#45513a,#25311d 63%,#18250f 90%); box-shadow: inset 0 .7px #7e8e6860,0 1px 1px #06170070; filter: var(--tact-cap-filter, none); }
 .pcb-key:active .tact-switch i, .pcb-key[data-key-pressed] .tact-switch i { transform: translateY(.7px); background: #182310; box-shadow: inset 0 1px 2px #000; }
-.pcb-scene:not([data-model="ready"]) .pcb-key:enabled[data-cursor-magnet] .tact-switch i { filter: brightness(.72); }
-:root:has(.pcb-key[data-cursor-magnet]) .adaptive-cursor[data-mode="target"] { --cursor-surface: rgb(128 128 128 / .10); }
-@media (hover: hover) and (pointer: fine) {
-  :where(html:not(.has-adaptive-cursor)) .pcb-scene:not([data-model="ready"]) .pcb-key:enabled:hover .tact-switch i { filter: brightness(.72); }
+@media (any-hover: hover) and (any-pointer: fine) {
+  .pcb-scene:not([data-model="ready"]) :is(.pcb-key[data-cursor-magnet], :where(html:not(.has-adaptive-cursor)) .pcb-key:hover):enabled {
+    --tact-edges: #f8d7a5 #b68049 #8f653f #dfb479;
+    --tact-bezel: linear-gradient(135deg,#f0d3a1,#dfb680 45%,#bd8d57 48%,#d3a46c);
+    --tact-cap-filter: brightness(.42);
+  }
 }
 .pcb-key:disabled { opacity: 1; }
 .pcb-key-guide {

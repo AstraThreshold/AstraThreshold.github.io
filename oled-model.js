@@ -112,8 +112,15 @@ void main() {
       opacity = min(0.98, 0.21 + 0.31 * edge + power * (0.25 + 0.55 * core));
     } else lit = mix(lit, mix(hue, vec3(1.0), 0.74) * 1.12, power);
   }
-  float hover = finish.z == 1.0 ? keyHover.x : finish.z == 2.0 ? keyHover.y : 0.0;
-  lit *= 1.0 - 0.28 * hover;
+  // The stamped covers of the two front switches pick up a warm highlight.
+  if (surface == 0.0 && abs(finish.y - 212.0) < 0.5 && abs(local.x - 11.8585) < 1.56) {
+    vec2 distanceToKey = abs(vec2(local.y) - vec2(8.1949, 11.2442));
+    float bezelHover = dot(keyHover, vec2(1.0) - step(vec2(1.28), distanceToKey));
+    vec3 warmMetal = lit * vec3(1.30, 0.99, 0.65) + vec3(0.095, 0.035, 0.0);
+    lit = mix(lit, warmMetal, 0.8 * bezelHover);
+  }
+  float capHover = finish.z == 1.0 ? keyHover.x : finish.z == 2.0 ? keyHover.y : 0.0;
+  lit *= 1.0 - 0.58 * capHover;
   gl_FragColor = vec4(lit, opacity);
 }`;
 

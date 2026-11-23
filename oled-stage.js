@@ -201,6 +201,10 @@ export function mountOledStage(root, board, { onPower, onApproach, onTap, onMode
   scene.addEventListener('pointerup', event => { if (drag?.id === event.pointerId) endDrag(); });
   scene.addEventListener('pointercancel', cancelPointerDrag);
   scene.addEventListener('lostpointercapture', cancelPointerDrag);
+  // Clicks retargeted by the magnetic cursor reach the body at their intended control.
+  document.body.addEventListener('click', event => {
+    if ((mode === 'active' || mode === 'aligning') && !root.contains(event.target)) showDisplay();
+  }, {capture:true, passive:true});
   scene.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (mode === 'active') { activity();return; }
